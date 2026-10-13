@@ -3,10 +3,11 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Building2, ChevronRight, Home, LogOut, Menu, Plus, Search, Trash2, X } from "lucide-react";
+import { Building2, ChevronRight, Home, LayoutTemplate, LogOut, Menu, Search, Trash2, X } from "lucide-react";
 import { signOut } from "@/app/actions/session";
 import { roleLabel } from "@/lib/permissions";
 import type { PageSummary, SidebarSections, User } from "@/lib/types";
+import { NewPageButton } from "../pages/NewPageDialog";
 import { Avatar } from "../ui/Avatar";
 
 
@@ -90,14 +91,13 @@ export function Sidebar({ user, sections }: { user: User; sections: SidebarSecti
         <span className="font-display text-lg font-bold leading-none">Wiki Grupo Comidas</span>
       </Link>
 
-      <button type="button" disabled title="Disponible en la fase 3 (editor)" className="flex items-center justify-center gap-2 rounded-lg bg-ink px-3 py-2 text-sm font-medium text-white hover:bg-basil disabled:cursor-not-allowed disabled:opacity-60">
-        <Plus size={16} aria-hidden /> Nueva página
-      </button>
+      <NewPageButton />
 
       <nav className="flex flex-col gap-0.5" aria-label="Principal">
         {navItem("/", "Inicio de la empresa", Home)}
         {department.slug && navItem(`/departamentos/${department.slug}`, department.name, Building2)}
         {navItem("/buscar", "Buscar", Search)}
+        {navItem("/plantillas", "Plantillas", LayoutTemplate)}
       </nav>
 
       <Section title="Empresa" pages={sections.empresa} />

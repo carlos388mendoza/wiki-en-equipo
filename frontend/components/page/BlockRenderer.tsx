@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ExternalLink, FileText, Link2, Paperclip } from "lucide-react";
 import type { CalloutTone, Span, WikiBlock } from "@/lib/blocks";
 import { formatBytes } from "@/lib/format";
+import { isDirectVideo, videoEmbed } from "@/lib/embeds";
 import { isOptimizableImage } from "@/lib/images";
 import type { PageSummary } from "@/lib/types";
 
@@ -45,18 +46,6 @@ function Rich({ data }: { data: { text: string; spans?: Span[] } }) {
   const spans = data.spans ?? [{ text: data.text }];
   return <>{spans.map((s, i) => <SpanView key={i} span={s} />)}</>;
 }
-
-export function videoEmbed(url: string): string | null {
-  const yt = url.match(/(?:youtube\.com\/(?:watch\?v=|embed\/|shorts\/)|youtu\.be\/)([\w-]{11})/);
-  if (yt) return `https://www.youtube-nocookie.com/embed/${yt[1]}`;
-  const vimeo = url.match(/vimeo\.com\/(?:video\/)?(\d+)/);
-  if (vimeo) return `https://player.vimeo.com/video/${vimeo[1]}`;
-  const loom = url.match(/loom\.com\/(?:share|embed)\/([\w-]+)/);
-  if (loom) return `https://www.loom.com/embed/${loom[1]}`;
-  return null;
-}
-
-const isDirectVideo = (url: string) => url.startsWith("/archivos/") || /\.(mp4|webm)(\?|$)/i.test(url);
 
 const toneClass: Record<CalloutTone, string> = {
   info: "bg-basil-soft",

@@ -80,6 +80,17 @@ async function main() {
   const ids = {};
   for (const key of Object.keys(users)) ids[key] = (await call("/auth/me", { token: tokens[key] })).user.id;
 
+  console.log("Instalando plantillas de Grupo Comidas…");
+  const { DEFAULT_TEMPLATES } = await import("../lib/default-templates.ts");
+  // Las plantillas básicas que crea el backend se conservan, pero dejan de ser "por defecto".
+  for (const t of (await call("/templates", { token: admin })).templates) {
+    if (t.isDefault) await call(`/templates/${t.id}`, { method: "PATCH", token: admin, body: { isDefault: false } });
+  }
+  for (const t of DEFAULT_TEMPLATES) {
+    const created = await call("/templates", { method: "POST", token: admin, body: { title: t.title, description: t.description, scope: "COMPANY", content: t.content, background: t.background } });
+    await call(`/templates/${created.template.id}`, { method: "PATCH", token: admin, body: { isDefault: true } });
+  }
+
   const page = async (who, body) => (await call("/pages", { method: "POST", token: tokens[who], body })).page;
 
   console.log("Creando páginas…");

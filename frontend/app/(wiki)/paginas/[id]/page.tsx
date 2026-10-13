@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { BookOpen, ChevronRight, Eye, Pencil } from "lucide-react";
 import { BlockRenderer } from "@/components/page/BlockRenderer";
 import { PageBackground } from "@/components/page/PageBackground";
+import { NewPageButton } from "@/components/pages/NewPageDialog";
 import { ShareButton } from "@/components/pages/ShareDialog";
 import { Avatar } from "@/components/ui/Avatar";
 import { StatusScreen } from "@/components/ui/StatusScreen";
@@ -46,12 +47,15 @@ export default async function PageView({ params }: { params: Promise<{ id: strin
       <div className="mx-auto max-w-3xl px-4 sm:px-8">
         <div className="-mt-10 flex flex-wrap items-end justify-between gap-4">
           <span className="text-7xl leading-none drop-shadow" aria-hidden>{page.icon ?? "📄"}</span>
-          <div className="flex gap-2 pb-1">
+          <div className="flex flex-wrap gap-2 pb-1">
             {shareable && <ShareButton page={page} viewer={user} people={people} />}
             {editable ? (
-              <button type="button" disabled title="Disponible en la fase 3 (editor)" className="inline-flex items-center gap-2 rounded-lg bg-ink px-3 py-2 text-sm font-medium text-white hover:bg-basil disabled:cursor-not-allowed disabled:opacity-60">
-                <Pencil size={14} aria-hidden /> Editar
-              </button>
+              <>
+                <NewPageButton parentId={page.id} parentTitle={page.title} variant="secondary" />
+                <Link href={`/paginas/${page.id}/editar`} className="inline-flex items-center gap-2 rounded-lg bg-ink px-3 py-2 text-sm font-medium text-white hover:bg-basil">
+                  <Pencil size={14} aria-hidden /> Editar
+                </Link>
+              </>
             ) : (
               <span className="inline-flex items-center gap-2 rounded-lg bg-paper px-3 py-2 text-sm text-muted">
                 <BookOpen size={14} aria-hidden /> Solo lectura

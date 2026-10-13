@@ -57,6 +57,18 @@ Cosas que el frontend necesita y el backend todavía no ofrece. El frontend **no
   **Propuesta:** conservar el permiso más alto.
 - La URL usa `FRONTEND_ORIGIN`; si no está configurada sale relativa. El frontend arma la URL con el origen de la petición.
 
+### 12. Archivos en plantillas y páginas copiadas
+- Un archivo subido sin `pageId` (por ejemplo, en el editor de plantillas) solo lo puede ver quien lo subió. Si la plantilla se comparte, otras personas no ven esas imágenes.
+- Al crear una página desde una plantilla o copiar bloques, los archivos siguen ligados a la página original; quien no pueda leer esa página no los verá.
+- **Propuesta:** permitir ligar archivos a plantillas (`templateId`) con los mismos permisos de lectura de la plantilla, y copiar/religar archivos al crear desde plantilla.
+
+### 13. Historial con autoguardado
+- El editor guarda automáticamente (1,5 s después de dejar de escribir) y cada guardado crea una versión en el historial.
+- **Propuesta:** agrupar versiones del mismo usuario dentro de una ventana de tiempo (por ejemplo, 10 minutos) o aceptar `createHistory: false` en guardados automáticos.
+
+### 14. Listado de plantillas sin fondo
+- `GET /api/templates` no incluye `backgroundJson`; la pantalla de plantillas pide cada una por separado para mostrar la vista previa.
+
 ## Baja prioridad
 
 - **Vaciar papelera:** no hay borrado definitivo; las páginas quedan para siempre en la papelera (las pruebas de integración dejan ahí sus páginas de prueba).

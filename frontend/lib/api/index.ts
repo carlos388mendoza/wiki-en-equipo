@@ -145,6 +145,12 @@ export async function getPage(viewer: User, id: string): Promise<ApiResult<Page>
   return { ok: true, data: toPage(raw, views) };
 }
 
+/** Todas las páginas que el usuario puede ver (máx. 100). */
+export async function listAccessible(_viewer: User): Promise<PageSummary[]> {
+  const res = await accessiblePages();
+  return res.ok ? res.data : [];
+}
+
 /** Resúmenes de páginas por id, sin abrirlas (abrir una página registra una visita). */
 export async function getPageSummaries(_viewer: User, ids: string[]): Promise<PageSummary[]> {
   const all = await accessiblePages();
