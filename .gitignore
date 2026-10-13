@@ -27,3 +27,6 @@ Thumbs.db
 
 # Usuarios de prueba generados por `npm run seed`
 *.local.json
+
+# Generado al compilar el frontend (service worker)
+frontend/public/sw-build.js

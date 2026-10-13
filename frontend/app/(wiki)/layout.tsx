@@ -1,6 +1,7 @@
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { Sidebar } from "@/components/layout/Sidebar";
+import { OfflineBanner } from "@/components/offline/OfflineBanner";
 import { StatusScreen } from "@/components/ui/StatusScreen";
 import { getSidebar } from "@/lib/api";
 import { getSession } from "@/lib/session";
@@ -20,7 +21,10 @@ export default async function WikiLayout({ children }: { children: React.ReactNo
   return (
     <div className="lg:flex">
       <Sidebar user={user} sections={sections} />
-      <main className="min-w-0 flex-1">{children}</main>
+      <main className="min-w-0 flex-1">
+        <OfflineBanner user={{ id: user.id, name: user.name }} />
+        {children}
+      </main>
     </div>
   );
 }

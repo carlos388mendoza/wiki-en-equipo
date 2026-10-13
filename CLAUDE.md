@@ -38,12 +38,14 @@ Wiki interna tipo Notion para Grupo Comidas: documentación, procesos y guías o
 
 ## Fases del frontend
 
-0. Base (fase 1 original con datos de ejemplo) — hecho.
+Todas las fases están hechas en la rama `frontend` (un commit `feat(frontend): fase N …` por fase):
+
+0. Base (fase 1 original con datos de ejemplo).
 1. Conectar al backend real (tipos de `shared/`, `lib/api` con fetch, sesión real, login).
 2. Compartir y publicar (modal).
 3. Contenido: editor BlockNote, crear páginas/subpáginas, fondos, etiquetas, plantillas.
 4. Administración: muros, destacadas, historial, papelera, usuarios, plantillas por defecto, límites de archivos.
-5. Avanzado: Yjs (presencia) y modo sin conexión (y-indexeddb).
+5. Avanzado: Yjs (presencia) y modo sin conexión (y-indexeddb + service worker).
 
 Para saber en qué fase se va: `git log --oneline` (cada fase es un commit `feat(frontend): fase N ...`) y este archivo.
 
@@ -121,8 +123,11 @@ El backend guarda `content` y `background` como JSON libre. Acuerdo del frontend
 
 ## Frontend
 
-Next.js 15 (App Router) + React 19 + Tailwind CSS 4 + lucide-react + TypeScript. `cd frontend && npm install && npm run dev` (necesita el backend en `:4000`; variable `BACKEND_URL`, ver `frontend/.env.example`).
+Next.js 15.5 (App Router) + React 19 + Tailwind CSS 4 + lucide-react + TypeScript + BlockNote 0.55 (Mantine) + Yjs 13. `cd frontend && npm install && npm run dev` (necesita el backend en `:4000`; variables en `frontend/.env.example`). Detalle de carpetas y modos en `frontend/README.md`.
 
-- `app/(wiki)/…` pantallas con sesión; `app/login`; `app/share/[token]` acepta enlaces compartidos.
-- `lib/api/` única capa de datos (`{ ok: true, data } | { ok: false, error, message }`); `lib/session.ts` sesión real; `lib/permissions.ts` reglas de visibilidad de botones.
-- Pruebas: `npm test` (Vitest, en `tests/frontend/`). Las de integración usan el backend local y los usuarios del seed.
+- `app/(wiki)/…` pantallas con sesión; `app/login`; `app/share/[token]` acepta enlaces; `app/sin-conexion` borradores offline.
+- `lib/api/` única capa de lecturas (`{ ok: true, data } | { ok: false, error, message }`); escrituras en `app/actions/*` (server actions). `lib/session.ts` sesión real; `lib/permissions.ts` reglas de visibilidad de botones.
+- Editor: `components/editor/PageEditor.tsx` (autoguardado con `expectedVersion`, conflictos, copia Yjs local) + `BlockEditor.tsx` (BlockNote con `withCollaboration` de `@blocknote/core/yjs`). Conversión en `lib/editor/convert.ts`, fusión en `lib/editor/merge.ts`.
+- Tiempo real: `lib/collab/useCollaboration.ts`. Sin `NEXT_PUBLIC_COLLAB_URL` usa `/realtime` del backend (avisos); con ella, y-websocket (en vivo + presencia). Servidor de prueba: `npm run collab:dev`. Ojo: `@y/websocket-server` usa Yjs v14 y **no** es compatible con BlockNote (Yjs v13).
+- Pruebas: `npm test` (Vitest, en `tests/frontend/`). Las de integración usan el backend local y los usuarios del seed (reutilizan sus tokens porque el backend limita los inicios de sesión: 10 cada 15 min por IP).
+- Lecciones: cada `GET /api/pages/:id` suma una visita; no correr `build` con `dev` abierto (comparten `.next`); dentro de OneDrive borrar `.next` si aparece `EINVAL readlink`; el service worker solo se registra en producción.

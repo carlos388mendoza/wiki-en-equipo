@@ -2,9 +2,10 @@
 
 import "@blocknote/core/fonts/inter.css";
 import "@blocknote/mantine/style.css";
-import { useMemo, useRef } from "react";
+import { useEffect, useMemo, useRef } from "react";
 import { filterSuggestionItems, insertOrUpdateBlockForSlashMenu } from "@blocknote/core";
 import { es } from "@blocknote/core/locales";
+import { withCollaboration, type CollaborationOptions } from "@blocknote/core/yjs";
 import { BlockNoteView } from "@blocknote/mantine";
 import {
   getDefaultReactSlashMenuItems,
@@ -32,11 +33,13 @@ export type BlockEditorProps = {
   editable?: boolean;
   /** Para que el padre pueda insertar bloques (p. ej. desde una plantilla). */
   editorRef?: React.MutableRefObject<WikiEditor | null>;
-  /** Opciones extra para BlockNote (lo usa la edición simultánea). */
-  collaboration?: Parameters<typeof useCreateBlockNote>[0] extends infer O ? O extends { collaboration?: infer C } ? C : never : never;
+  /** Edición simultánea y copia local (Yjs). Si se pasa, el contenido vive en el documento Yjs. */
+  collaboration?: CollaborationOptions | null;
+  /** Se llama cuando el editor está listo (una vez por editor creado). */
+  onEditorReady?: (editor: WikiEditor) => void;
 };
 
-export default function BlockEditor({ initialBlocks, onChange, pages, uploadFile, onCreateSubpage, onInsertTemplate, editable = true, editorRef, collaboration }: BlockEditorProps) {
+export default function BlockEditor({ initialBlocks, onChange, pages, uploadFile, onCreateSubpage, onInsertTemplate, editable = true, editorRef, collaboration, onEditorReady }: BlockEditorProps) {
   const initialContent = useMemo(() => {
     const blocks = wikiToBlockNote(initialBlocks);
     return blocks.length ? blocks : undefined;
@@ -44,19 +47,22 @@ export default function BlockEditor({ initialBlocks, onChange, pages, uploadFile
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const editor = useCreateBlockNote(
-    {
-      schema: wikiSchema,
-      dictionary: {
-        ...es,
-        placeholders: { ...es.placeholders, emptyDocument: "Escribe algo o presiona “/” para ver los bloques", default: "Escribe o presiona “/”" },
-      },
-      ...(collaboration ? { collaboration } : { initialContent: initialContent as never }),
-      uploadFile: async (file: File) => uploadFile(file),
+  const base = {
+    schema: wikiSchema,
+    dictionary: {
+      ...es,
+      placeholders: { ...es.placeholders, emptyDocument: "Escribe algo o presiona “/” para ver los bloques", default: "Escribe o presiona “/”" },
     },
+    uploadFile: async (file: File) => uploadFile(file),
+  };
+  const editor = useCreateBlockNote(
+    (collaboration ? withCollaboration({ ...base, collaboration }) : { ...base, initialContent: initialContent as never }) as typeof base,
     [collaboration],
   );
   if (editorRef) editorRef.current = editor;
+  const readyRef = useRef(onEditorReady);
+  readyRef.current = onEditorReady;
+  useEffect(() => { readyRef.current?.(editor); }, [editor]);
 
   const pagesRef = useRef(pages);
   pagesRef.current = pages;

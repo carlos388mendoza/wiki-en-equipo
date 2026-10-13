@@ -13,6 +13,7 @@ export function NewPageButton({ parentId, parentTitle, variant = "primary", init
   parentId?: string; parentTitle?: string; variant?: "primary" | "secondary" | "small"; initialTemplateId?: string; label?: string;
 }) {
   const [open, setOpen] = useState(false);
+  const router = useRouter();
   const cls = {
     primary: "flex w-full items-center justify-center gap-2 rounded-lg bg-ink px-3 py-2 text-sm font-medium text-white hover:bg-basil",
     secondary: "inline-flex items-center gap-2 rounded-lg border border-line bg-surface px-3 py-2 text-sm font-medium hover:border-basil",
@@ -20,7 +21,7 @@ export function NewPageButton({ parentId, parentTitle, variant = "primary", init
   }[variant];
   return (
     <>
-      <button type="button" onClick={() => setOpen(true)} className={cls}>
+      <button type="button" onClick={() => (navigator.onLine ? setOpen(true) : router.push("/sin-conexion?nuevo=1"))} className={cls}>
         {parentId ? <FilePlus2 size={14} aria-hidden /> : <Plus size={variant === "small" ? 13 : 16} aria-hidden />} {label ?? (parentId ? "Subpágina" : "Nueva página")}
       </button>
       <Modal open={open} onClose={() => setOpen(false)} size="xl"

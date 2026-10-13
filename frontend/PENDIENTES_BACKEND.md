@@ -19,10 +19,14 @@ Cosas que el frontend necesita y el backend todavía no ofrece. El frontend **no
 - **Propuesta:** registrar visitas en una ruta aparte (`POST /api/pages/:id/visit`) o con `?visit=1`, y deduplicar por usuario/día.
 - **Mientras tanto:** el frontend evita pedir páginas solo para títulos o rutas (usa el listado).
 
-### 4. Edición simultánea real (Yjs)
-- **Problema:** el WebSocket `/realtime` solo notifica `page.refresh` (máx. 16 KB por mensaje); no retransmite actualizaciones de Yjs ni presencia (quién está editando).
-- **Propuesta:** un endpoint compatible con `y-websocket` (por ejemplo `/collab/:pageId`) que autentique con el mismo JWT y los mismos permisos de lectura/edición, retransmita actualizaciones y *awareness*, y guarde el estado del documento.
-- **Mientras tanto:** ver la sección de la fase 5 en el README del frontend.
+### 4. Edición simultánea real (Yjs) y presencia
+- **Problema:** el WebSocket `/realtime` solo notifica `page.refresh` (máx. 16 KB por mensaje); no retransmite actualizaciones de Yjs ni presencia (quién está editando). Sin eso, dos personas no ven sus cambios al instante: el frontend combina al guardar.
+- **Propuesta:** un endpoint WebSocket con el protocolo de `y-websocket` (Yjs v13, `y-protocols` sync + awareness), por ejemplo `/collab/pagina-<pageId>`:
+  - Autenticar con el mismo JWT (el frontend lo envía como `?token=`) y comprobar `canReadPage` al conectar.
+  - Ignorar actualizaciones (sync paso 2 y `update`) de quien no tenga `canEditPage`; seguir enviándole los cambios.
+  - Retransmitir *awareness* (nombre y color de cada persona) para mostrar presencia.
+  - Opcional: guardar el estado Yjs para que el documento no dependa de que alguien tenga la página abierta.
+- **Mientras tanto:** el frontend funciona con `/realtime` + fusión de tres vías. Para probar el modo en vivo en local hay un servidor de desarrollo en `frontend/scripts/collab-dev-server.mjs` (`npm run collab:dev`) que ya hace la validación de lectura/edición contra el backend; puede servir de referencia, pero **no** es para producción (documentos en memoria, sin límites ni registros).
 
 ## Media prioridad
 

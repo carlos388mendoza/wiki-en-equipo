@@ -114,7 +114,7 @@ export function Sidebar({ user, sections }: { user: User; sections: SidebarSecti
             <p className="truncate text-sm font-semibold">{user.name}</p>
             <p className="truncate text-xs text-muted">{roleLabel[user.role]}</p>
           </div>
-          <form action={signOut}>
+          <form action={signOut} onSubmit={() => navigator.serviceWorker?.controller?.postMessage("limpiar")}>
             <button type="submit" aria-label="Cerrar sesión" className="grid h-8 w-8 place-items-center rounded-md text-muted hover:bg-line/60 hover:text-ink">
               <LogOut size={16} />
             </button>
