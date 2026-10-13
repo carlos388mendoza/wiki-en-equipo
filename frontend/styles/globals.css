@@ -1,0 +1,30 @@
+@import "tailwindcss";
+
+@theme {
+  --color-paper: #f4f6f4;
+  --color-surface: #ffffff;
+  --color-ink: #1d2420;
+  --color-muted: #5f6a64;
+  --color-line: #dce2de;
+  --color-basil: #2e6a4f;
+  --color-basil-soft: #e3efe8;
+  --color-saffron: #c9861f;
+  --color-saffron-soft: #fbf0da;
+  --color-danger: #b4432f;
+  --color-danger-soft: #f8e6e2;
+
+  --font-display: var(--font-bricolage), ui-sans-serif, system-ui, sans-serif;
+  --font-sans: var(--font-figtree), ui-sans-serif, system-ui, sans-serif;
+}
+
+html { color-scheme: light; }
+body { @apply bg-paper text-ink font-sans antialiased; }
+
+:focus-visible { outline: 2px solid var(--color-basil); outline-offset: 2px; border-radius: 4px; }
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation: none !important; transition: none !important; }
+}
+
+/* Texto de lectura de una página */
+.prose-wiki { max-width: 68ch; line-height: 1.65; }
