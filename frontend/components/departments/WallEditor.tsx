@@ -31,6 +31,9 @@ export function WallPagePicker({ target, wall, candidates }: { target: Target; w
   });
 
   const options = candidates.filter((p) => p.id !== wall?.id);
+  const chosen = options.find((p) => p.id === choice);
+  // El backend publica la página del muro (departamento o empresa) al asignarla.
+  const willPublish = (p: PageSummary) => (target.kind === "company" ? p.visibility !== "COMPANY" : p.visibility === "PRIVATE");
 
   return (
     <section aria-labelledby="pagina-muro" className="rounded-xl border border-line bg-surface p-5">
@@ -62,7 +65,7 @@ export function WallPagePicker({ target, wall, candidates }: { target: Target; w
           <label className="sr-only" htmlFor="muro-pagina">Usar otra página</label>
           <select id="muro-pagina" value={choice} onChange={(e) => setChoice(e.target.value)} className="h-10 min-w-0 flex-1 rounded-lg border border-line bg-surface px-2 text-sm outline-none focus:border-basil">
             <option value="">{options.length ? "Elegir una página existente…" : "No hay otras páginas disponibles"}</option>
-            {options.map((p) => <option key={p.id} value={p.id}>{p.title}</option>)}
+            {options.map((p) => <option key={p.id} value={p.id}>{p.title}{willPublish(p) ? " (se publicará)" : ""}</option>)}
           </select>
           <button type="button" disabled={!choice || pending} onClick={() => run(() => (target.kind === "company" ? setCompanyWall(choice) : setDepartmentWall(target.departmentId, choice)), "Listo: esa página ahora es el inicio del muro.", () => setChoice(""))}
             className="h-10 rounded-lg border border-line px-3 text-sm font-medium hover:border-basil disabled:opacity-50">
@@ -76,6 +79,11 @@ export function WallPagePicker({ target, wall, candidates }: { target: Target; w
             {pending ? <LoaderCircle size={14} className="animate-spin" aria-hidden /> : <Sparkles size={14} aria-hidden />} Crear desde plantilla
           </button>
         </div>
+        {chosen && willPublish(chosen) && (
+          <p role="note" className="rounded-lg bg-saffron-soft px-3 py-2 text-sm">
+            “{chosen.title}” es {chosen.visibility === "PRIVATE" ? "privada" : "del departamento"}. Al usarla como muro quedará visible para {target.kind === "company" ? "toda la empresa" : "todo el departamento"}.
+          </p>
+        )}
         <Feedback message={message} />
       </div>
     </section>

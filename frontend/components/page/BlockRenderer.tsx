@@ -6,6 +6,7 @@ import { formatBytes } from "@/lib/format";
 import { isDirectVideo, videoEmbed } from "@/lib/embeds";
 import { isOptimizableImage } from "@/lib/images";
 import type { PageSummary } from "@/lib/types";
+import { PageIcon } from "../ui/PageIcon";
 
 /**
  * Vista de solo lectura de los bloques de una página.
@@ -221,7 +222,7 @@ function Blocks({ blocks, subpages }: { blocks: WikiBlock[]; subpages: Record<st
             if (!sub) return null; // sin acceso o en la papelera
             return (
               <Link key={b.id} href={`/paginas/${sub.id}`} className="flex items-center gap-3 rounded-lg border border-line px-3 py-2 hover:border-basil hover:bg-basil-soft">
-                <span aria-hidden>{sub.icon ?? "📄"}</span>
+                <PageIcon icon={sub.icon} size={18} />
                 <span className="font-medium">{sub.title}</span>
                 <span className="ml-auto text-xs text-muted">Subpágina</span>
               </Link>

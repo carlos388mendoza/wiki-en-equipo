@@ -74,8 +74,9 @@ export function useCollaboration({ pageId, user, onRemoteSave, enabled = true }:
         ws.awareness.on("change", updatePeers);
         setProvider(ws);
       });
-      // Si no hay conexión al abrir, se trabaja con la copia local.
-      const fallback = setTimeout(() => setRemoteSynced(true), 4000);
+      // Si no hay conexión al abrir, se trabaja con la copia local. Si sí hay conexión se espera la
+      // sincronización: cargar el contenido antes haría que se duplicara al combinarse con el remoto.
+      const fallback = setTimeout(() => { if (!ws?.wsconnected) setRemoteSynced(true); }, 4000);
       return () => { cancelled = true; clearTimeout(fallback); ws?.destroy(); setProvider(null); };
     }
     return connectPageChannel({

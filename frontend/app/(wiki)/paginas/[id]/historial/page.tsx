@@ -12,6 +12,7 @@ import { getHistory, getPage } from "@/lib/api";
 import { timeAgo } from "@/lib/format";
 import { canEdit } from "@/lib/permissions";
 import { requireUser } from "@/lib/session";
+import { PageIcon } from "@/components/ui/PageIcon";
 
 export const metadata = { title: "Historial" };
 
@@ -82,7 +83,7 @@ export default async function HistoryPage({ params, searchParams }: { params: Pr
             </div>
             <PageBackground background={selected.snapshot.background} seed={page.id} className="h-24" sizes="800px" />
             <div className="px-5 pb-8 sm:px-8">
-              <span className="-mt-6 block text-5xl" aria-hidden>{selected.snapshot.icon ?? "📄"}</span>
+              <PageIcon icon={selected.snapshot.icon} size={48} className="-mt-6" />
               <h2 className="mt-2 font-display text-3xl font-bold">{selected.snapshot.title}</h2>
               <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-muted">
                 <VisibilityBadge visibility={selected.snapshot.visibility} />

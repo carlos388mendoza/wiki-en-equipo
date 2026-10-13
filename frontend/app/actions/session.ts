@@ -2,15 +2,16 @@
 
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
+import { headers } from "next/headers";
 import { backend, getToken, SESSION_COOKIE } from "@/lib/api/client";
+import { isInternalPath } from "@/lib/blocks";
 import { SESSION_MAX_AGE } from "@/lib/session";
 
 export type LoginState = { error?: string; email?: string };
 
 /** Solo rutas internas: evita redirigir a otro sitio con `?next=`. */
 function safeNext(value: FormDataEntryValue | null) {
-  const next = typeof value === "string" ? value : "";
-  return next.startsWith("/") && !next.startsWith("//") && !next.startsWith("/\\") ? next : "/";
+  return typeof value === "string" && isInternalPath(value) ? value : "/";
 }
 
 export async function login(_prev: LoginState, form: FormData): Promise<LoginState> {
@@ -18,7 +19,14 @@ export async function login(_prev: LoginState, form: FormData): Promise<LoginSta
   const password = String(form.get("password") ?? "");
   if (!email || !password) return { error: "Escribe tu correo y tu contraseña.", email };
 
-  const res = await backend<{ token: string }>("/auth/login", { method: "POST", body: { email, password }, token: null });
+  // El backend limita los intentos por IP. Sin esto, todas las personas comparten la IP del
+  // servidor de Next (el backend debe confiar en este encabezado: ver PENDIENTES_BACKEND.md).
+  const h = await headers();
+  const clientIp = h.get("x-forwarded-for")?.split(",")[0]?.trim() || h.get("x-real-ip") || undefined;
+  const res = await backend<{ token: string }>("/auth/login", {
+    method: "POST", body: { email, password }, token: null,
+    ...(clientIp && { headers: { "X-Forwarded-For": clientIp } }),
+  });
   if (!res.ok) {
     const message =
       res.error === "no_autenticado" ? "Correo o contraseña incorrectos."
@@ -50,7 +58,9 @@ export async function getRealtimeToken(): Promise<string | null> {
   return (await getToken()) ?? null;
 }
 
-export async function changePassword(_prev: { error?: string; done?: boolean }, form: FormData) {
+export type PasswordState = { error?: string };
+
+export async function changePassword(_prev: PasswordState, form: FormData): Promise<PasswordState> {
   const currentPassword = String(form.get("currentPassword") ?? "");
   const newPassword = String(form.get("newPassword") ?? "");
   if (newPassword.length < 12) return { error: "La nueva contraseña debe tener al menos 12 caracteres." };

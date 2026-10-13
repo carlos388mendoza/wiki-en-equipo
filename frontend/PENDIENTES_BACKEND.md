@@ -28,6 +28,11 @@ Cosas que el frontend necesita y el backend todavía no ofrece. El frontend **no
   - Opcional: guardar el estado Yjs para que el documento no dependa de que alguien tenga la página abierta.
 - **Mientras tanto:** el frontend funciona con `/realtime` + fusión de tres vías. Para probar el modo en vivo en local hay un servidor de desarrollo en `frontend/scripts/collab-dev-server.mjs` (`npm run collab:dev`) que ya hace la validación de lectura/edición contra el backend; puede servir de referencia, pero **no** es para producción (documentos en memoria, sin límites ni registros).
 
+### 4b. Límite de inicios de sesión compartido por todos (importante antes de producción)
+- **Problema:** el frontend llama a `POST /api/auth/login` desde el servidor de Next, así que el backend ve siempre la IP de ese servidor. El límite de 10 intentos cada 15 minutos por IP se aplica a **toda la empresa junta**: diez contraseñas mal escritas bloquean a todo el mundo.
+- **Ya hecho en el frontend:** el login envía la IP real de la persona en `X-Forwarded-For`.
+- **Propuesta:** en `backend/api/app.ts`, `app.set("trust proxy", <dirección del servidor de Next>)` (o `1` si hay un solo proxy delante) para que `express-rate-limit` use esa IP. No usar `true` sin restricción: cualquiera podría falsear el encabezado.
+
 ## Media prioridad
 
 ### 5. Listado de páginas sin fondo, icono ni autor
@@ -76,6 +81,11 @@ Cosas que el frontend necesita y el backend todavía no ofrece. El frontend **no
 ### 15. Destacadas de la empresa
 - Hay destacadas por departamento (`/departments/:id/featured`) pero no para el muro de la empresa. El frontend usa como destacadas las páginas enlazadas en la página del muro.
 - **Propuesta:** `GET/PUT /api/company/featured` (solo ADMIN, páginas COMPANY).
+
+### 16. Compartir plantillas como las páginas
+- **Problema:** las plantillas solo tienen alcance (`PRIVATE`, `DEPARTMENT`, `COMPANY`) y solo quien la creó puede editarla. No se pueden compartir con una persona, por enlace, ni dar permiso de edición, como pide el requisito ("compartirlas como privadas igual que las páginas").
+- **Propuesta:** `TemplateShare { templateId, userId, permission: READ | EDIT }` y `TemplateShareLink` con las mismas rutas que las páginas (`PUT/DELETE /api/templates/:id/shares/:userId`, `POST /api/templates/:id/share-links`, aceptar enlace) y que `canReadTemplate` y el permiso de edición los consideren.
+- **Mientras tanto:** el modal "Compartir plantilla" cambia el alcance y da un enlace directo (`/plantillas?plantilla=<id>`) que funciona para quien ya tiene acceso; explica que lo demás todavía no es posible.
 
 ## Baja prioridad
 

@@ -6,12 +6,19 @@ import { Check, ImagePlus, LoaderCircle, Search, Upload } from "lucide-react";
 import { COLORS, GRADIENTS, PATTERN_COLORS, PATTERN_EMOJIS, PHOTO_GALLERY } from "@/lib/backgrounds";
 import { safeHref } from "@/lib/blocks";
 import { isOptimizableImage } from "@/lib/images";
-import type { Background } from "@/lib/types";
+import type { Background, ShapePattern } from "@/lib/types";
 import { MAX_UPLOAD_MB, uploadToWiki } from "@/lib/uploads";
 import { backgroundStyle } from "../page/PageBackground";
 import { Modal } from "../ui/Modal";
 
 type Tab = "imagenes" | "degradados" | "colores" | "patrones";
+const SHAPES: { id: ShapePattern; label: string }[] = [
+  { id: "puntos", label: "Puntos" }, { id: "rayas", label: "Rayas" }, { id: "cuadricula", label: "Cuadrícula" },
+  { id: "zigzag", label: "Zigzag" }, { id: "circulos", label: "Círculos" },
+];
+/** Color de las figuras: albahaca semitransparente, combina con cualquier fondo claro. */
+const SHAPE_INK = "#2e6a4f2e";
+
 const tabs: { id: Tab; label: string }[] = [
   { id: "imagenes", label: "Imágenes" },
   { id: "degradados", label: "Degradados" },
@@ -34,7 +41,7 @@ function Swatch({ selected, onClick, label, style, children }: { selected: boole
 export function BackgroundPicker({ open, onClose, value, onChange, pageId }: {
   open: boolean; onClose: () => void; value: Background | null; onChange: (bg: Background | null) => void; pageId?: string;
 }) {
-  const [tab, setTab] = useState<Tab>(value?.type === "gradient" ? "degradados" : value?.type === "color" ? "colores" : value?.type === "pattern" ? "patrones" : "imagenes");
+  const [tab, setTab] = useState<Tab>(value?.type === "gradient" ? "degradados" : value?.type === "color" ? "colores" : value?.type === "pattern" || value?.type === "shapes" ? "patrones" : "imagenes");
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<SearchResult[] | null>(null);
   const [searchEnabled, setSearchEnabled] = useState<boolean | null>(null);
@@ -42,7 +49,7 @@ export function BackgroundPicker({ open, onClose, value, onChange, pageId }: {
   const [error, setError] = useState("");
   const [link, setLink] = useState("");
   const [patternEmoji, setPatternEmoji] = useState(value?.type === "pattern" ? value.emoji : "🍽️");
-  const [patternColor, setPatternColor] = useState(value?.type === "pattern" ? value.color : PATTERN_COLORS[0]);
+  const [patternColor, setPatternColor] = useState(value?.type === "pattern" || value?.type === "shapes" ? value.color : PATTERN_COLORS[0]);
   const fileRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
@@ -198,24 +205,39 @@ export function BackgroundPicker({ open, onClose, value, onChange, pageId }: {
         {tab === "patrones" && (
           <div className="flex flex-col gap-4">
             <div>
-              <h3 className="mb-2 text-sm font-semibold">Figura</h3>
+              <h3 className="mb-2 text-sm font-semibold">Emojis</h3>
               <div className="flex flex-wrap gap-1">
                 {PATTERN_EMOJIS.map((e) => (
-                  <button key={e} type="button" aria-pressed={patternEmoji === e} onClick={() => { setPatternEmoji(e); pick({ type: "pattern", emoji: e, color: patternColor }); }}
-                    className={`grid h-10 w-10 place-items-center rounded-lg text-xl ${patternEmoji === e ? "bg-basil-soft ring-2 ring-basil" : "hover:bg-paper"}`}>{e}</button>
+                  <button key={e} type="button" aria-pressed={value?.type === "pattern" && patternEmoji === e} onClick={() => { setPatternEmoji(e); pick({ type: "pattern", emoji: e, color: patternColor }); }}
+                    className={`grid h-10 w-10 place-items-center rounded-lg text-xl ${value?.type === "pattern" && patternEmoji === e ? "bg-basil-soft ring-2 ring-basil" : "hover:bg-paper"}`}>{e}</button>
                 ))}
+              </div>
+            </div>
+            <div>
+              <h3 className="mb-2 text-sm font-semibold">Figuras</h3>
+              <div className="flex flex-wrap gap-2">
+                {SHAPES.map(({ id: shape, label }) => {
+                  const bg: Background = { type: "shapes", shape, color: patternColor, ink: SHAPE_INK };
+                  const active = value?.type === "shapes" && value.shape === shape;
+                  return <Swatch key={shape} label={label} selected={active} onClick={() => pick(bg)} style={{ ...backgroundStyle(bg), width: 72 }} />;
+                })}
               </div>
             </div>
             <div>
               <h3 className="mb-2 text-sm font-semibold">Color de fondo</h3>
               <div className="flex flex-wrap gap-2">
                 {PATTERN_COLORS.map((c) => (
-                  <button key={c} type="button" aria-label={`Color ${c}`} aria-pressed={patternColor === c} onClick={() => { setPatternColor(c); pick({ type: "pattern", emoji: patternEmoji, color: c }); }}
+                  <button key={c} type="button" aria-label={`Color ${c}`} aria-pressed={patternColor === c}
+                    onClick={() => {
+                      setPatternColor(c);
+                      pick(value?.type === "shapes" ? { ...value, color: c } : { type: "pattern", emoji: patternEmoji, color: c });
+                    }}
                     className={`h-9 w-9 rounded-full border ${patternColor === c ? "ring-2 ring-basil" : "border-line"}`} style={{ backgroundColor: c }} />
                 ))}
               </div>
             </div>
-            <div className="h-24 rounded-lg border border-line" style={backgroundStyle({ type: "pattern", emoji: patternEmoji, color: patternColor })} aria-label="Vista previa del patrón" />
+            <div className="h-24 rounded-lg border border-line" aria-label="Vista previa del patrón"
+              style={backgroundStyle(value?.type === "shapes" ? value : { type: "pattern", emoji: patternEmoji, color: patternColor })} />
           </div>
         )}
 

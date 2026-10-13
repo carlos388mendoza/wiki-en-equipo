@@ -9,6 +9,7 @@ import { getDepartmentWall, getPageSummaries } from "@/lib/api";
 import { linkedPageIds } from "@/lib/blocks";
 import { canEditWall } from "@/lib/permissions";
 import { requireUser } from "@/lib/session";
+import { PageIcon } from "@/components/ui/PageIcon";
 
 export default async function DepartmentWall({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;
@@ -31,7 +32,7 @@ export default async function DepartmentWall({ params }: { params: Promise<{ slu
       <header className="relative mb-10 overflow-hidden rounded-2xl border border-line bg-surface">
         <PageBackground background={wall?.background ?? null} seed={department.id} className="h-28 sm:h-36" priority />
         <div className="flex flex-col gap-4 px-6 pb-8 sm:flex-row sm:items-end sm:px-10">
-          <span className="-mt-10 text-6xl drop-shadow" aria-hidden>{wall?.icon ?? "🏢"}</span>
+          <PageIcon icon={wall?.icon} fallback="🏢" size={64} className="-mt-10 drop-shadow" />
           <div className="flex-1">
             <h1 className="font-display text-4xl font-bold leading-tight">{department.name}</h1>
             <p className="mt-1 flex items-center gap-1.5 text-sm text-muted">

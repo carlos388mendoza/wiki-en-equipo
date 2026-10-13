@@ -171,6 +171,12 @@ export function PageEditor({ mode, id, initial, pages, tagSuggestions, viewer, b
     persistLocal(true);
     if (isPage && !collab.meta.get("operationId")) collab.meta.set("operationId", uuid());
     setStatus("offline");
+    // Si el navegador cree tener red pero el servidor no respondió, el evento "online" no llegará:
+    // se reintenta cada 15 s hasta que el guardado funcione.
+    if (navigator.onLine) {
+      if (timer.current) clearTimeout(timer.current);
+      timer.current = setTimeout(() => void saveRef.current(), 15_000);
+    }
   };
 
   const save = async (force?: number) => {
@@ -326,7 +332,8 @@ export function PageEditor({ mode, id, initial, pages, tagSuggestions, viewer, b
   /* ---------- Conexión ---------- */
 
   useEffect(() => {
-    const handler = (e: BeforeUnloadEvent) => { if (status !== "saved" && status !== "offline") e.preventDefault(); };
+    // Sin conexión los cambios ya están en este dispositivo; para plantillas no hay copia local, así que se avisa.
+    const handler = (e: BeforeUnloadEvent) => { if (status !== "saved" && (status !== "offline" || !isPage)) e.preventDefault(); };
     window.addEventListener("beforeunload", handler);
     return () => window.removeEventListener("beforeunload", handler);
   }, [status]);
@@ -393,7 +400,7 @@ export function PageEditor({ mode, id, initial, pages, tagSuggestions, viewer, b
     saving: { text: "Guardando…", Icon: LoaderCircle, cls: "text-muted" },
     error: { text: "No se pudo guardar", Icon: TriangleAlert, cls: "text-danger" },
     conflict: { text: "Hay que resolver un conflicto", Icon: TriangleAlert, cls: "text-danger" },
-    offline: { text: "Guardado en este dispositivo", Icon: CloudOff, cls: "text-saffron" },
+    offline: { text: isPage ? "Guardado en este dispositivo" : "Sin conexión: no cierres hasta reconectar", Icon: CloudOff, cls: "text-saffron" },
   };
   const S = statusView[status];
 

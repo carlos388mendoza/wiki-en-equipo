@@ -40,7 +40,11 @@ export type Background =
   | { type: "color"; value: string }
   | { type: "gradient"; value: string }
   | { type: "image"; url: string; credit?: string; creditUrl?: string }
-  | { type: "pattern"; emoji: string; color: string };
+  | { type: "pattern"; emoji: string; color: string }
+  /** Patrón de figuras geométricas: `ink` es el color de las figuras. */
+  | { type: "shapes"; shape: ShapePattern; color: string; ink: string };
+
+export type ShapePattern = "puntos" | "rayas" | "cuadricula" | "zigzag" | "circulos";
 
 export interface Page {
   id: string;

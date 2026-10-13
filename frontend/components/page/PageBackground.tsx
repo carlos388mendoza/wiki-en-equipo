@@ -1,10 +1,26 @@
 import Image from "next/image";
 import { isOptimizableImage } from "@/lib/images";
-import type { Background } from "@/lib/types";
+import type { Background, ShapePattern } from "@/lib/types";
 
 export function patternUrl(emoji: string) {
   const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64'><text x='8' y='28' font-size='20'>${emoji}</text><text x='40' y='60' font-size='20'>${emoji}</text></svg>`;
   return `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
+}
+
+/** Patrones de figuras hechos solo con CSS (sin imágenes externas). */
+export function shapeStyle(shape: ShapePattern, ink: string): React.CSSProperties {
+  switch (shape) {
+    case "puntos":
+      return { backgroundImage: `radial-gradient(${ink} 2px, transparent 2.5px)`, backgroundSize: "18px 18px" };
+    case "rayas":
+      return { backgroundImage: `repeating-linear-gradient(45deg, ${ink} 0 6px, transparent 6px 18px)` };
+    case "cuadricula":
+      return { backgroundImage: `linear-gradient(${ink} 1px, transparent 1px), linear-gradient(90deg, ${ink} 1px, transparent 1px)`, backgroundSize: "22px 22px" };
+    case "zigzag":
+      return { backgroundImage: `linear-gradient(135deg, ${ink} 25%, transparent 25%), linear-gradient(225deg, ${ink} 25%, transparent 25%)`, backgroundSize: "24px 24px", backgroundPosition: "0 0, 12px 0" };
+    case "circulos":
+      return { backgroundImage: `radial-gradient(circle at center, transparent 9px, ${ink} 10px, ${ink} 11px, transparent 12px)`, backgroundSize: "32px 32px" };
+  }
 }
 
 /** Degradados de respaldo cuando una página no tiene fondo (o el listado no lo incluye). */
@@ -31,6 +47,8 @@ export function backgroundStyle(background: Background | null, seed?: string): R
       return { backgroundImage: background.value };
     case "pattern":
       return { backgroundColor: background.color, backgroundImage: patternUrl(background.emoji), backgroundSize: "64px 64px" };
+    case "shapes":
+      return { backgroundColor: background.color, ...shapeStyle(background.shape, background.ink) };
     case "image":
       return {};
   }

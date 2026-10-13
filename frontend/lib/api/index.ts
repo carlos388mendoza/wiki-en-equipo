@@ -114,12 +114,6 @@ async function enrich(pages: PageSummary[]): Promise<PageSummary[]> {
 
 /* ---------- Usuarios y departamentos ---------- */
 
-/** Solo administradores pueden listar usuarios; para el resto devuelve `null`. */
-export async function getUser(id: string): Promise<ManagedUser | null> {
-  const res = await listUsers();
-  return res.ok ? res.data.find((u) => u.id === id) ?? null : null;
-}
-
 export const listUsers = cache(async (): Promise<ApiResult<ManagedUser[]>> => {
   const res = await backend<{ users: ManagedUser[] }>("/users");
   return res.ok ? { ok: true, data: res.data.users } : res;

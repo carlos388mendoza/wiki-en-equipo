@@ -43,15 +43,17 @@ type Options = {
   form?: FormData;
   /** Por defecto se usa el token de la cookie de sesión. */
   token?: string | null;
+  /** Encabezados extra (por ejemplo, la IP del cliente al iniciar sesión). */
+  headers?: Record<string, string>;
 };
 
 /**
  * Llama a una ruta del backend (`/api/...`) y devuelve `{ ok, data }` o `{ ok: false, error }`.
  * Nunca lanza: los errores de red se devuelven como `error_servidor`.
  */
-export async function backend<T>(path: string, { method = "GET", body, form, token }: Options = {}): Promise<ApiResult<T>> {
+export async function backend<T>(path: string, { method = "GET", body, form, token, headers: extra }: Options = {}): Promise<ApiResult<T>> {
   const auth = token === undefined ? await getToken() : token;
-  const headers: Record<string, string> = {};
+  const headers: Record<string, string> = { ...extra };
   if (auth) headers.Authorization = `Bearer ${auth}`;
   if (body !== undefined) headers["Content-Type"] = "application/json";
 

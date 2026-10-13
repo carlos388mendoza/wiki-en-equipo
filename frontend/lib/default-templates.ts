@@ -3,6 +3,7 @@
  *
  * Un administrador las instala desde /plantillas ("Instalar plantillas de Grupo Comidas"):
  * se crean con alcance COMPANY y `isDefault: true`. También las instala `npm run seed`.
+ * Los iconos usan Lucide (`lucide:<nombre>:<tono>`, ver lib/icons.ts) y las imágenes, Unsplash.
  * Sin dependencias en tiempo de ejecución para que Node pueda importarlo directamente.
  */
 import type { StoredAppearance, WikiBlock } from "./blocks";
@@ -32,7 +33,7 @@ export const DEFAULT_TEMPLATES: DefaultTemplate[] = [
   {
     title: "Documentación general",
     description: "Para documentar un sistema, una política o un tema: contexto, funcionamiento, responsables y preguntas frecuentes.",
-    background: photoBg("1454165804606-c3d57bc86b40", "📘"),
+    background: photoBg("1454165804606-c3d57bc86b40", "lucide:book-open:cielo"),
     content: [
       callout("🧭", "info", "En resumen", "Explica en dos o tres frases qué es, para quién es y qué problema resuelve. Quien lea solo esto debería entender lo esencial."),
       table(["Dato", "Detalle"], [["Responsable", "Nombre y puesto"], ["Área", "Departamento dueño del tema"], ["Última revisión", "dd/mm/aaaa"], ["Estado", "Vigente · En revisión · Obsoleto"]]),
@@ -53,7 +54,7 @@ export const DEFAULT_TEMPLATES: DefaultTemplate[] = [
   {
     title: "Bienvenido al departamento",
     description: "Guía cálida para quien llega: quiénes somos, su primera semana, personas clave y herramientas.",
-    background: photoBg("1528605248644-14dd04022da1", "👋"),
+    background: photoBg("1528605248644-14dd04022da1", "lucide:handshake:albahaca"),
     content: [
       h(1, "¡Te damos la bienvenida al equipo!"),
       p("Nos alegra que estés aquí. Esta página reúne todo lo que necesitas para tus primeros días. Guárdala: la vas a consultar seguido."),
@@ -75,7 +76,7 @@ export const DEFAULT_TEMPLATES: DefaultTemplate[] = [
   {
     title: "Página de inicio de departamento",
     description: "Muro del departamento: misión, prioridades, accesos rápidos, anuncios y calendario.",
-    background: { type: "gradient", value: "linear-gradient(120deg, #2e6a4f 0%, #e3a33a 100%)", icon: "🏢" },
+    background: { type: "gradient", value: "linear-gradient(120deg, #2e6a4f 0%, #e3a33a 100%)", icon: "lucide:building-2:albahaca" },
     content: [
       callout("🎯", "success", "Nuestra misión", "En una frase: para qué existe este departamento y cómo ayuda a Grupo Comidas."),
       h(2, "Prioridades del trimestre"),
@@ -93,7 +94,7 @@ export const DEFAULT_TEMPLATES: DefaultTemplate[] = [
   {
     title: "Proceso paso a paso",
     description: "Procedimiento operativo claro: objetivo, requisitos, pasos numerados, errores comunes e indicadores.",
-    background: { type: "pattern", emoji: "🧾", color: "#fbf0da", icon: "🧭" },
+    background: { type: "pattern", emoji: "🧾", color: "#fbf0da", icon: "lucide:list-checks:azafran" },
     content: [
       table(["Objetivo", "Alcance", "Frecuencia", "Responsable"], [["Qué se logra", "A quién aplica", "Diario · Semanal · Mensual", "Puesto"]]),
       h(2, "Antes de empezar"),
@@ -110,7 +111,7 @@ export const DEFAULT_TEMPLATES: DefaultTemplate[] = [
   {
     title: "Acta de reunión",
     description: "Agenda, acuerdos y tareas con responsable y fecha. Ideal para reuniones semanales.",
-    background: { type: "color", value: "#eef6ff", icon: "🗓️" },
+    background: { type: "color", value: "#eef6ff", icon: "lucide:calendar-days:cielo" },
     content: [
       table(["Fecha", "Hora", "Lugar", "Facilitador"], [["dd/mm/aaaa", "00:00", "Sala o enlace", "Nombre"]]),
       bold("Asistentes: ", "Nombre, Nombre, Nombre"),
@@ -128,7 +129,7 @@ export const DEFAULT_TEMPLATES: DefaultTemplate[] = [
   {
     title: "Receta estándar",
     description: "Ficha técnica de cocina: porciones, ingredientes, preparación, presentación, control de calidad y alérgenos.",
-    background: photoBg("1556909114-f6e7ad7d3136", "🧑‍🍳"),
+    background: photoBg("1556909114-f6e7ad7d3136", "lucide:chef-hat:tomate"),
     content: [
       table(["Porciones", "Tiempo total", "Costo por porción", "Marca o restaurante"], [["10", "45 min", "L 0.00", "Nombre"]]),
       image("1504674900247-0877df9cc836", "Plato terminado", "Foto de referencia del plato terminado."),
@@ -146,7 +147,7 @@ export const DEFAULT_TEMPLATES: DefaultTemplate[] = [
   {
     title: "Apertura y cierre de sucursal",
     description: "Listas de verificación para abrir y cerrar un restaurante sin olvidar nada.",
-    background: photoBg("1517248135467-4c7edcad34c4", "🏪"),
+    background: photoBg("1517248135467-4c7edcad34c4", "lucide:store:albahaca"),
     content: [
       callout("⏰", "warning", "Horario", "Apertura: 00:00 · Cierre: 00:00. Ajusta según la sucursal."),
       h(2, "Apertura"),
@@ -160,7 +161,7 @@ export const DEFAULT_TEMPLATES: DefaultTemplate[] = [
   {
     title: "Preguntas frecuentes",
     description: "Respuestas cortas a las dudas más comunes de un tema, agrupadas por categoría.",
-    background: { type: "gradient", value: "linear-gradient(135deg, #e7f7f0 0%, #eef6ff 100%)", icon: "❓" },
+    background: { type: "gradient", value: "linear-gradient(135deg, #e7f7f0 0%, #eef6ff 100%)", icon: "lucide:circle-help:uva" },
     content: [
       p("Si tu pregunta no está aquí, escríbele al responsable del tema."),
       h(2, "General"),

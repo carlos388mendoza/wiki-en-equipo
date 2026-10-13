@@ -5,10 +5,11 @@ import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
 import { Building2, ChevronRight, Home, LayoutTemplate, Shield, LogOut, Menu, Search, Trash2, X } from "lucide-react";
 import { signOut } from "@/app/actions/session";
-import { roleLabel } from "@/lib/permissions";
+import { canManageUsers, roleLabel } from "@/lib/permissions";
 import type { PageSummary, SidebarSections, User } from "@/lib/types";
 import { NewPageButton } from "../pages/NewPageDialog";
 import { Avatar } from "../ui/Avatar";
+import { PageIcon } from "../ui/PageIcon";
 
 
 function TreeNode({ page, all, depth }: { page: PageSummary; all: PageSummary[]; depth: number }) {
@@ -38,7 +39,7 @@ function TreeNode({ page, all, depth }: { page: PageSummary; all: PageSummary[];
           <span className="w-6" />
         )}
         <Link href={`/paginas/${page.id}`} aria-current={active ? "page" : undefined} className="flex min-w-0 flex-1 items-center gap-2 py-1.5">
-          <span aria-hidden>{page.icon ?? "📄"}</span>
+          <PageIcon icon={page.icon} size={16} />
           <span className="truncate">{page.title}</span>
         </Link>
       </div>
@@ -98,7 +99,7 @@ export function Sidebar({ user, sections }: { user: User; sections: SidebarSecti
         {department.slug && navItem(`/departamentos/${department.slug}`, department.name, Building2)}
         {navItem("/buscar", "Buscar", Search)}
         {navItem("/plantillas", "Plantillas", LayoutTemplate)}
-        {user.role === "ADMIN" && navItem("/admin", "Administración", Shield)}
+        {canManageUsers(user) && navItem("/admin", "Administración", Shield)}
       </nav>
 
       <Section title="Empresa" pages={sections.empresa} />
@@ -110,10 +111,10 @@ export function Sidebar({ user, sections }: { user: User; sections: SidebarSecti
         {navItem("/papelera", "Papelera", Trash2)}
         <div className="flex items-center gap-2 px-2">
           <Avatar name={user.name} />
-          <div className="min-w-0 flex-1">
+          <Link href="/cuenta" className="min-w-0 flex-1 rounded-md hover:bg-line/60" title="Mi cuenta">
             <p className="truncate text-sm font-semibold">{user.name}</p>
             <p className="truncate text-xs text-muted">{roleLabel[user.role]}</p>
-          </div>
+          </Link>
           <form action={signOut} onSubmit={() => navigator.serviceWorker?.controller?.postMessage("limpiar")}>
             <button type="submit" aria-label="Cerrar sesión" className="grid h-8 w-8 place-items-center rounded-md text-muted hover:bg-line/60 hover:text-ink">
               <LogOut size={16} />

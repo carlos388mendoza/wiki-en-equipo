@@ -1,5 +1,6 @@
 import { redirect } from "next/navigation";
 import { LoginForm } from "@/components/auth/LoginForm";
+import { isInternalPath } from "@/lib/blocks";
 import { getSession } from "@/lib/session";
 
 export const metadata = { title: "Iniciar sesión" };
@@ -7,7 +8,7 @@ export const metadata = { title: "Iniciar sesión" };
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ next?: string; clave?: string }> }) {
   const { next, clave } = await searchParams;
   const session = await getSession();
-  if (session.ok) redirect(next?.startsWith("/") && !next.startsWith("//") ? next : "/");
+  if (session.ok) redirect(next && isInternalPath(next) ? next : "/");
   const backendDown = !session.ok && session.error === "error_servidor";
 
   return (

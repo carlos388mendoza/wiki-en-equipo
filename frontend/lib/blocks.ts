@@ -7,7 +7,10 @@
  * `data.spans` (texto con formato) y tipos extra que el editor necesita.
  * Los bloques anidados van en `data.children`.
  */
-import type { Background } from "./types";
+import { sanitizeIcon } from "./icons";
+import type { Background, ShapePattern } from "./types";
+
+const SHAPES: ShapePattern[] = ["puntos", "rayas", "cuadricula", "zigzag", "circulos"];
 
 /** Fragmento de texto con formato. */
 export interface Span {
@@ -49,11 +52,20 @@ const str = (v: unknown, fallback = "") => (typeof v === "string" ? v : fallback
 const optStr = (v: unknown) => (typeof v === "string" && v.length > 0 ? v : undefined);
 const optNum = (v: unknown) => (typeof v === "number" && Number.isFinite(v) ? v : undefined);
 
+/**
+ * Ruta interna de la wiki (`/algo`). Rechaza `//dominio` y `/\dominio`, que el
+ * navegador trata como otro sitio, y caracteres de control.
+ */
+export function isInternalPath(value: unknown): boolean {
+  return typeof value === "string" && value.startsWith("/") && !value.startsWith("//") && !/[\\\u0000-\u001f]/.test(value);
+}
+
 /** Solo enlaces http(s), mailto y rutas internas: evita `javascript:` y similares. */
 export function safeHref(url: unknown): string | undefined {
   if (typeof url !== "string") return undefined;
   const value = url.trim();
-  if (value.startsWith("/") && !value.startsWith("//")) return value;
+  if (isInternalPath(value)) return value;
+  if (value.startsWith("/")) return undefined;
   try {
     const parsed = new URL(value);
     return ["http:", "https:", "mailto:"].includes(parsed.protocol) ? parsed.toString() : undefined;
@@ -196,7 +208,8 @@ export function linkedPageIds(blocks: WikiBlock[]): string[] {
 export type StoredAppearance = (Background | { type: "none" }) & { icon?: string };
 
 const CSS_COLOR = /^#([0-9a-f]{3}|[0-9a-f]{6}|[0-9a-f]{8})$/i;
-const CSS_GRADIENT = /^(linear|radial)-gradient\([#%(),.\s\w-]+\)$/i;
+// Un degradado sin url() ni otras funciones que carguen recursos.
+const CSS_GRADIENT = /^(?!.*(?:url|image|expression)\s*\()(linear|radial)-gradient\([#%(),.\s\w-]+\)$/i;
 
 export function parseAppearance(value: unknown): { background: Background | null; icon: string | null } {
   let v = value;
@@ -204,11 +217,12 @@ export function parseAppearance(value: unknown): { background: Background | null
     try { v = JSON.parse(v); } catch { v = null; }
   }
   if (!isObj(v)) return { background: null, icon: null };
-  const icon = optStr(v.icon)?.slice(0, 16) ?? null;
+  const icon = sanitizeIcon(v.icon);
   let background: Background | null = null;
   if (v.type === "color" && typeof v.value === "string" && CSS_COLOR.test(v.value)) background = { type: "color", value: v.value };
   else if (v.type === "gradient" && typeof v.value === "string" && CSS_GRADIENT.test(v.value)) background = { type: "gradient", value: v.value };
   else if (v.type === "image" && safeHref(v.url)) background = { type: "image", url: safeHref(v.url)!, credit: optStr(v.credit), creditUrl: safeHref(v.creditUrl) };
+  else if (v.type === "shapes" && SHAPES.includes(v.shape as ShapePattern) && typeof v.color === "string" && CSS_COLOR.test(v.color) && typeof v.ink === "string" && CSS_COLOR.test(v.ink)) background = { type: "shapes", shape: v.shape as ShapePattern, color: v.color, ink: v.ink };
   else if (v.type === "pattern" && typeof v.emoji === "string" && typeof v.color === "string" && CSS_COLOR.test(v.color)) background = { type: "pattern", emoji: v.emoji.slice(0, 16), color: v.color };
   return { background, icon };
 }

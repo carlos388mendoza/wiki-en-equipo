@@ -50,10 +50,6 @@ export function canEditWall(user: Viewer, department: Pick<Department, "id">): b
   return user.role === "DEPARTMENT_ADMIN" && user.departmentId === department.id;
 }
 
-export function canEnterDepartment(user: Viewer, department: Pick<Department, "id">): boolean {
-  return user.role === "ADMIN" || user.departmentId === department.id;
-}
-
 export function canManageUsers(user: Viewer): boolean {
   return user.role === "ADMIN";
 }

@@ -16,6 +16,7 @@ import { linkedPageIds } from "@/lib/blocks";
 import { timeAgo } from "@/lib/format";
 import { canDelete, canEdit, canShare } from "@/lib/permissions";
 import { requireUser } from "@/lib/session";
+import { PageIcon } from "@/components/ui/PageIcon";
 
 export default async function PageView({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
@@ -48,7 +49,7 @@ export default async function PageView({ params }: { params: Promise<{ id: strin
 
       <div className="mx-auto max-w-3xl px-4 sm:px-8">
         <div className="-mt-10 flex flex-wrap items-end justify-between gap-4">
-          <span className="text-7xl leading-none drop-shadow" aria-hidden>{page.icon ?? "📄"}</span>
+          <PageIcon icon={page.icon} size={76} className="drop-shadow" />
           <div className="flex flex-wrap gap-2 pb-1">
             {shareable && <ShareButton page={page} viewer={user} people={people} />}
             {editable ? (
@@ -126,7 +127,7 @@ export default async function PageView({ params }: { params: Promise<{ id: strin
               {unlinkedChildren.map((c) => (
                 <li key={c.id}>
                   <Link href={`/paginas/${c.id}`} className="flex items-center gap-3 rounded-lg border border-line px-3 py-2 hover:border-basil">
-                    <span aria-hidden>{c.icon ?? "📄"}</span> {c.title}
+                    <PageIcon icon={c.icon} size={18} /> {c.title}
                   </Link>
                 </li>
               ))}

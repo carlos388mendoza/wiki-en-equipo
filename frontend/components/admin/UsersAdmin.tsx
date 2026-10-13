@@ -97,7 +97,7 @@ export function UsersAdmin({ users, departments, viewerId }: { users: ManagedUse
 
       <DepartmentsSection departments={departments} pending={pending} run={run} />
 
-      <Modal open={creating} onClose={() => setCreating(false)} title="Nuevo usuario" description="Comparte la contraseña temporal por un canal seguro y pide que la cambie al entrar.">
+      <Modal open={creating} onClose={() => setCreating(false)} title="Nuevo usuario" description="Comparte la contraseña temporal por un canal seguro. La persona puede cambiarla en “Mi cuenta” (clic en su nombre, abajo en el menú).">
         <NewUserForm departments={departments} onDone={(text) => { setCreating(false); setMessage({ ok: true, text }); router.refresh(); }} />
       </Modal>
 

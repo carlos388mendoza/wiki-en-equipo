@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { blocksToText, linkedPageIds, normalizeBlocks, parseAppearance, safeHref, toStoredAppearance } from "../../frontend/lib/blocks";
+import { blocksToText, isInternalPath, linkedPageIds, normalizeBlocks, parseAppearance, safeHref, toStoredAppearance } from "../../frontend/lib/blocks";
 
 describe("formato de bloques del backend", () => {
   it("entiende las plantillas por defecto del backend", () => {
@@ -29,6 +29,16 @@ describe("formato de bloques del backend", () => {
     expect(safeHref("/paginas/1")).toBe("/paginas/1");
     expect(safeHref("//evil.test")).toBeUndefined();
     expect(safeHref("data:text/html,x")).toBeUndefined();
+    expect(safeHref("/\\evil.test")).toBeUndefined();
+  });
+
+  it("solo acepta rutas internas para redirigir después de iniciar sesión", () => {
+    expect(isInternalPath("/paginas/1?x=2")).toBe(true);
+    expect(isInternalPath("//evil.test")).toBe(false);
+    expect(isInternalPath("/\\evil.test")).toBe(false);
+    expect(isInternalPath("/%0d%0a")).toBe(true);
+    expect(isInternalPath("/a\nb")).toBe(false);
+    expect(isInternalPath("https://evil.test")).toBe(false);
   });
 
   it("encuentra páginas enlazadas en subpáginas, menciones e hijos", () => {
@@ -56,5 +66,7 @@ describe("fondo e icono", () => {
   it("rechaza CSS inyectado en colores y degradados", () => {
     expect(parseAppearance({ type: "color", value: "red; background:url(x)" }).background).toBeNull();
     expect(parseAppearance({ type: "gradient", value: "url(https://evil.test)" }).background).toBeNull();
+    expect(parseAppearance({ type: "gradient", value: "linear-gradient(red, red), url(archivos)" }).background).toBeNull();
+    expect(parseAppearance({ type: "gradient", value: "linear-gradient(135deg, rgba(46,106,79,0.5) 0%, #fff 100%)" }).background).not.toBeNull();
   });
 });
