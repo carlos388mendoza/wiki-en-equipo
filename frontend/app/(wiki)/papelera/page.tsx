@@ -1,5 +1,8 @@
 import { RotateCcw } from "lucide-react";
+import { restorePage } from "@/app/actions/admin";
+import { ActionButton } from "@/components/ui/ActionButton";
 import { listTrash } from "@/lib/api";
+import { canDelete } from "@/lib/permissions";
 import { timeAgo } from "@/lib/format";
 import { StatusScreen } from "@/components/ui/StatusScreen";
 import { requireUser } from "@/lib/session";
@@ -15,10 +18,10 @@ export default async function TrashPage() {
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 sm:px-8">
       <h1 className="font-display text-3xl font-bold">Papelera</h1>
-      <p className="mt-2 text-muted">Las páginas que elimines (y sus subpáginas) quedan aquí hasta que las restaures.</p>
+      <p className="mt-2 text-muted">Las páginas que elimines (y sus subpáginas) quedan aquí hasta que las restaures. Al restaurar una página también vuelven sus subpáginas.</p>
 
       {items.length === 0 ? (
-        <p className="mt-10 text-muted">La papelera está vacía.</p>
+        <p className="mt-10 rounded-xl border border-dashed border-line px-4 py-8 text-center text-muted">La papelera está vacía. 🧹</p>
       ) : (
         <ul className="mt-8 divide-y divide-line rounded-xl border border-line bg-surface">
           {items.map((p) => (
@@ -28,9 +31,11 @@ export default async function TrashPage() {
                 <p className="truncate font-medium">{p.title}</p>
                 <p className="text-sm text-muted">Eliminada {timeAgo(p.deletedAt!)}</p>
               </div>
-              <button type="button" disabled title="Disponible en la fase 4 (administración)" className="inline-flex items-center gap-1.5 rounded-lg border border-line px-3 py-1.5 text-sm font-medium hover:border-basil disabled:cursor-not-allowed disabled:opacity-60">
-                <RotateCcw size={14} aria-hidden /> Restaurar
-              </button>
+              {canDelete(user, p) && (
+                <ActionButton action={restorePage.bind(null, p.id)} ariaLabel={`Restaurar ${p.title}`}>
+                  <RotateCcw size={14} aria-hidden /> Restaurar
+                </ActionButton>
+              )}
             </li>
           ))}
         </ul>

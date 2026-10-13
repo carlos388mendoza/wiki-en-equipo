@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { notFound } from "next/navigation";
 import { Pencil, Users } from "lucide-react";
 import { WallSections } from "@/components/layout/WallSections";
@@ -40,9 +41,9 @@ export default async function DepartmentWall({ params }: { params: Promise<{ slu
             </p>
           </div>
           {editable && (
-            <button type="button" disabled title="Disponible en la fase 4 (administración)" className="inline-flex items-center gap-2 self-start rounded-lg border border-line px-3 py-2 text-sm font-medium hover:border-basil disabled:cursor-not-allowed disabled:opacity-60 sm:self-auto">
+            <Link href={`/departamentos/${department.slug}/editar`} className="inline-flex items-center gap-2 self-start rounded-lg border border-line px-3 py-2 text-sm font-medium hover:border-basil sm:self-auto">
               <Pencil size={14} aria-hidden /> Editar muro
-            </button>
+            </Link>
           )}
         </div>
       </header>

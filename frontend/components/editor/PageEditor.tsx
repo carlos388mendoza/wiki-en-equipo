@@ -9,7 +9,7 @@ import { createPage, savePage, updateTemplate, type PageDraft } from "@/app/acti
 import type { WikiBlock } from "@/lib/blocks";
 import { wikiToBlockNote } from "@/lib/editor/convert";
 import type { Background, PageSummary, TemplateScope, User } from "@/lib/types";
-import { uploadToWiki } from "@/lib/uploads";
+import { allowedList, MAX_UPLOAD_MB, uploadToWiki } from "@/lib/uploads";
 import { PageBackground } from "../page/PageBackground";
 import { Modal } from "../ui/Modal";
 import { BackgroundPicker } from "./BackgroundPicker";
@@ -289,6 +289,7 @@ export function PageEditor({ mode, id, initial, pages, tagSuggestions, viewer, b
             onInsertTemplate={() => setTemplatePicker(true)}
           />
         </div>
+        <p className="mt-6 text-xs text-muted">Presiona “/” para insertar bloques y “@” para enlazar páginas. Archivos de hasta {MAX_UPLOAD_MB} MB: {allowedList()}.</p>
         <div className="h-32" />
       </div>
 

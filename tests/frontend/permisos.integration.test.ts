@@ -128,3 +128,40 @@ describe.skipIf(!ready)("compartir por enlace y publicar", () => {
     await backend(`/pages/${id}`, { method: "DELETE", token: luis });
   });
 });
+
+describe.skipIf(!ready)("administración", () => {
+  const tokenOf = async (key: "ana" | "carlos" | "luis") => {
+    const saved = seed!.users[key].token;
+    if (saved && (await backend("/auth/me", { token: saved })).ok) return saved;
+    const res = await backend<{ token: string }>("/auth/login", { method: "POST", body: { email: seed!.users[key].email, password: seed!.users[key].password }, token: null });
+    if (!res.ok) throw new Error(res.message);
+    return res.data.token;
+  };
+
+  it("un usuario normal no puede gestionar usuarios", async () => {
+    const res = await backend("/users", { token: await tokenOf("luis") });
+    expect(!res.ok && res.error).toBe("sin_acceso");
+  });
+
+  it("un admin de departamento no puede cambiar el muro de otro departamento", async () => {
+    const carlos = await tokenOf("carlos");
+    const deps = await backend<{ departments: { id: string; slug: string }[] }>("/departments", { token: await tokenOf("ana") });
+    const tecnologia = deps.ok ? deps.data.departments.find((d) => d.slug === "tecnologia") : undefined;
+    expect(tecnologia).toBeTruthy();
+    const res = await backend(`/departments/${tecnologia!.id}/featured`, { method: "PUT", token: carlos, body: { pageIds: [] } });
+    expect(!res.ok && res.error).toBe("sin_acceso");
+  });
+
+  it("solo quien creó la página puede enviarla a la papelera y restaurarla", async () => {
+    const [luis, carlos] = [await tokenOf("luis"), await tokenOf("carlos")];
+    const created = await backend<{ page: { id: string } }>("/pages", { method: "POST", token: luis, body: { title: "Prueba de papelera", visibility: "DEPARTMENT" } });
+    if (!created.ok) throw new Error(created.message);
+    const id = created.data.page.id;
+    expect(!((await backend(`/pages/${id}`, { method: "DELETE", token: carlos })).ok)).toBe(true);
+    expect((await backend(`/pages/${id}`, { method: "DELETE", token: luis })).ok).toBe(true);
+    expect((await backend(`/pages/${id}`, { token: luis })).ok).toBe(false);
+    expect((await backend(`/pages/${id}/restore`, { method: "POST", token: luis })).ok).toBe(true);
+    expect((await backend(`/pages/${id}`, { token: luis })).ok).toBe(true);
+    await backend(`/pages/${id}`, { method: "DELETE", token: luis });
+  });
+});

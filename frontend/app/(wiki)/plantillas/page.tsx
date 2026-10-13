@@ -66,7 +66,7 @@ export default async function TemplatesPage() {
               {g.items.map((t) => (
                 <li key={t.id}>
                   <TemplateCard template={t} background={t.background} icon={t.icon}>
-                    <TemplateActions template={t} canManage={canManage(t)} />
+                    <TemplateActions template={t} canManage={canManage(t)} isAdmin={user.role === "ADMIN"} />
                   </TemplateCard>
                 </li>
               ))}

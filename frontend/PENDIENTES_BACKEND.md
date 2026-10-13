@@ -69,6 +69,10 @@ Cosas que el frontend necesita y el backend todavía no ofrece. El frontend **no
 ### 14. Listado de plantillas sin fondo
 - `GET /api/templates` no incluye `backgroundJson`; la pantalla de plantillas pide cada una por separado para mostrar la vista previa.
 
+### 15. Destacadas de la empresa
+- Hay destacadas por departamento (`/departments/:id/featured`) pero no para el muro de la empresa. El frontend usa como destacadas las páginas enlazadas en la página del muro.
+- **Propuesta:** `GET/PUT /api/company/featured` (solo ADMIN, páginas COMPANY).
+
 ## Baja prioridad
 
 - **Vaciar papelera:** no hay borrado definitivo; las páginas quedan para siempre en la papelera (las pruebas de integración dejan ahí sus páginas de prueba).

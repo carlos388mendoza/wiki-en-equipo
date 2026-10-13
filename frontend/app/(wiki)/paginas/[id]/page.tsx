@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { BookOpen, ChevronRight, Eye, Pencil } from "lucide-react";
+import { BookOpen, ChevronRight, Eye, History, Pencil, Trash2 } from "lucide-react";
+import { trashPage } from "@/app/actions/admin";
+import { ActionButton } from "@/components/ui/ActionButton";
 import { BlockRenderer } from "@/components/page/BlockRenderer";
 import { PageBackground } from "@/components/page/PageBackground";
 import { NewPageButton } from "@/components/pages/NewPageDialog";
@@ -12,7 +14,7 @@ import { VisibilityBadge } from "@/components/ui/VisibilityBadge";
 import { getAncestors, getPage, getPageSummaries, listUsers } from "@/lib/api";
 import { linkedPageIds } from "@/lib/blocks";
 import { timeAgo } from "@/lib/format";
-import { canEdit, canShare } from "@/lib/permissions";
+import { canDelete, canEdit, canShare } from "@/lib/permissions";
 import { requireUser } from "@/lib/session";
 
 export default async function PageView({ params }: { params: Promise<{ id: string }> }) {
@@ -95,6 +97,23 @@ export default async function PageView({ params }: { params: Promise<{ id: strin
         {page.tags.length > 0 && (
           <div className="mt-3 flex flex-wrap gap-1.5">{page.tags.map((t) => <TagChip key={t} tag={t} />)}</div>
         )}
+
+        <div className="mt-3 flex flex-wrap items-center gap-3 text-sm">
+          <Link href={`/paginas/${page.id}/historial`} className="inline-flex items-center gap-1.5 text-muted hover:text-ink hover:underline">
+            <History size={14} aria-hidden /> Historial
+          </Link>
+          {canDelete(user, page) && !page.isWall && !page.isCompanyWall && (
+            <ActionButton
+              action={trashPage.bind(null, page.id)}
+              successHref="/papelera"
+              danger
+              className="inline-flex items-center gap-1.5 text-muted hover:text-danger hover:underline"
+              confirm={{ title: "¿Mover a la papelera?", body: `“${page.title}”${page.children.length ? " y sus subpáginas" : ""} dejarán de verse en la wiki. Podrás restaurarla desde la papelera.`, cta: "Mover a la papelera" }}
+            >
+              <Trash2 size={14} aria-hidden /> Mover a la papelera
+            </ActionButton>
+          )}
+        </div>
 
         <hr className="my-8 border-line" />
 

@@ -3,8 +3,8 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { Eye, LoaderCircle, Pencil, Plus, Sparkles, Trash2 } from "lucide-react";
-import { createTemplate, deleteTemplate, installDefaultTemplates } from "@/app/actions/pages";
+import { Eye, LoaderCircle, Pencil, Plus, Sparkles, StarOff, Trash2 } from "lucide-react";
+import { createTemplate, deleteTemplate, installDefaultTemplates, updateTemplate } from "@/app/actions/pages";
 import type { Template } from "@/lib/types";
 import { BlockRenderer } from "../page/BlockRenderer";
 import { PageBackground } from "../page/PageBackground";
@@ -12,7 +12,7 @@ import { NewPageButton } from "../pages/NewPageDialog";
 import { Modal } from "../ui/Modal";
 
 /** Acciones de una tarjeta de plantilla: usar, vista previa, editar y eliminar. */
-export function TemplateActions({ template, canManage }: { template: Template; canManage: boolean }) {
+export function TemplateActions({ template, canManage, isAdmin = false }: { template: Template; canManage: boolean; isAdmin?: boolean }) {
   const router = useRouter();
   const [preview, setPreview] = useState(false);
   const [confirm, setConfirm] = useState(false);
@@ -25,6 +25,19 @@ export function TemplateActions({ template, canManage }: { template: Template; c
       <button type="button" onClick={() => setPreview(true)} className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-muted hover:bg-paper hover:text-ink">
         <Eye size={13} aria-hidden /> Ver
       </button>
+      {isAdmin && (
+        <button type="button" disabled={pending} title={template.isDefault ? "Deja de recomendarse a todos (sigue disponible)" : "Se recomienda a toda la empresa"}
+          onClick={() => start(async () => {
+            const res = await updateTemplate(template.id, template.isDefault ? { isDefault: false } : { isDefault: true, scope: "COMPANY" });
+            if (!res.ok) { setError(res.message); return; }
+            setError("");
+            router.refresh();
+          })}
+          className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-muted hover:bg-saffron-soft hover:text-ink disabled:opacity-60">
+          {template.isDefault ? <><StarOff size={13} aria-hidden /> Retirar</> : <><Sparkles size={13} aria-hidden /> Por defecto</>}
+        </button>
+      )}
+      {error && !confirm && <p role="alert" className="w-full text-xs text-danger">{error}</p>}
       {canManage && (
         <>
           <Link href={`/plantillas/${template.id}/editar`} className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-muted hover:bg-paper hover:text-ink">

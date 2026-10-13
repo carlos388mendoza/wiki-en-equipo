@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Building2, ChevronRight, Home, LayoutTemplate, LogOut, Menu, Search, Trash2, X } from "lucide-react";
+import { Building2, ChevronRight, Home, LayoutTemplate, Shield, LogOut, Menu, Search, Trash2, X } from "lucide-react";
 import { signOut } from "@/app/actions/session";
 import { roleLabel } from "@/lib/permissions";
 import type { PageSummary, SidebarSections, User } from "@/lib/types";
@@ -72,7 +72,7 @@ export function Sidebar({ user, sections }: { user: User; sections: SidebarSecti
   useEffect(() => setMobileOpen(false), [pathname]);
 
   const navItem = (href: string, label: string, Icon?: typeof Home) => {
-    const active = pathname === href;
+    const active = pathname === href || (href !== "/" && pathname.startsWith(`${href}/`));
     return (
       <Link
         href={href}
@@ -98,6 +98,7 @@ export function Sidebar({ user, sections }: { user: User; sections: SidebarSecti
         {department.slug && navItem(`/departamentos/${department.slug}`, department.name, Building2)}
         {navItem("/buscar", "Buscar", Search)}
         {navItem("/plantillas", "Plantillas", LayoutTemplate)}
+        {user.role === "ADMIN" && navItem("/admin", "Administración", Shield)}
       </nav>
 
       <Section title="Empresa" pages={sections.empresa} />

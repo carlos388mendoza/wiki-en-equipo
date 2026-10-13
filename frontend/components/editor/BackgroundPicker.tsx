@@ -7,7 +7,7 @@ import { COLORS, GRADIENTS, PATTERN_COLORS, PATTERN_EMOJIS, PHOTO_GALLERY } from
 import { safeHref } from "@/lib/blocks";
 import { isOptimizableImage } from "@/lib/images";
 import type { Background } from "@/lib/types";
-import { uploadToWiki } from "@/lib/uploads";
+import { MAX_UPLOAD_MB, uploadToWiki } from "@/lib/uploads";
 import { backgroundStyle } from "../page/PageBackground";
 import { Modal } from "../ui/Modal";
 
@@ -109,6 +109,8 @@ export function BackgroundPicker({ open, onClose, value, onChange, pageId }: {
               </button>
               <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) void upload(f); e.target.value = ""; }} />
             </div>
+
+            <p className="-mt-3 text-xs text-muted">Puedes subir imágenes JPG, PNG, WEBP o GIF de hasta {MAX_UPLOAD_MB} MB.</p>
 
             {results && (
               <section aria-label="Resultados de Unsplash">
