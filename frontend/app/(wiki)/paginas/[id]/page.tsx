@@ -1,13 +1,14 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { BookOpen, ChevronRight, Eye, Pencil, Share2 } from "lucide-react";
+import { BookOpen, ChevronRight, Eye, Pencil } from "lucide-react";
 import { BlockRenderer } from "@/components/page/BlockRenderer";
 import { PageBackground } from "@/components/page/PageBackground";
+import { ShareButton } from "@/components/pages/ShareDialog";
 import { Avatar } from "@/components/ui/Avatar";
 import { StatusScreen } from "@/components/ui/StatusScreen";
 import { TagChip } from "@/components/ui/TagChip";
 import { VisibilityBadge } from "@/components/ui/VisibilityBadge";
-import { getAncestors, getPage, getPageSummaries } from "@/lib/api";
+import { getAncestors, getPage, getPageSummaries, listUsers } from "@/lib/api";
 import { linkedPageIds } from "@/lib/blocks";
 import { timeAgo } from "@/lib/format";
 import { canEdit, canShare } from "@/lib/permissions";
@@ -25,7 +26,13 @@ export default async function PageView({ params }: { params: Promise<{ id: strin
   const page = res.data;
 
   const linkedIds = linkedPageIds(page.blocks);
-  const [linked, ancestors] = await Promise.all([getPageSummaries(user, linkedIds), getAncestors(user, page)]);
+  const [linked, ancestors, users] = await Promise.all([
+    getPageSummaries(user, linkedIds),
+    getAncestors(user, page),
+    // Solo un administrador puede listar usuarios (ver PENDIENTES_BACKEND.md, punto 1).
+    user.role === "ADMIN" ? listUsers() : Promise.resolve(null),
+  ]);
+  const people = users?.ok ? users.data : null;
   const subpages = Object.fromEntries([...page.children, ...linked].map((p) => [p.id, p]));
   const unlinkedChildren = page.children.filter((c) => !linkedIds.includes(c.id));
 
@@ -40,11 +47,7 @@ export default async function PageView({ params }: { params: Promise<{ id: strin
         <div className="-mt-10 flex flex-wrap items-end justify-between gap-4">
           <span className="text-7xl leading-none drop-shadow" aria-hidden>{page.icon ?? "📄"}</span>
           <div className="flex gap-2 pb-1">
-            {shareable && (
-              <button type="button" disabled title="Disponible en la fase 2 (compartir)" className="inline-flex items-center gap-2 rounded-lg border border-line bg-surface px-3 py-2 text-sm font-medium hover:border-basil disabled:cursor-not-allowed disabled:opacity-60">
-                <Share2 size={14} aria-hidden /> Compartir
-              </button>
-            )}
+            {shareable && <ShareButton page={page} viewer={user} people={people} />}
             {editable ? (
               <button type="button" disabled title="Disponible en la fase 3 (editor)" className="inline-flex items-center gap-2 rounded-lg bg-ink px-3 py-2 text-sm font-medium text-white hover:bg-basil disabled:cursor-not-allowed disabled:opacity-60">
                 <Pencil size={14} aria-hidden /> Editar

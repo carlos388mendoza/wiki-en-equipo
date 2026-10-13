@@ -50,7 +50,16 @@ Cosas que el frontend necesita y el backend todavía no ofrece. El frontend **no
 - Un usuario que no es administrador solo recibe su propio departamento: no se puede distinguir "no existe" de "no tienes acceso", y no hay nombres para mostrar otros departamentos.
 - `Department` no tiene descripción ni icono para el muro (el frontend usa los de la página del muro).
 
+### 11. Enlaces compartidos
+- No hay ruta para **listar** los enlaces activos de una página: solo se puede desactivar el que se acaba de crear en el modal.
+  **Propuesta:** `GET /api/pages/:id/share-links` (sin el token, con permiso, vencimiento y fecha).
+- **Aceptar un enlace puede bajar el permiso:** `acceptShareLink` hace `upsert` y reemplaza un permiso `EDIT` existente por el `READ` del enlace.
+  **Propuesta:** conservar el permiso más alto.
+- La URL usa `FRONTEND_ORIGIN`; si no está configurada sale relativa. El frontend arma la URL con el origen de la petición.
+
 ## Baja prioridad
+
+- **Vaciar papelera:** no hay borrado definitivo; las páginas quedan para siempre en la papelera (las pruebas de integración dejan ahí sus páginas de prueba).
 
 - **Rutas de páginas superiores:** no hay forma de pedir la ruta (padres) sin abrir cada página; el frontend usa el listado (máx. 100 páginas).
 - **Límite de inicios de sesión:** 10 intentos cada 15 min por IP. En una oficina con IP compartida puede bloquear a varias personas a la vez.

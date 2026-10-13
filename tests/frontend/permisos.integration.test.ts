@@ -79,3 +79,52 @@ describe.skipIf(!ready)("permisos contra el backend real", () => {
     expect(!res.ok && res.error).toBe("no_autenticado");
   });
 });
+
+describe.skipIf(!ready)("compartir por enlace y publicar", () => {
+  const login = async (key: "ana" | "carlos" | "luis") => {
+    const saved = seed!.users[key].token;
+    if (saved && (await backend("/auth/me", { token: saved })).ok) return saved;
+    const res = await backend<{ token: string }>("/auth/login", { method: "POST", body: { email: seed!.users[key].email, password: seed!.users[key].password }, token: null });
+    if (!res.ok) throw new Error(res.message);
+    return res.data.token;
+  };
+
+  it("un enlace de lectura da acceso de solo lectura y se puede revocar", async () => {
+    const [luis, carlos] = [await login("luis"), await login("carlos")];
+    const created = await backend<{ page: { id: string } }>("/pages", { method: "POST", token: luis, body: { title: "Prueba de enlace", content: [] } });
+    expect(created.ok).toBe(true);
+    if (!created.ok) return;
+    const pageId = created.data.page.id;
+
+    expect((await backend(`/pages/${pageId}`, { token: carlos })).ok).toBe(false);
+
+    const link = await backend<{ token: string }>(`/pages/${pageId}/share-links`, { method: "POST", token: luis, body: { permission: "READ", expiresInHours: 1 } });
+    expect(link.ok).toBe(true);
+    if (!link.ok) return;
+    const accepted = await backend<{ pageId: string; permission: string }>(`/share/${link.data.token}/accept`, { method: "POST", token: carlos });
+    expect(accepted.ok && accepted.data).toEqual({ pageId, permission: "READ" });
+
+    const page = await backend<{ page: { version: number } }>(`/pages/${pageId}`, { token: carlos });
+    expect(page.ok).toBe(true);
+    const edit = await backend(`/pages/${pageId}`, { method: "PATCH", token: carlos, body: { expectedVersion: page.ok ? page.data.page.version : 1, title: "No debería" } });
+    expect(!edit.ok && edit.error).toBe("sin_acceso");
+
+    const carlosId = seed!.users.carlos.id;
+    expect((await backend(`/pages/${pageId}/shares/${carlosId}`, { method: "DELETE", token: luis })).ok).toBe(true);
+    expect((await backend(`/pages/${pageId}`, { token: carlos })).ok).toBe(false);
+
+    await backend(`/pages/${pageId}`, { method: "DELETE", token: luis });
+  });
+
+  it("un usuario publica en su departamento, pero no en toda la empresa", async () => {
+    const luis = await login("luis");
+    const created = await backend<{ page: { id: string; version: number } }>("/pages", { method: "POST", token: luis, body: { title: "Prueba de publicación", content: [] } });
+    if (!created.ok) throw new Error(created.message);
+    const { id, version } = created.data.page;
+    const company = await backend(`/pages/${id}`, { method: "PATCH", token: luis, body: { expectedVersion: version, visibility: "COMPANY" } });
+    expect(!company.ok && company.error).toBe("sin_acceso");
+    const dept = await backend(`/pages/${id}`, { method: "PATCH", token: luis, body: { expectedVersion: version, visibility: "DEPARTMENT" } });
+    expect(dept.ok).toBe(true);
+    await backend(`/pages/${id}`, { method: "DELETE", token: luis });
+  });
+});
