@@ -1,14 +1,35 @@
-import { cookies } from "next/headers";
-import { getUser } from "./api";
+import "server-only";
+import { redirect } from "next/navigation";
+import { cache } from "react";
+import { backend, getToken } from "./api/client";
+import type { ApiResult, User } from "./types";
 
-export const SESSION_COOKIE = "wiki_user";
+export { SESSION_COOKIE } from "./api/client";
+
+/** Duración de la sesión: igual que el token del backend (8 horas). */
+export const SESSION_MAX_AGE = 8 * 60 * 60;
 
 /**
- * Usuario actual. Mientras no haya inicio de sesión real, se lee de una cookie
- * que permite cambiar de usuario para probar permisos.
- * Al conectar con el backend, aquí se lee la sesión verdadera.
+ * Sesión actual, validada contra el backend (`GET /api/auth/me`).
+ * Distingue "no hay sesión" (`no_autenticado`) de "el servidor no responde".
  */
-export async function getCurrentUser() {
-  const id = (await cookies()).get(SESSION_COOKIE)?.value;
-  return id ? getUser(id) : null;
+export const getSession = cache(async (): Promise<ApiResult<User>> => {
+  if (!(await getToken())) return { ok: false, error: "no_autenticado", message: "Inicia sesión para continuar." };
+  const res = await backend<{ user: User & { department?: { name: string; slug: string } | null } }>("/auth/me");
+  if (!res.ok) return res;
+  const { id, name, email, role, departmentId, department } = res.data.user;
+  return { ok: true, data: { id, name, email, role, departmentId, department: department ?? null } };
+});
+
+/** Usuario actual o `null` si no hay sesión válida. */
+export async function getCurrentUser(): Promise<User | null> {
+  const res = await getSession();
+  return res.ok ? res.data : null;
+}
+
+/** Usuario actual en pantallas protegidas por el layout (que ya redirige si no hay sesión). */
+export async function requireUser(): Promise<User> {
+  const user = await getCurrentUser();
+  if (!user) redirect("/login");
+  return user;
 }

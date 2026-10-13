@@ -3,13 +3,12 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { ChevronRight, Home, LogOut, Menu, Plus, Search, Trash2, X } from "lucide-react";
-import { signOut } from "@/app/actions";
+import { Building2, ChevronRight, Home, LogOut, Menu, Plus, Search, Trash2, X } from "lucide-react";
+import { signOut } from "@/app/actions/session";
 import { roleLabel } from "@/lib/permissions";
-import type { Department, PageSummary, User } from "@/lib/types";
+import type { PageSummary, SidebarSections, User } from "@/lib/types";
 import { Avatar } from "../ui/Avatar";
 
-type Sections = { empresa: PageSummary[]; departamento: PageSummary[]; compartidas: PageSummary[]; privadas: PageSummary[] };
 
 function TreeNode({ page, all, depth }: { page: PageSummary; all: PageSummary[]; depth: number }) {
   const pathname = usePathname();
@@ -38,7 +37,7 @@ function TreeNode({ page, all, depth }: { page: PageSummary; all: PageSummary[];
           <span className="w-6" />
         )}
         <Link href={`/paginas/${page.id}`} aria-current={active ? "page" : undefined} className="flex min-w-0 flex-1 items-center gap-2 py-1.5">
-          <span aria-hidden>{page.emoji}</span>
+          <span aria-hidden>{page.icon ?? "📄"}</span>
           <span className="truncate">{page.title}</span>
         </Link>
       </div>
@@ -65,7 +64,8 @@ function Section({ title, pages, empty }: { title: string; pages: PageSummary[];
   );
 }
 
-export function Sidebar({ user, department, sections }: { user: User; department: Department; sections: Sections }) {
+export function Sidebar({ user, sections }: { user: User; sections: SidebarSections }) {
+  const department = user.department ?? { name: "Mi departamento", slug: "" };
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
   useEffect(() => setMobileOpen(false), [pathname]);
@@ -96,7 +96,7 @@ export function Sidebar({ user, department, sections }: { user: User; department
 
       <nav className="flex flex-col gap-0.5" aria-label="Principal">
         {navItem("/", "Inicio de la empresa", Home)}
-        {navItem(`/departamentos/${department.slug}`, `${department.emoji} ${department.name}`)}
+        {department.slug && navItem(`/departamentos/${department.slug}`, department.name, Building2)}
         {navItem("/buscar", "Buscar", Search)}
       </nav>
 

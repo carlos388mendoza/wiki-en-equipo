@@ -1,54 +1,71 @@
-import type { Department, Page, PageSummary, User } from "./types";
+import type { Department, Page, PageSummary, PageVisibility, User, UserRole } from "./types";
 
 /**
  * Reglas de permisos del lado de la interfaz.
  * Sirven SOLO para mostrar u ocultar botones. La verificación real la hace
- * el backend; si estas reglas y las del backend difieren, manda el backend.
+ * el backend (`backend/permissions/access.ts`); si difieren, manda el backend.
  */
 
-type PageLike = Page | (PageSummary & { shares?: Page["shares"] });
+type Viewer = Pick<User, "id" | "role" | "departmentId">;
+type PageLike = Pick<Page, "ownerId" | "departmentId" | "visibility"> &
+  Partial<Pick<Page, "shares" | "isWall" | "deletedAt">>;
 
-export function shareFor(user: User, page: PageLike) {
+export function shareFor(user: Viewer, page: PageLike) {
   return page.shares?.find((s) => s.userId === user.id);
 }
 
-export function canView(user: User, page: PageLike): boolean {
-  if (page.ownerId === user.id) return true;
+export function canView(user: Viewer, page: PageLike): boolean {
   if (page.deletedAt) return false;
-  if (shareFor(user, page)) return true;
-  if (page.visibility === "empresa") return true;
-  if (page.visibility === "departamento") {
-    return user.role === "admin" || user.departmentId === page.departmentId;
-  }
-  return false;
+  if (user.role === "ADMIN") return true;
+  if (page.ownerId === user.id || shareFor(user, page)) return true;
+  if (page.isWall && user.departmentId === page.departmentId) return true;
+  if (page.visibility === "COMPANY") return true;
+  return page.visibility === "DEPARTMENT" && user.departmentId === page.departmentId;
 }
 
-export function canEdit(user: User, page: PageLike): boolean {
+export function canEdit(user: Viewer, page: PageLike): boolean {
   if (page.deletedAt) return false;
-  if (page.ownerId === user.id) return true;
-  return shareFor(user, page)?.permission === "edicion";
+  if (user.role === "ADMIN" || page.ownerId === user.id) return true;
+  if (shareFor(user, page)?.permission === "EDIT") return true;
+  return Boolean(page.isWall && user.role === "DEPARTMENT_ADMIN" && user.departmentId === page.departmentId);
 }
 
-export function canShare(user: User, page: PageLike): boolean {
-  return page.ownerId === user.id && !page.deletedAt;
+/** En el backend, quien puede editar también puede compartir. */
+export function canShare(user: Viewer, page: PageLike): boolean {
+  return canEdit(user, page);
 }
 
-export function canPublishTo(user: User, page: PageLike, target: "departamento" | "empresa"): boolean {
-  if (page.ownerId !== user.id) return false;
-  return target === "departamento" ? true : user.role === "admin";
+export function canPublishTo(user: Viewer, page: PageLike, target: Exclude<PageVisibility, "PRIVATE">): boolean {
+  if (!canEdit(user, page)) return false;
+  return target === "DEPARTMENT" ? true : user.role === "ADMIN";
 }
 
-export function canEditWall(user: User, department: Department): boolean {
-  if (user.role === "admin") return true;
-  return user.role === "admin_departamento" && user.departmentId === department.id;
+/** Enviar a la papelera y restaurar: solo quien la creó o un administrador. */
+export function canDelete(user: Viewer, page: Pick<PageSummary, "ownerId">): boolean {
+  return user.role === "ADMIN" || page.ownerId === user.id;
 }
 
-export function canEnterDepartment(user: User, department: Department): boolean {
-  return user.role === "admin" || user.departmentId === department.id;
+export function canEditWall(user: Viewer, department: Pick<Department, "id">): boolean {
+  if (user.role === "ADMIN") return true;
+  return user.role === "DEPARTMENT_ADMIN" && user.departmentId === department.id;
 }
 
-export const roleLabel: Record<User["role"], string> = {
-  usuario: "Usuario",
-  admin_departamento: "Admin. de departamento",
-  admin: "Administrador",
+export function canEnterDepartment(user: Viewer, department: Pick<Department, "id">): boolean {
+  return user.role === "ADMIN" || user.departmentId === department.id;
+}
+
+export function canManageUsers(user: Viewer): boolean {
+  return user.role === "ADMIN";
+}
+
+export const roleLabel: Record<UserRole, string> = {
+  USER: "Usuario",
+  DEPARTMENT_ADMIN: "Admin. de departamento",
+  ADMIN: "Administrador",
+};
+
+export const visibilityLabel: Record<PageVisibility, string> = {
+  PRIVATE: "Privada",
+  DEPARTMENT: "Departamento",
+  COMPANY: "Toda la empresa",
 };

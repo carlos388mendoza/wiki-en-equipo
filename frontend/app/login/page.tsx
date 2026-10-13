@@ -1,54 +1,38 @@
 import { redirect } from "next/navigation";
-import { signInAs } from "@/app/actions";
-import { Avatar } from "@/components/ui/Avatar";
-import { listDepartments, listUsers } from "@/lib/api";
-import { roleLabel } from "@/lib/permissions";
-import { getCurrentUser } from "@/lib/session";
+import { LoginForm } from "@/components/auth/LoginForm";
+import { getSession } from "@/lib/session";
 
 export const metadata = { title: "Iniciar sesión" };
 
-export default async function LoginPage() {
-  if (await getCurrentUser()) redirect("/");
-  const [users, departments] = await Promise.all([listUsers(), listDepartments()]);
-  const deptName = (id: string) => departments.find((d) => d.id === id)?.name ?? "";
+export default async function LoginPage({ searchParams }: { searchParams: Promise<{ next?: string; clave?: string }> }) {
+  const { next, clave } = await searchParams;
+  const session = await getSession();
+  if (session.ok) redirect(next?.startsWith("/") && !next.startsWith("//") ? next : "/");
+  const backendDown = !session.ok && session.error === "error_servidor";
 
   return (
     <main className="grid min-h-dvh place-items-center bg-basil px-4 py-10">
-      <div className="w-full max-w-md rounded-2xl bg-surface p-8">
+      <div className="w-full max-w-md rounded-2xl bg-surface p-6 sm:p-8">
         <span className="text-4xl" aria-hidden>🍽️</span>
         <h1 className="mt-3 font-display text-3xl font-bold">Wiki Grupo Comidas</h1>
+        <p className="mt-1 text-muted">Procesos, guías y documentación de todo el grupo.</p>
 
-        <form className="mt-6 flex flex-col gap-3">
-          <label className="flex flex-col gap-1 text-sm font-medium">
-            Correo
-            <input type="email" disabled placeholder="nombre@grupocomidas.com" className="h-11 rounded-lg border border-line px-3 font-normal disabled:bg-paper" />
-          </label>
-          <label className="flex flex-col gap-1 text-sm font-medium">
-            Contraseña
-            <input type="password" disabled className="h-11 rounded-lg border border-line px-3 disabled:bg-paper" />
-          </label>
-          <button type="button" disabled className="h-11 rounded-lg bg-ink font-medium text-white disabled:opacity-60">Iniciar sesión</button>
-          <p className="text-xs text-muted">Se activa al conectar con el inicio de sesión del backend.</p>
-        </form>
+        {clave === "actualizada" && (
+          <p role="status" className="mt-6 rounded-lg bg-basil-soft px-3 py-2 text-sm text-basil">
+            Tu contraseña se actualizó. Inicia sesión con la nueva.
+          </p>
+        )}
+        {backendDown && (
+          <p role="alert" className="mt-6 rounded-lg bg-saffron-soft px-3 py-2 text-sm text-ink">
+            No pudimos conectar con el servidor. Si el problema sigue, avisa al equipo de Tecnología.
+          </p>
+        )}
 
-        <div className="mt-8 border-t border-line pt-6">
-          <h2 className="text-sm font-semibold">Entrar como usuario de prueba</h2>
-          <ul className="mt-3 flex flex-col gap-2">
-            {users.map((u) => (
-              <li key={u.id}>
-                <form action={signInAs.bind(null, u.id)}>
-                  <button type="submit" className="flex w-full items-center gap-3 rounded-lg border border-line px-3 py-2 text-left hover:border-basil hover:bg-basil-soft">
-                    <Avatar name={u.name} />
-                    <span className="flex-1">
-                      <span className="block font-medium">{u.name}</span>
-                      <span className="block text-xs text-muted">{roleLabel[u.role]} en {deptName(u.departmentId)}</span>
-                    </span>
-                  </button>
-                </form>
-              </li>
-            ))}
-          </ul>
-        </div>
+        <LoginForm next={next} />
+
+        <p className="mt-6 border-t border-line pt-4 text-sm text-muted">
+          ¿No tienes cuenta o olvidaste tu contraseña? Pide ayuda al administrador de la wiki.
+        </p>
       </div>
     </main>
   );

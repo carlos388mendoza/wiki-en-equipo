@@ -2,14 +2,16 @@ import type { PageSummary } from "@/lib/types";
 import { PageCard, PageRow } from "../page/PageCard";
 
 /** Bloques comunes del muro de empresa y del muro de departamento. */
-export function WallSections({ featured, mostVisited, recent }: { featured: PageSummary[]; mostVisited: PageSummary[]; recent: PageSummary[] }) {
+export function WallSections({ featured, mostVisited, recent, emptyFeatured = "Aún no hay páginas destacadas." }: {
+  featured: PageSummary[]; mostVisited: PageSummary[]; recent: PageSummary[]; emptyFeatured?: string;
+}) {
   return (
     <div className="grid gap-10 lg:grid-cols-[1fr_300px]">
       <div className="flex flex-col gap-10">
         <section aria-labelledby="destacadas">
           <h2 id="destacadas" className="mb-4 font-display text-xl font-semibold">Destacadas</h2>
           {featured.length === 0 ? (
-            <p className="text-muted">Aún no hay páginas destacadas.</p>
+            <p className="rounded-xl border border-dashed border-line px-4 py-6 text-muted">{emptyFeatured}</p>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2">
               {featured.map((p) => <PageCard key={p.id} page={p} />)}
@@ -19,7 +21,7 @@ export function WallSections({ featured, mostVisited, recent }: { featured: Page
         <section aria-labelledby="recientes">
           <h2 id="recientes" className="mb-4 font-display text-xl font-semibold">Actualizadas recientemente</h2>
           {recent.length === 0 ? (
-            <p className="text-muted">Todavía no se ha publicado nada.</p>
+            <p className="rounded-xl border border-dashed border-line px-4 py-6 text-muted">Todavía no se ha publicado nada.</p>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2">
               {recent.map((p) => <PageCard key={p.id} page={p} />)}

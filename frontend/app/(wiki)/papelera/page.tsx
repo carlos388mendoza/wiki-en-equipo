@@ -1,18 +1,21 @@
 import { RotateCcw } from "lucide-react";
 import { listTrash } from "@/lib/api";
 import { timeAgo } from "@/lib/format";
-import { getCurrentUser } from "@/lib/session";
+import { StatusScreen } from "@/components/ui/StatusScreen";
+import { requireUser } from "@/lib/session";
 
 export const metadata = { title: "Papelera" };
 
 export default async function TrashPage() {
-  const user = (await getCurrentUser())!;
-  const items = await listTrash(user);
+  const user = await requireUser();
+  const res = await listTrash(user);
+  if (!res.ok) return <StatusScreen error={res.error} message={res.message} />;
+  const items = res.data;
 
   return (
     <div className="mx-auto max-w-3xl px-4 py-8 sm:px-8">
       <h1 className="font-display text-3xl font-bold">Papelera</h1>
-      <p className="mt-2 text-muted">Las páginas que elimines quedan aquí hasta que las restaures.</p>
+      <p className="mt-2 text-muted">Las páginas que elimines (y sus subpáginas) quedan aquí hasta que las restaures.</p>
 
       {items.length === 0 ? (
         <p className="mt-10 text-muted">La papelera está vacía.</p>
@@ -20,7 +23,7 @@ export default async function TrashPage() {
         <ul className="mt-8 divide-y divide-line rounded-xl border border-line bg-surface">
           {items.map((p) => (
             <li key={p.id} className="flex items-center gap-3 px-4 py-3">
-              <span aria-hidden>{p.emoji}</span>
+              <span aria-hidden>📄</span>
               <div className="min-w-0 flex-1">
                 <p className="truncate font-medium">{p.title}</p>
                 <p className="text-sm text-muted">Eliminada {timeAgo(p.deletedAt!)}</p>

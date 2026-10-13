@@ -24,3 +24,6 @@ Thumbs.db
 *.log
 .vscode/
 .idea/
+
+# Usuarios de prueba generados por `npm run seed`
+*.local.json

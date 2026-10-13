@@ -2,14 +2,17 @@ import { Search } from "lucide-react";
 import { PageCard } from "@/components/page/PageCard";
 import { TagChip } from "@/components/ui/TagChip";
 import { listTags, searchPages } from "@/lib/api";
-import { getCurrentUser } from "@/lib/session";
+import { StatusScreen } from "@/components/ui/StatusScreen";
+import { requireUser } from "@/lib/session";
 
 export const metadata = { title: "Buscar" };
 
 export default async function SearchPage({ searchParams }: { searchParams: Promise<{ q?: string; etiqueta?: string }> }) {
   const { q = "", etiqueta } = await searchParams;
-  const user = (await getCurrentUser())!;
-  const [results, tags] = await Promise.all([searchPages(user, q, etiqueta), listTags(user)]);
+  const user = await requireUser();
+  const [res, tags] = await Promise.all([searchPages(user, q, etiqueta), listTags(user)]);
+  if (!res.ok) return <StatusScreen error={res.error} message={res.message} />;
+  const results = res.data;
 
   return (
     <div className="mx-auto max-w-5xl px-4 py-8 sm:px-8">
@@ -20,8 +23,8 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
         <label htmlFor="q" className="sr-only">Buscar páginas</label>
         <div className="flex items-center gap-2 rounded-xl border border-line bg-surface px-4 focus-within:border-basil">
           <Search size={18} className="text-muted" aria-hidden />
-          <input id="q" name="q" defaultValue={q} placeholder="Título o etiqueta…" className="h-12 flex-1 bg-transparent outline-none" />
-          <button type="submit" className="rounded-lg bg-ink px-3 py-1.5 text-sm font-medium text-white hover:bg-basil">Buscar</button>
+          <input id="q" name="q" defaultValue={q} placeholder="Buscar por título…" className="h-12 flex-1 bg-transparent outline-none" />
+          <button type="submit" className="shrink-0 rounded-lg bg-ink px-3 py-1.5 text-sm font-medium text-white hover:bg-basil">Buscar</button>
         </div>
       </form>
 
