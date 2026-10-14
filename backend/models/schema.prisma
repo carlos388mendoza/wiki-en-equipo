@@ -78,6 +78,7 @@ model Page {
   tags            Tag[]
   featuredIn      DepartmentFeaturedPage[]
   companyFeatured CompanyFeaturedPage?
+  collabState     PageCollabState?
 
   @@index([departmentId, visibility, deletedAt])
   @@index([ownerId, deletedAt])
@@ -237,4 +238,14 @@ model CompanyFeaturedPage {
   page      Page   @relation(fields: [pageId], references: [id], onDelete: Cascade)
   sortOrder Int    @default(0)
   @@index([sortOrder])
+}
+
+/// Estado Yjs de la edición en vivo (realtime/collab.ts). Solo se usa si `pageVersion` coincide con la
+/// versión actual de la página: si alguien la cambió por REST (restaurar, sincronizar), se descarta.
+model PageCollabState {
+  pageId      String   @id
+  page        Page     @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  state       Bytes
+  pageVersion Int
+  updatedAt   DateTime @updatedAt
 }

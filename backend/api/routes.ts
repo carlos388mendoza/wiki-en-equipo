@@ -13,6 +13,7 @@ import * as templates from "../services/template-service.js";
 import { syncPage } from "../sync/service.js";
 import { uploadSingleFile, isInlineSafeImage } from "../storage/files.js";
 import { openFile } from "../services/file-service.js";
+import type { CollabServer } from "../realtime/collab.js";
 import type { RealtimeHub } from "../realtime/hub.js";
 
 const router = Router();
@@ -51,6 +52,21 @@ router.post("/auth/login", loginIpLimiter, loginLimiter, async (req, res) => {
 });
 
 router.use(requireAuth);
+
+// Después de un cambio que puede dar o quitar acceso (compartir, publicar, papelera, muros, cuentas),
+// la edición en vivo vuelve a comprobar los permisos de quienes están conectados.
+router.use((req, res, next) => {
+  if (req.method !== "GET") res.on("finish", () => {
+    if (res.statusCode >= 400) return;
+    const pageId = /^\/pages\/([^/]+)/.exec(req.path)?.[1];
+    if (pageId && !["trash", "from-template"].includes(pageId) && !req.path.endsWith("/visit")) collab.refreshPage(pageId);
+    if (/^\/(departments\/[^/]+|company)\/wall$/.test(req.path)) collab.refreshAll();
+    const userId = /^\/users\/([^/]+)$/.exec(req.path)?.[1];
+    if (userId) collab.refreshUser(userId);
+    if (req.path === "/auth/password" && req.auth) collab.refreshUser(req.auth.sub);
+  });
+  next();
+});
 
 router.get("/auth/me", async (req, res) => {
   const user = await prisma.user.findFirst({ where: { id: currentUserId(req), active: true }, select: { id: true, name: true, email: true, role: true, departmentId: true, department: { select: { name: true, slug: true } } } });
@@ -234,9 +250,11 @@ router.get("/files/:fileId/content", async (req, res) => {
 });
 router.delete("/files/:fileId", async (req, res) => { await files.deleteFile(actor(req), param(req, "fileId")); res.status(204).end(); });
 
-export function makeRouter(realtime: RealtimeHub) {
+export function makeRouter(realtime: RealtimeHub, collabServer: CollabServer) {
   hub = realtime;
+  collab = collabServer;
   return router;
 }
 
 let hub: RealtimeHub;
+let collab: CollabServer;

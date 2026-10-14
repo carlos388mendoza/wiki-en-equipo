@@ -5,6 +5,7 @@ import helmet from "helmet";
 import { Prisma } from "@prisma/client";
 import { ZodError } from "zod";
 import { makeRouter } from "./routes.js";
+import { COLLAB_PATH, CollabServer, collabOptionsFromEnv } from "../realtime/collab.js";
 import { RealtimeHub } from "../realtime/hub.js";
 import { HttpError } from "../services/errors.js";
 
@@ -21,6 +22,7 @@ export function trustProxySetting(value = "loopback"): string | number | false {
 }
 
 export const realtimeHub = new RealtimeHub();
+export const collabServer = new CollabServer(collabOptionsFromEnv());
 export const app = express();
 
 app.disable("x-powered-by");
@@ -29,7 +31,7 @@ app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
 app.use(cors({ origin: process.env.FRONTEND_ORIGIN ?? "http://localhost:3000", methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"], allowedHeaders: ["Authorization", "Content-Type"] }));
 app.use(express.json({ limit: "2mb", strict: true }));
 app.get("/health", (_req, res) => res.json({ status: "ok" }));
-app.use("/api", makeRouter(realtimeHub));
+app.use("/api", makeRouter(realtimeHub, collabServer));
 app.use((_req, res) => res.status(404).json({ error: { code: "NOT_FOUND", message: "La ruta solicitada no existe." } }));
 
 const errors: ErrorRequestHandler = (error, _req, res, _next) => {
@@ -47,11 +49,12 @@ const errors: ErrorRequestHandler = (error, _req, res, _next) => {
 
 app.use(errors);
 
-/** Dirige las conexiones WebSocket del servidor HTTP: `/realtime` (avisos). */
+/** Dirige las conexiones WebSocket del servidor HTTP: `/realtime` (avisos) y `/collab/pagina-<id>` (Yjs en vivo). */
 export function attachWebSockets(server: Server) {
   server.on("upgrade", (request, socket, head) => {
     const { pathname } = new URL(request.url ?? "/", "http://localhost");
     if (pathname === "/realtime") return realtimeHub.handleUpgrade(request, socket, head);
+    if (pathname.startsWith(COLLAB_PATH)) return void collabServer.handleUpgrade(request, socket, head);
     socket.destroy();
   });
 }
