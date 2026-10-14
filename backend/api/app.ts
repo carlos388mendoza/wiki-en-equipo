@@ -1,3 +1,4 @@
+import type { Server } from "node:http";
 import express, { type ErrorRequestHandler } from "express";
 import cors from "cors";
 import helmet from "helmet";
@@ -32,3 +33,12 @@ const errors: ErrorRequestHandler = (error, _req, res, _next) => {
 };
 
 app.use(errors);
+
+/** Dirige las conexiones WebSocket del servidor HTTP: `/realtime` (avisos). */
+export function attachWebSockets(server: Server) {
+  server.on("upgrade", (request, socket, head) => {
+    const { pathname } = new URL(request.url ?? "/", "http://localhost");
+    if (pathname === "/realtime") return realtimeHub.handleUpgrade(request, socket, head);
+    socket.destroy();
+  });
+}
