@@ -39,6 +39,15 @@ export async function setFeaturedPages(departmentId: string, pageIds: string[]):
   return ok(undefined);
 }
 
+/** Destacadas del inicio de la empresa: solo administradores y solo páginas publicadas a la empresa. */
+export async function setCompanyFeaturedPages(pageIds: string[]): Promise<ActionResult> {
+  if (pageIds.length > 12) return { ok: false, message: "Puedes destacar hasta 12 páginas." };
+  const res = await backend("/company/featured", { method: "PUT", body: { pageIds } });
+  if (!res.ok) return fail(res, "Solo un administrador puede elegir las destacadas de la empresa.");
+  refreshAll();
+  return ok(undefined);
+}
+
 export async function setCompanyWall(pageId: string): Promise<ActionResult> {
   const res = await backend("/company/wall", { method: "PUT", body: { pageId } });
   if (!res.ok) return fail(res, "Solo un administrador puede cambiar el muro de la empresa.");
@@ -66,6 +75,22 @@ export async function restorePage(pageId: string): Promise<ActionResult> {
   const res = await backend(`/pages/${encodeURIComponent(pageId)}/restore`, { method: "POST" });
   if (!res.ok) return fail(res, "Solo quien creó la página (o un administrador) puede restaurarla.");
   refreshAll();
+  revalidatePath("/papelera");
+  return ok(undefined);
+}
+
+/** Elimina para siempre una página de la papelera (con sus subpáginas propias y sus archivos). */
+export async function deletePermanently(pageId: string): Promise<ActionResult> {
+  const res = await backend(`/pages/${encodeURIComponent(pageId)}/permanent`, { method: "DELETE" });
+  if (!res.ok) return fail(res, "Solo quien creó la página (o un administrador) puede eliminarla definitivamente.");
+  revalidatePath("/papelera");
+  return ok(undefined);
+}
+
+/** Vacía la papelera: elimina para siempre las páginas propias que están en ella. */
+export async function emptyTrash(): Promise<ActionResult> {
+  const res = await backend<{ deleted: number }>("/pages/trash", { method: "DELETE" });
+  if (!res.ok) return fail(res);
   revalidatePath("/papelera");
   return ok(undefined);
 }
@@ -127,4 +152,12 @@ export async function createWallPage(target: { departmentId: string; name: strin
   const assigned = target === "company" ? await setCompanyWall(created.data.page.id) : await setDepartmentWall(target.departmentId, created.data.page.id);
   if (!assigned.ok) return assigned;
   return ok({ id: created.data.page.id });
+}
+
+/** Descripción e icono del departamento (su administrador o un administrador general). */
+export async function updateDepartmentInfo(departmentId: string, input: { description: string; icon: string | null }): Promise<ActionResult> {
+  const res = await backend(`/departments/${encodeURIComponent(departmentId)}`, { method: "PATCH", body: { description: input.description.slice(0, 500), icon: input.icon } });
+  if (!res.ok) return fail(res, "Solo el administrador del departamento puede cambiar su descripción.");
+  refreshAll();
+  return ok(undefined);
 }

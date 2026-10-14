@@ -50,7 +50,7 @@ export default async function CompanyWall() {
       )}
 
       <WallSections featured={wall.featured} mostVisited={wall.mostVisited} recent={wall.recent}
-        emptyFeatured={user.role === "ADMIN" ? "Enlaza páginas en el muro de la empresa para destacarlas aquí." : "Aún no hay páginas destacadas."} />
+        emptyFeatured={user.role === "ADMIN" ? "Elige las destacadas de la empresa en Administración → Muro de la empresa." : "Aún no hay páginas destacadas."} />
     </div>
   );
 }

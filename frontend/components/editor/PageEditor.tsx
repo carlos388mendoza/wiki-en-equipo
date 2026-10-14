@@ -50,6 +50,8 @@ export type EditorInitial = {
   /** Solo plantillas. */
   description?: string;
   scope?: TemplateScope;
+  /** Solo plantillas: puede cambiar el alcance (dueño o administrador). */
+  canManage?: boolean;
 };
 
 const AUTOSAVE_MS = 1500;
@@ -144,7 +146,8 @@ export function PageEditor({ mode, id, initial, pages, tagSuggestions, viewer, b
 
   /* ---------- Guardar ---------- */
 
-  const saveRef = useRef<(force?: number) => Promise<void>>(async () => {});
+  // `auto`: guardado automático (por defecto). Al salir del editor se guarda como versión normal del historial.
+  const saveRef = useRef<(force?: number, auto?: boolean) => Promise<void>>(async () => {});
 
   /** Combina tus cambios con la versión del servidor. Sin choques, guarda solo; con choques, pregunta. */
   const resolveAgainst = (version: number, theirs: PageState, origin: "reconnect" | "concurrent") => {
@@ -179,11 +182,13 @@ export function PageEditor({ mode, id, initial, pages, tagSuggestions, viewer, b
     }
   };
 
-  const save = async (force?: number) => {
+  const save = async (force?: number, auto = true) => {
+    // El contenido se reemplazó en el servidor (se restauró otra versión): no se guarda encima.
+    if (collab.replaced) return;
     if (saving.current) { pendingAgain.current = true; return; }
     if (typeof navigator !== "undefined" && !navigator.onLine) { goOffline(); return; }
     try {
-      await saveOnline(force);
+      await saveOnline(force, auto);
     } catch {
       // El servidor no respondió: se trata como sin conexión y se reintenta al reconectar.
       saving.current = false;
@@ -192,7 +197,7 @@ export function PageEditor({ mode, id, initial, pages, tagSuggestions, viewer, b
   };
   saveRef.current = save;
 
-  const saveOnline = async (force?: number) => {
+  const saveOnline = async (force: number | undefined, auto: boolean) => {
     saving.current = true;
     setStatus("saving");
     const d = draftRef.current();
@@ -226,7 +231,7 @@ export function PageEditor({ mode, id, initial, pages, tagSuggestions, viewer, b
       return;
     }
 
-    const res = await savePage(id, d, force ?? versionRef.current);
+    const res = await savePage(id, d, force ?? versionRef.current, auto);
     saving.current = false;
     if (res.ok) {
       parentChanged.current = false;
@@ -260,6 +265,16 @@ export function PageEditor({ mode, id, initial, pages, tagSuggestions, viewer, b
     lastFields.current = fieldsKey;
     markDirty();
   }, [fieldsKey, markDirty]);
+
+  useEffect(() => {
+    if (!collab.replaced) return;
+    if (timer.current) clearTimeout(timer.current);
+    setNotice("Se restauró otra versión de esta página. Cargando la versión actual…");
+  }, [collab.replaced]);
+
+  useEffect(() => {
+    if (collab.accessLost) setError("Ya no tienes acceso para editar esta página en vivo. Pide a quien la creó que te vuelva a dar permiso.");
+  }, [collab.accessLost]);
 
   /* ---------- Cambios de otras personas (aviso del backend) ---------- */
 
@@ -348,7 +363,7 @@ export function PageEditor({ mode, id, initial, pages, tagSuggestions, viewer, b
 
   const finish = async () => {
     if (timer.current) clearTimeout(timer.current);
-    if (status !== "saved" && navigator.onLine) await saveRef.current();
+    if (status !== "saved" && navigator.onLine) await saveRef.current(undefined, false);
     router.push(backHref);
     router.refresh();
   };
@@ -357,7 +372,7 @@ export function PageEditor({ mode, id, initial, pages, tagSuggestions, viewer, b
 
   const upload = async (file: File) => {
     try {
-      const res = await uploadToWiki(file, isPage ? id : undefined);
+      const res = await uploadToWiki(file, isPage ? { pageId: id } : { templateId: id });
       setError("");
       return res.url;
     } catch (e) {
@@ -476,10 +491,10 @@ export function PageEditor({ mode, id, initial, pages, tagSuggestions, viewer, b
                 className="h-9 w-full rounded-lg border border-line bg-surface px-3 outline-none focus:border-basil" />
               <label className="flex flex-wrap items-center gap-2 text-muted">
                 Disponible para
-                <select value={scope} onChange={(e) => setScope(e.target.value as TemplateScope)} className="h-8 rounded-lg border border-line bg-surface px-2 text-ink outline-none focus:border-basil">
-                  <option value="PRIVATE">Solo yo</option>
+                <select value={scope} disabled={initial.canManage === false} title={initial.canManage === false ? "Solo quien creó la plantilla puede cambiar su alcance" : undefined} onChange={(e) => setScope(e.target.value as TemplateScope)} className="h-8 rounded-lg border border-line bg-surface px-2 text-ink outline-none focus:border-basil disabled:opacity-60">
+                  <option value="PRIVATE">Solo con invitación</option>
                   <option value="DEPARTMENT">Mi departamento</option>
-                  {viewer.role === "ADMIN" && <option value="COMPANY">Toda la empresa</option>}
+                  {(viewer.role === "ADMIN" || scope === "COMPANY") && <option value="COMPANY">Toda la empresa</option>}
                 </select>
               </label>
             </>
@@ -518,7 +533,7 @@ export function PageEditor({ mode, id, initial, pages, tagSuggestions, viewer, b
         <div className="h-32" />
       </div>
 
-      <BackgroundPicker open={bgOpen} onClose={() => setBgOpen(false)} value={background} onChange={setBackground} pageId={isPage ? id : undefined} />
+      <BackgroundPicker open={bgOpen} onClose={() => setBgOpen(false)} value={background} onChange={setBackground} uploadTarget={isPage ? { pageId: id } : { templateId: id }} />
       <TemplatePicker open={templatePicker} onClose={() => setTemplatePicker(false)} onPick={(t) => { insertTemplateBlocks(t.blocks); setTemplatePicker(false); }} />
       <SaveTemplateDialog
         open={saveTemplate !== null}

@@ -6,11 +6,11 @@ import { parseAppearance, parseContent, toStoredAppearance } from "@/lib/blocks"
 import type { PageState } from "@/lib/editor/merge";
 import type { ActionResult } from "./sharing";
 
-type RawPage = { version: number; title: string; contentJson: string; backgroundJson: string | null; tags?: { name: string }[] };
+type RawPage = { version: number; title: string; icon: string | null; contentJson: string; backgroundJson: string | null; tags?: { name: string }[] };
 
 function toState(raw: RawPage): PageState {
   const { background, icon } = parseAppearance(raw.backgroundJson);
-  return { title: raw.title, blocks: parseContent(raw.contentJson), background, icon, tags: raw.tags?.map((t) => t.name) ?? [] };
+  return { title: raw.title, icon: parseAppearance({ icon: raw.icon }).icon ?? icon, background, blocks: parseContent(raw.contentJson), tags: raw.tags?.map((t) => t.name) ?? [] };
 }
 
 /** Estado actual de una página en el servidor (para combinar cambios). */
@@ -32,15 +32,15 @@ export async function syncOffline(pageId: string, state: PageState, baseVersion:
 > {
   const res = await backend<{ status: string; page: { version: number } }>(`/sync/pages/${encodeURIComponent(pageId)}`, {
     method: "POST",
-    body: { operationId, baseVersion, title: state.title.trim() || "Página sin título", content: state.blocks, background: toStoredAppearance(state.background, state.icon) },
+    body: { operationId, baseVersion, title: state.title.trim() || "Página sin título", content: state.blocks, background: toStoredAppearance(state.background), icon: state.icon },
   });
   if (!res.ok) {
     if (res.error === "conflicto") {
-      const details = res.details as { currentVersion: number; current: { title: string; content: unknown; background: unknown } } | undefined;
+      const details = res.details as { currentVersion: number; current: { title: string; icon?: string | null; content: unknown; background: unknown } } | undefined;
       if (details?.current) {
         const { background, icon } = parseAppearance(details.current.background);
         // El endpoint de sincronización no devuelve etiquetas: se conservan las tuyas.
-        return { ok: false, conflict: true, version: details.currentVersion, state: { title: details.current.title, blocks: parseContent(details.current.content), background, icon, tags: state.tags } };
+        return { ok: false, conflict: true, version: details.currentVersion, state: { title: details.current.title, blocks: parseContent(details.current.content), background, icon: parseAppearance({ icon: details.current.icon }).icon ?? icon, tags: state.tags } };
       }
     }
     return { ok: false, message: res.message };

@@ -15,12 +15,12 @@ export default async function EditTemplatePage({ params }: { params: Promise<{ i
     return <StatusScreen error={res.error} message={res.message} />;
   }
   const t = res.data;
-  if (user.role !== "ADMIN" && t.ownerId !== user.id) {
+  if (!t.canEdit) {
     return (
       <StatusScreen
         error="sin_acceso"
-        title="Solo quien creó la plantilla puede editarla"
-        message="Puedes usarla para crear páginas o guardar tu propia copia desde el editor."
+        title="Solo puedes usar esta plantilla"
+        message="Para editarla, pide a quien la creó que te dé permiso de edición. También puedes guardar tu propia copia desde el editor."
       />
     );
   }
@@ -33,7 +33,7 @@ export default async function EditTemplatePage({ params }: { params: Promise<{ i
       backHref="/plantillas"
       pages={pages}
       tagSuggestions={[]}
-      initial={{ title: t.title, blocks: t.blocks, background: t.background, icon: t.icon, tags: [], version: 1, parentId: null, description: t.description, scope: t.scope }}
+      initial={{ title: t.title, blocks: t.blocks, background: t.background, icon: t.icon, tags: [], version: 1, parentId: null, description: t.description, scope: t.scope, canManage: t.canManage }}
     />
   );
 }

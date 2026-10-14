@@ -204,7 +204,10 @@ export function linkedPageIds(blocks: WikiBlock[]): string[] {
 
 /* ---------- Fondo e icono ---------- */
 
-/** Lo que se guarda en `background`: el fondo (o ninguno) más el icono de la página. */
+/**
+ * Lo que se guarda en `background`: el fondo (o ninguno). El icono tiene su propio campo (`icon`);
+ * las páginas y plantillas anteriores lo guardaban aquí dentro, por eso `icon` sigue siendo opcional.
+ */
 export type StoredAppearance = (Background | { type: "none" }) & { icon?: string };
 
 const CSS_COLOR = /^#([0-9a-f]{3}|[0-9a-f]{6}|[0-9a-f]{8})$/i;
@@ -227,8 +230,14 @@ export function parseAppearance(value: unknown): { background: Background | null
   return { background, icon };
 }
 
-export function toStoredAppearance(background: Background | null, icon: string | null): StoredAppearance {
-  return { ...(background ?? { type: "none" }), ...(icon ? { icon } : {}) };
+export function toStoredAppearance(background: Background | null): StoredAppearance {
+  return background ?? { type: "none" };
+}
+
+/** Separa el icono que traen las plantillas por defecto dentro del fondo. */
+export function splitAppearance(stored: StoredAppearance): { background: StoredAppearance; icon: string | null } {
+  const { icon, ...background } = stored;
+  return { background: background as StoredAppearance, icon: sanitizeIcon(icon) };
 }
 
 /** Parsea `contentJson` (texto) o un arreglo ya parseado. */

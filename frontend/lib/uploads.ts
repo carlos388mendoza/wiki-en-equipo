@@ -25,13 +25,17 @@ export function checkUpload(file: { size: number; type: string; name: string }, 
 
 export class UploadError extends Error {}
 
+/** A qué pertenece el archivo: una página o una plantilla (y entonces lo ve quien puede leerla). */
+export type UploadTarget = { pageId?: string; templateId?: string };
+
 /** Sube un archivo a la wiki (pasa por `/archivos`, que agrega la sesión) y devuelve su URL. */
-export async function uploadToWiki(file: File, pageId?: string, onlyImages = false): Promise<{ url: string; id: string; name: string; size: number; type: string }> {
+export async function uploadToWiki(file: File, target: UploadTarget = {}, onlyImages = false): Promise<{ url: string; id: string; name: string; size: number; type: string }> {
   const problem = checkUpload(file, onlyImages);
   if (problem) throw new UploadError(problem);
   const form = new FormData();
   form.set("file", file);
-  if (pageId) form.set("pageId", pageId);
+  if (target.pageId) form.set("pageId", target.pageId);
+  if (target.templateId) form.set("templateId", target.templateId);
   let res: Response;
   try {
     res = await fetch("/archivos", { method: "POST", body: form });

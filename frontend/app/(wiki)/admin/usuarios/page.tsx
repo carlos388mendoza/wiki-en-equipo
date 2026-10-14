@@ -7,7 +7,7 @@ export const metadata = { title: "Usuarios y departamentos" };
 
 export default async function UsersPage() {
   const user = await requireUser();
-  const [users, departments] = await Promise.all([listUsers(), listDepartments()]);
+  const [users, departments] = await Promise.all([listUsers(true), listDepartments()]);
   if (!users.ok) return <StatusScreen error={users.error} message={users.message} />;
   return <UsersAdmin users={users.data} departments={departments} viewerId={user.id} />;
 }

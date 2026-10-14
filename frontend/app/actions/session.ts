@@ -19,10 +19,11 @@ export async function login(_prev: LoginState, form: FormData): Promise<LoginSta
   const password = String(form.get("password") ?? "");
   if (!email || !password) return { error: "Escribe tu correo y tu contraseña.", email };
 
-  // El backend limita los intentos por IP. Sin esto, todas las personas comparten la IP del
-  // servidor de Next (el backend debe confiar en este encabezado: ver PENDIENTES_BACKEND.md).
+  // El backend limita los intentos fallidos por persona e IP y confía en este encabezado cuando viene del
+  // servidor de Next (TRUST_PROXY). Sin él, todas las personas compartirían la IP del servidor.
+  // Se usa la última IP de la lista: la agrega el proxy más cercano; las primeras las puede inventar el navegador.
   const h = await headers();
-  const clientIp = h.get("x-forwarded-for")?.split(",")[0]?.trim() || h.get("x-real-ip") || undefined;
+  const clientIp = h.get("x-forwarded-for")?.split(",").map((ip) => ip.trim()).filter(Boolean).at(-1) || h.get("x-real-ip") || undefined;
   const res = await backend<{ token: string }>("/auth/login", {
     method: "POST", body: { email, password }, token: null,
     ...(clientIp && { headers: { "X-Forwarded-For": clientIp } }),
@@ -31,6 +32,7 @@ export async function login(_prev: LoginState, form: FormData): Promise<LoginSta
     const message =
       res.error === "no_autenticado" ? "Correo o contraseña incorrectos."
       : res.error === "datos_invalidos" ? "Revisa que el correo esté bien escrito."
+      : res.error === "demasiados_intentos" ? "Hiciste demasiados intentos. Espera unos minutos e inténtalo de nuevo."
       : res.message;
     return { error: message, email };
   }

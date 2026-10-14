@@ -2,7 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
-import { KeyRound, LoaderCircle, Plus, Search, UserX } from "lucide-react";
+import { KeyRound, LoaderCircle, Plus, Search, UserCheck, UserX } from "lucide-react";
 import { createDepartment, createUser, updateUser, type UserForm } from "@/app/actions/admin";
 import { roleLabel } from "@/lib/permissions";
 import type { Department, ManagedUser, UserRole } from "@/lib/types";
@@ -27,10 +27,14 @@ export function UsersAdmin({ users, departments, viewerId }: { users: ManagedUse
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
   const [creating, setCreating] = useState(false);
   const [confirmOff, setConfirmOff] = useState<ManagedUser | null>(null);
+  const [show, setShow] = useState<"activos" | "inactivos">("activos");
+  const inactiveCount = users.filter((u) => u.active === false).length;
 
   const deptName = (id: string) => departments.find((d) => d.id === id)?.name ?? "—";
   const q = query.trim().toLowerCase();
-  const filtered = users.filter((u) => !q || u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q) || deptName(u.departmentId).toLowerCase().includes(q));
+  const filtered = users
+    .filter((u) => (show === "inactivos" ? u.active === false : u.active !== false))
+    .filter((u) => !q || u.name.toLowerCase().includes(q) || u.email.toLowerCase().includes(q) || deptName(u.departmentId).toLowerCase().includes(q));
 
   const run = (fn: () => Promise<{ ok: boolean; message?: string }>, success: string, after?: () => void) => start(async () => {
     const res = await fn();
@@ -53,20 +57,28 @@ export function UsersAdmin({ users, departments, viewerId }: { users: ManagedUse
           </button>
         </div>
 
+        <div role="tablist" aria-label="Estado de las cuentas" className="mt-3 inline-flex rounded-lg border border-line bg-surface p-0.5 text-sm">
+          {([["activos", "Activos"], ["inactivos", `Inactivos (${inactiveCount})`]] as const).map(([value, label]) => (
+            <button key={value} type="button" role="tab" aria-selected={show === value} onClick={() => setShow(value)}
+              className={`rounded-md px-3 py-1.5 font-medium ${show === value ? "bg-basil-soft text-basil" : "text-muted hover:text-ink"}`}>{label}</button>
+          ))}
+        </div>
+
         {message && <p role={message.ok ? "status" : "alert"} className={`mt-3 rounded-lg px-3 py-2 text-sm ${message.ok ? "bg-basil-soft text-basil" : "bg-danger-soft text-danger"}`}>{message.text}</p>}
 
         {filtered.length === 0 ? (
-          <p className="mt-4 rounded-xl border border-dashed border-line px-4 py-6 text-muted">No hay usuarios que coincidan.</p>
+          <p className="mt-4 rounded-xl border border-dashed border-line px-4 py-6 text-muted">{show === "inactivos" && !q ? "No hay cuentas desactivadas." : "No hay usuarios que coincidan."}</p>
         ) : (
           <ul className="mt-4 divide-y divide-line rounded-xl border border-line bg-surface">
             {filtered.map((u) => {
               const self = u.id === viewerId;
+              const inactive = u.active === false;
               return (
                 <li key={u.id} className="flex flex-col gap-3 px-4 py-3 md:flex-row md:items-center">
                   <div className="flex min-w-0 flex-1 items-center gap-3">
                     <Avatar name={u.name} />
                     <div className="min-w-0">
-                      <p className="truncate font-medium">{u.name}{self && " (tú)"}</p>
+                      <p className="truncate font-medium">{u.name}{self && " (tú)"}{inactive && <span className="ml-2 rounded-full bg-paper px-2 py-0.5 text-xs font-normal text-muted">Desactivada</span>}</p>
                       <p className="truncate text-sm text-muted">{u.email}</p>
                     </div>
                   </div>
@@ -81,7 +93,12 @@ export function UsersAdmin({ users, departments, viewerId }: { users: ManagedUse
                       className={`${input} h-9`}>
                       {departments.map((d) => <option key={d.id} value={d.id}>{d.name}</option>)}
                     </select>
-                    {!self && (
+                    {inactive ? (
+                      <button type="button" disabled={pending} onClick={() => run(() => updateUser(u.id, { active: true }), `Se reactivó la cuenta de ${u.name}.`)}
+                        className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-line px-3 text-sm font-medium hover:border-basil disabled:opacity-60">
+                        <UserCheck size={16} aria-hidden /> Reactivar
+                      </button>
+                    ) : !self && (
                       <button type="button" onClick={() => setConfirmOff(u)} aria-label={`Desactivar a ${u.name}`} className="inline-flex h-9 items-center gap-1.5 rounded-lg px-2 text-sm text-muted hover:bg-danger-soft hover:text-danger">
                         <UserX size={16} aria-hidden /> <span className="md:sr-only">Desactivar</span>
                       </button>

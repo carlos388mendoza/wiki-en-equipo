@@ -4,14 +4,14 @@ import { PageBackground } from "../page/PageBackground";
 import { PageIcon } from "../ui/PageIcon";
 
 const scopeView = {
-  PRIVATE: { label: "Solo yo", Icon: Lock },
+  PRIVATE: { label: "Privada", Icon: Lock },
   DEPARTMENT: { label: "Mi departamento", Icon: Users },
   COMPANY: { label: "Toda la empresa", Icon: Building2 },
 } as const;
 
 /** Vista compacta de una plantilla (fondo, icono, título y alcance). */
 export function TemplateCard({ template, background, icon, selected, children }: {
-  template: Pick<TemplateSummary, "id" | "title" | "description" | "scope" | "isDefault">;
+  template: Pick<TemplateSummary, "id" | "title" | "description" | "scope" | "isDefault"> & Partial<Pick<TemplateSummary, "owner">>;
   background?: Background | null; icon?: string | null; selected?: boolean; children?: React.ReactNode;
 }) {
   const scope = scopeView[template.scope];
@@ -25,6 +25,7 @@ export function TemplateCard({ template, background, icon, selected, children }:
         {template.id !== "blank" && <p className="mt-auto flex items-center gap-2 pt-1 text-[11px] text-muted">
           {template.isDefault ? <span className="inline-flex items-center gap-1 font-medium text-saffron"><Sparkles size={11} aria-hidden /> Grupo Comidas</span>
             : <span className="inline-flex items-center gap-1"><scope.Icon size={11} aria-hidden /> {scope.label}</span>}
+          {!template.isDefault && template.owner && <span className="truncate">· {template.owner.name}</span>}
         </p>}
         {children}
       </div>

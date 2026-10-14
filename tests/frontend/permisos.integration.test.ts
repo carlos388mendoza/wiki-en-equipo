@@ -102,7 +102,7 @@ describe.skipIf(!ready)("compartir por enlace y publicar", () => {
     expect(link.ok).toBe(true);
     if (!link.ok) return;
     const accepted = await backend<{ pageId: string; permission: string }>(`/share/${link.data.token}/accept`, { method: "POST", token: carlos });
-    expect(accepted.ok && accepted.data).toEqual({ pageId, permission: "READ" });
+    expect(accepted.ok && accepted.data).toEqual({ type: "page", pageId, permission: "READ" });
 
     const page = await backend<{ page: { version: number } }>(`/pages/${pageId}`, { token: carlos });
     expect(page.ok).toBe(true);
@@ -114,6 +114,7 @@ describe.skipIf(!ready)("compartir por enlace y publicar", () => {
     expect((await backend(`/pages/${pageId}`, { token: carlos })).ok).toBe(false);
 
     await backend(`/pages/${pageId}`, { method: "DELETE", token: luis });
+    await backend(`/pages/${pageId}/permanent`, { method: "DELETE", token: luis });
   });
 
   it("un usuario publica en su departamento, pero no en toda la empresa", async () => {
@@ -126,6 +127,7 @@ describe.skipIf(!ready)("compartir por enlace y publicar", () => {
     const dept = await backend(`/pages/${id}`, { method: "PATCH", token: luis, body: { expectedVersion: version, visibility: "DEPARTMENT" } });
     expect(dept.ok).toBe(true);
     await backend(`/pages/${id}`, { method: "DELETE", token: luis });
+    await backend(`/pages/${id}/permanent`, { method: "DELETE", token: luis });
   });
 });
 
@@ -163,5 +165,48 @@ describe.skipIf(!ready)("administración", () => {
     expect((await backend(`/pages/${id}/restore`, { method: "POST", token: luis })).ok).toBe(true);
     expect((await backend(`/pages/${id}`, { token: luis })).ok).toBe(true);
     await backend(`/pages/${id}`, { method: "DELETE", token: luis });
+    await backend(`/pages/${id}/permanent`, { method: "DELETE", token: luis });
+  });
+});
+
+describe.skipIf(!ready)("pendientes resueltos del backend", () => {
+  const tokenOf = async (key: "ana" | "carlos" | "luis" | "maria") => {
+    const saved = seed!.users[key].token;
+    if (saved && (await backend("/auth/me", { token: saved })).ok) return saved;
+    const res = await backend<{ token: string }>("/auth/login", { method: "POST", body: { email: seed!.users[key].email, password: seed!.users[key].password }, token: null });
+    if (!res.ok) throw new Error(res.message);
+    return res.data.token;
+  };
+
+  it("un usuario normal busca personas para invitar y solo recibe nombre y departamento", async () => {
+    const res = await backend<{ users: Record<string, unknown>[] }>("/users/directory?q=carlos", { token: await tokenOf("maria") });
+    expect(res.ok).toBe(true);
+    if (!res.ok) return;
+    expect(res.data.users.map((u) => u.name)).toContain("Carlos Mejía");
+    expect(Object.keys(res.data.users[0]).sort()).toEqual(["department", "departmentId", "id", "name"]);
+  });
+
+  it("abrir una página no cuenta visitas; verla sí, una vez por persona", async () => {
+    const luis = await tokenOf("luis");
+    const created = await backend<{ page: { id: string } }>("/pages", { method: "POST", token: luis, body: { title: "Prueba de visitas", visibility: "DEPARTMENT" } });
+    if (!created.ok) throw new Error(created.message);
+    const id = created.data.page.id;
+    await backend(`/pages/${id}`, { token: luis });
+    await backend(`/pages/${id}`, { token: luis });
+    const first = await backend<{ counted: boolean; visits: number }>(`/pages/${id}/visit`, { method: "POST", token: luis });
+    const again = await backend<{ counted: boolean; visits: number }>(`/pages/${id}/visit`, { method: "POST", token: luis });
+    expect(first.ok && first.data).toEqual({ counted: true, visits: 1 });
+    expect(again.ok && again.data).toEqual({ counted: false, visits: 1 });
+    await backend(`/pages/${id}`, { method: "DELETE", token: luis });
+    await backend(`/pages/${id}/permanent`, { method: "DELETE", token: luis });
+  });
+
+  it("una plantilla compartida en lectura se usa pero no se edita", async () => {
+    const templateId = (seed as unknown as { templates?: { visita?: string } }).templates?.visita;
+    if (!templateId) return;
+    const maria = await tokenOf("maria");
+    expect((await backend(`/templates/${templateId}`, { token: maria })).ok).toBe(true);
+    const edit = await backend(`/templates/${templateId}`, { method: "PATCH", token: maria, body: { title: "No debería" } });
+    expect(!edit.ok && edit.error).toBe("sin_acceso");
   });
 });

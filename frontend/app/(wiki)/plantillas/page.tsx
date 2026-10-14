@@ -2,10 +2,10 @@ import { LayoutTemplate } from "lucide-react";
 import { InstallDefaultsButton, NewTemplateButton, TemplateActions } from "@/components/templates/TemplateActions";
 import { TemplateCard } from "@/components/templates/TemplateCard";
 import { StatusScreen } from "@/components/ui/StatusScreen";
-import { getTemplate, listTemplates } from "@/lib/api";
+import { listTemplates } from "@/lib/api";
 import { DEFAULT_TEMPLATES } from "@/lib/default-templates";
 import { requireUser } from "@/lib/session";
-import type { Template } from "@/lib/types";
+import type { TemplateSummary } from "@/lib/types";
 
 export const metadata = { title: "Plantillas" };
 
@@ -14,18 +14,18 @@ export default async function TemplatesPage({ searchParams }: { searchParams: Pr
   const res = await listTemplates(user);
   if (!res.ok) return <StatusScreen error={res.error} message={res.message} />;
 
-  // El listado no trae fondo ni contenido: se piden los detalles para mostrar vistas previas.
-  const details = await Promise.all(res.data.map((t) => getTemplate(user, t.id)));
-  const templates = details.flatMap((d) => (d.ok ? [d.data] : []));
-  const canManage = (t: Template) => user.role === "ADMIN" || t.ownerId === user.id;
+  // El listado ya trae fondo, icono, autor y permisos; el contenido se pide solo para la vista previa.
+  const templates = res.data;
+  const sharedWithMe = (t: TemplateSummary) => t.myPermission === "EDIT" || t.myPermission === "READ";
 
-  const groups: { key: string; title: string; help: string; items: Template[] }[] = [
+  const groups: { key: string; title: string; help: string; items: TemplateSummary[] }[] = [
     { key: "default", title: "De Grupo Comidas", help: "Plantillas recomendadas para toda la empresa.", items: templates.filter((t) => t.isDefault) },
     { key: "mine", title: "Mis plantillas", help: "Las que creaste tú.", items: templates.filter((t) => !t.isDefault && t.ownerId === user.id) },
-    { key: "dept", title: "De mi departamento", help: "Compartidas por compañeros de tu departamento.", items: templates.filter((t) => !t.isDefault && t.ownerId !== user.id && t.scope === "DEPARTMENT") },
-    { key: "company", title: "De toda la empresa", help: "Compartidas con toda la empresa.", items: templates.filter((t) => !t.isDefault && t.ownerId !== user.id && t.scope === "COMPANY") },
+    { key: "shared", title: "Compartidas conmigo", help: "Te invitaron a usarlas o a editarlas.", items: templates.filter((t) => !t.isDefault && t.ownerId !== user.id && sharedWithMe(t)) },
+    { key: "dept", title: "De mi departamento", help: "Compartidas por compañeros de tu departamento.", items: templates.filter((t) => !t.isDefault && t.ownerId !== user.id && !sharedWithMe(t) && t.scope === "DEPARTMENT") },
+    { key: "company", title: "De toda la empresa", help: "Compartidas con toda la empresa.", items: templates.filter((t) => !t.isDefault && t.ownerId !== user.id && !sharedWithMe(t) && t.scope === "COMPANY") },
     ...(user.role === "ADMIN"
-      ? [{ key: "private", title: "Privadas de otras personas", help: "Visibles solo para administradores.", items: templates.filter((t) => !t.isDefault && t.ownerId !== user.id && t.scope === "PRIVATE") }]
+      ? [{ key: "private", title: "Privadas de otras personas", help: "Visibles solo para administradores.", items: templates.filter((t) => !t.isDefault && t.ownerId !== user.id && !sharedWithMe(t) && t.scope === "PRIVATE") }]
       : []),
   ];
   const installedTitles = new Set(templates.filter((t) => t.scope === "COMPANY").map((t) => t.title));
@@ -45,7 +45,7 @@ export default async function TemplatesPage({ searchParams }: { searchParams: Pr
 
       {plantilla && !templates.some((t) => t.id === plantilla) && (
         <p role="alert" className="mt-6 rounded-lg bg-saffron-soft px-4 py-3 text-sm">
-          No tienes acceso a esa plantilla o ya no existe. Pide a quien te la envió que la comparta con tu departamento o con toda la empresa.
+          No tienes acceso a esa plantilla o ya no existe. Pide a quien te la envió que te invite o te comparta un enlace.
         </p>
       )}
 
@@ -72,7 +72,7 @@ export default async function TemplatesPage({ searchParams }: { searchParams: Pr
               {g.items.map((t) => (
                 <li key={t.id}>
                   <TemplateCard template={t} background={t.background} icon={t.icon}>
-                    <TemplateActions template={t} canManage={canManage(t)} isAdmin={user.role === "ADMIN"} autoOpen={t.id === plantilla} />
+                    <TemplateActions template={t} viewer={user} autoOpen={t.id === plantilla} />
                   </TemplateCard>
                 </li>
               ))}

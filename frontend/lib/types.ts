@@ -4,17 +4,20 @@
  * aquí solo se agregan las formas ya procesadas que usan las pantallas.
  */
 import type {
+  DirectoryUser,
+  MyPermission,
   PageBlock,
   PagePermission,
   PageSummary as SharedPageSummary,
   PageVisibility,
+  ShareLinkSummary,
   TemplateScope,
   UserRole,
   UserSummary,
 } from "@shared/types";
 import type { WikiBlock } from "./blocks";
 
-export type { PageBlock, PagePermission, PageVisibility, TemplateScope, UserRole, UserSummary };
+export type { DirectoryUser, MyPermission, PageBlock, PagePermission, PageVisibility, ShareLinkSummary, TemplateScope, UserRole, UserSummary };
 
 /** Usuario con sesión (respuesta de `GET /api/auth/me`). */
 export interface User extends UserSummary {
@@ -25,17 +28,22 @@ export interface Department {
   id: string;
   slug: string;
   name: string;
+  description: string;
+  icon: string | null;
   wallPageId: string | null;
   memberCount?: number;
   pageCount?: number;
 }
 
+/** Persona con acceso a una página o plantilla. */
 export interface Share {
   userId: string;
   permission: PagePermission;
+  /** Nombre y departamento (sin correo). */
+  user: { id: string; name: string; department: { name: string } | null } | null;
 }
 
-/** Fondo de una página o plantilla. Se guarda en `background` junto con el icono. */
+/** Fondo de una página o plantilla. */
 export type Background =
   | { type: "color"; value: string }
   | { type: "gradient"; value: string }
@@ -66,7 +74,9 @@ export interface Page {
   updatedAt: string;
   deletedAt: string | null;
   children: PageSummary[];
-  /** Visitas registradas (solo páginas públicas); `null` si el backend no las informa. */
+  /** Páginas superiores que la persona puede leer, de la raíz a la página padre. */
+  ancestors: { id: string; title: string; icon: string | null }[];
+  /** Visitas registradas (solo páginas públicas); `null` en las privadas. */
   views: number | null;
 }
 
@@ -80,8 +90,13 @@ export interface PageSummary extends Pick<SharedPageSummary, "id" | "title" | "v
   icon: string | null;
   background: Background | null;
   tags: string[];
+  owner?: { id: string; name: string } | null;
+  /** Dueño o permiso compartido; `null` si se ve por estar publicada o por ser administrador. */
+  myPermission?: MyPermission;
   views?: number;
   deletedAt?: string | null;
+  /** Solo en búsquedas: fragmento del contenido con la palabra encontrada. */
+  excerpt?: string | null;
 }
 
 /** Secciones de la barra lateral. */
@@ -91,17 +106,24 @@ export interface TemplateSummary {
   id: string;
   title: string;
   description: string;
+  icon: string | null;
+  background: Background | null;
   scope: TemplateScope;
   isDefault: boolean;
   ownerId: string | null;
+  owner: { id: string; name: string } | null;
   departmentId: string | null;
   updatedAt: string;
+  myPermission: MyPermission;
+  /** Puede cambiar el contenido y compartirla (dueño, administrador o compartida con edición). */
+  canEdit: boolean;
+  /** Puede cambiar el alcance y eliminarla (dueño o administrador). */
+  canManage: boolean;
 }
 
 export interface Template extends TemplateSummary {
-  icon: string | null;
-  background: Background | null;
   blocks: WikiBlock[];
+  shares: Share[];
 }
 
 export interface HistoryEntry {

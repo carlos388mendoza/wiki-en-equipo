@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
-import { FeaturedEditor, WallPagePicker } from "@/components/departments/WallEditor";
+import { DepartmentInfoEditor, FeaturedEditor, WallPagePicker } from "@/components/departments/WallEditor";
 import { StatusScreen } from "@/components/ui/StatusScreen";
 import { getDepartmentWall, listDepartmentPages } from "@/lib/api";
 import { canEditWall } from "@/lib/permissions";
@@ -29,15 +29,16 @@ export default async function EditDepartmentWall({ params }: { params: Promise<{
         <ArrowLeft size={14} aria-hidden /> Muro de {department.name}
       </Link>
       <h1 className="mt-2 font-display text-3xl font-bold">Editar muro</h1>
-      <p className="mt-1 text-muted">Elige la página de inicio y las páginas destacadas de {department.name}.</p>
+      <p className="mt-1 text-muted">Presentación, página de inicio y páginas destacadas de {department.name}.</p>
 
       <div className="mt-8 flex flex-col gap-6">
+        <DepartmentInfoEditor departmentId={department.id} initial={{ description: department.description, icon: department.icon }} />
         <WallPagePicker
           target={{ kind: "department", departmentId: department.id, name: department.name }}
           wall={wall ? { id: wall.id, title: wall.title } : null}
           candidates={pages.filter((p) => p.departmentId === department.id)}
         />
-        <FeaturedEditor departmentId={department.id} initial={featured} candidates={pages.filter((p) => p.departmentId === department.id && p.id !== wall?.id)} />
+        <FeaturedEditor target={{ kind: "department", departmentId: department.id, name: department.name }} initial={featured} candidates={pages.filter((p) => p.departmentId === department.id && p.id !== wall?.id)} />
       </div>
     </div>
   );

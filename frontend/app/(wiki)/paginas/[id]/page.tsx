@@ -1,17 +1,18 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { BookOpen, ChevronRight, Eye, History, Pencil, Trash2 } from "lucide-react";
+import { BookOpen, ChevronRight, History, Pencil, Trash2 } from "lucide-react";
 import { trashPage } from "@/app/actions/admin";
 import { ActionButton } from "@/components/ui/ActionButton";
 import { BlockRenderer } from "@/components/page/BlockRenderer";
 import { PageBackground } from "@/components/page/PageBackground";
+import { VisitCounter } from "@/components/page/VisitCounter";
 import { NewPageButton } from "@/components/pages/NewPageDialog";
 import { ShareButton } from "@/components/pages/ShareDialog";
 import { Avatar } from "@/components/ui/Avatar";
 import { StatusScreen } from "@/components/ui/StatusScreen";
 import { TagChip } from "@/components/ui/TagChip";
 import { VisibilityBadge } from "@/components/ui/VisibilityBadge";
-import { getAncestors, getPage, getPageSummaries, listUsers } from "@/lib/api";
+import { getPage, getPageSummaries } from "@/lib/api";
 import { linkedPageIds } from "@/lib/blocks";
 import { timeAgo } from "@/lib/format";
 import { canDelete, canEdit, canShare } from "@/lib/permissions";
@@ -30,13 +31,8 @@ export default async function PageView({ params }: { params: Promise<{ id: strin
   const page = res.data;
 
   const linkedIds = linkedPageIds(page.blocks);
-  const [linked, ancestors, users] = await Promise.all([
-    getPageSummaries(user, linkedIds),
-    getAncestors(user, page),
-    // Solo un administrador puede listar usuarios (ver PENDIENTES_BACKEND.md, punto 1).
-    user.role === "ADMIN" ? listUsers() : Promise.resolve(null),
-  ]);
-  const people = users?.ok ? users.data : null;
+  const linked = await getPageSummaries(user, linkedIds);
+  const { ancestors } = page;
   const subpages = Object.fromEntries([...page.children, ...linked].map((p) => [p.id, p]));
   const unlinkedChildren = page.children.filter((c) => !linkedIds.includes(c.id));
 
@@ -51,7 +47,7 @@ export default async function PageView({ params }: { params: Promise<{ id: strin
         <div className="-mt-10 flex flex-wrap items-end justify-between gap-4">
           <PageIcon icon={page.icon} size={76} className="drop-shadow" />
           <div className="flex flex-wrap gap-2 pb-1">
-            {shareable && <ShareButton page={page} viewer={user} people={people} />}
+            {shareable && <ShareButton page={page} viewer={user} />}
             {editable ? (
               <>
                 <NewPageButton parentId={page.id} parentTitle={page.title} variant="secondary" />
@@ -90,9 +86,7 @@ export default async function PageView({ params }: { params: Promise<{ id: strin
           {page.owner && <span className="inline-flex items-center gap-2"><Avatar name={page.owner.name} size={22} /> {page.owner.name}</span>}
           <span>Editada {timeAgo(page.updatedAt)}</span>
           <VisibilityBadge visibility={page.visibility} />
-          {page.visibility !== "PRIVATE" && page.views !== null && (
-            <span className="inline-flex items-center gap-1"><Eye size={14} aria-hidden /> {page.views} {page.views === 1 ? "visita" : "visitas"}</span>
-          )}
+          <VisitCounter pageId={page.id} initial={page.views} isPublic={page.visibility !== "PRIVATE"} />
         </div>
 
         {page.tags.length > 0 && (

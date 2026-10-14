@@ -23,8 +23,10 @@ export async function POST(request: Request) {
 
   const upstream = new FormData();
   upstream.set("file", file, file.name);
-  const pageId = form.get("pageId");
-  if (typeof pageId === "string" && pageId) upstream.set("pageId", pageId);
+  for (const key of ["pageId", "templateId"]) {
+    const value = form.get(key);
+    if (typeof value === "string" && value) upstream.set(key, value);
+  }
 
   let res: Response;
   try {
@@ -37,7 +39,7 @@ export async function POST(request: Request) {
     const message =
       res.status === 413 ? `El archivo supera el límite de ${MAX_UPLOAD_MB} MB.`
       : res.status === 415 ? `Ese tipo de archivo no está permitido. Tipos permitidos: ${allowedList()}.`
-      : res.status === 403 ? "Necesitas permiso de edición en la página para subir archivos."
+      : res.status === 403 ? `Necesitas permiso de edición en la ${form.get("templateId") ? "plantilla" : "página"} para subir archivos.`
       : json?.error?.message ?? "No se pudo subir el archivo.";
     return Response.json({ message }, { status: res.status });
   }

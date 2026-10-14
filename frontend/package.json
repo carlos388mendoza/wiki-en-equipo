@@ -9,7 +9,6 @@
     "typecheck": "tsc --noEmit",
     "seed": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/seed-dev.mjs",
     "test": "vitest run",
-    "collab:dev": "node scripts/collab-dev-server.mjs",
     "postbuild": "node scripts/sw-assets.mjs",
     "predev": "node scripts/copy-assets.mjs",
     "prebuild": "node scripts/copy-assets.mjs"
@@ -36,12 +35,10 @@
     "@types/node": "22.15.29",
     "@types/react": "19.2.18",
     "@types/react-dom": "19.2.7",
-    "@types/ws": "8.18.1",
     "fake-indexeddb": "6.2.5",
     "tailwindcss": "4.1.8",
     "typescript": "5.8.3",
-    "vitest": "5.0.4",
-    "ws": "8.22.0"
+    "vitest": "5.0.4"
   },
   "overrides": {
     "postcss": "^8.5.30"

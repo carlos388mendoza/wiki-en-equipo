@@ -69,7 +69,13 @@ async function main() {
   });
   const admin = boot.token;
   const deps = { Tecnología: boot.user.departmentId };
-  for (const name of ["Contabilidad", "Compras"]) deps[name] = (await call("/departments", { method: "POST", token: admin, body: { name } })).department.id;
+  const departments = {
+    Tecnología: { description: "Sistemas, equipos y soporte para oficinas y restaurantes.", icon: "lucide:laptop:cielo" },
+    Contabilidad: { description: "Pagos a proveedores, facturación y cierres contables del grupo.", icon: "lucide:chart-column:albahaca" },
+    Compras: { description: "Proveedores, insumos y abastecimiento de las marcas.", icon: "lucide:shopping-cart:azafran" },
+  };
+  for (const name of ["Contabilidad", "Compras"]) deps[name] = (await call("/departments", { method: "POST", token: admin, body: { name, ...departments[name] } })).department.id;
+  await call(`/departments/${deps.Tecnología}`, { method: "PATCH", token: admin, body: departments.Tecnología });
 
   const tokens = { ana: admin };
   for (const key of ["carlos", "luis", "maria"]) {
@@ -87,11 +93,17 @@ async function main() {
     if (t.isDefault) await call(`/templates/${t.id}`, { method: "PATCH", token: admin, body: { isDefault: false } });
   }
   for (const t of DEFAULT_TEMPLATES) {
-    const created = await call("/templates", { method: "POST", token: admin, body: { title: t.title, description: t.description, scope: "COMPANY", content: t.content, background: t.background } });
+    // El icono va en su propio campo; las plantillas por defecto lo traen dentro del fondo.
+    const { icon, ...background } = t.background;
+    const created = await call("/templates", { method: "POST", token: admin, body: { title: t.title, description: t.description, scope: "COMPANY", content: t.content, background, icon } });
     await call(`/templates/${created.template.id}`, { method: "PATCH", token: admin, body: { isDefault: true } });
   }
 
-  const page = async (who, body) => (await call("/pages", { method: "POST", token: tokens[who], body })).page;
+  // Las páginas de ejemplo escriben el icono junto al fondo; se envía en su propio campo.
+  const page = async (who, { background, ...body }) => {
+    const { icon, ...rest } = background ?? {};
+    return (await call("/pages", { method: "POST", token: tokens[who], body: { ...body, icon: icon ?? null, background: rest } })).page;
+  };
 
   console.log("Creando páginas…");
   const viaticos = await page("ana", {
@@ -128,6 +140,7 @@ async function main() {
     ],
   });
   await call("/company/wall", { method: "PUT", token: admin, body: { pageId: muroEmpresa.id } });
+  await call("/company/featured", { method: "PUT", token: admin, body: { pageIds: [bienvenida.id, viaticos.id] } });
 
   const equipo = await page("luis", {
     title: "Cómo pedir equipo de cómputo", visibility: "DEPARTMENT", tags: ["procesos", "equipo"],
@@ -185,13 +198,22 @@ async function main() {
     content: [{ id: id(), type: "table", data: { columns: ["Proveedor", "Categoría", "Contacto"], rows: [["Verduras del Valle", "Vegetales", "ventas@vdv.test"], ["Lácteos Sula", "Lácteos", "pedidos@lsula.test"]] } }],
   });
 
-  // Algunas visitas para "Más visitadas".
-  for (const [who, pg, times] of [["luis", bienvenida, 4], ["maria", bienvenida, 2], ["maria", viaticos, 3], ["ana", equipo, 2], ["luis", equipo, 1]]) {
-    for (let i = 0; i < times; i++) await call(`/pages/${pg.id}`, { token: tokens[who] });
+  console.log("Compartiendo una plantilla…");
+  const visita = (await call("/templates", { method: "POST", token: tokens.luis, body: {
+    title: "Visita técnica a sucursal", description: "Lo que hay que revisar al visitar un restaurante.", scope: "PRIVATE", icon: "lucide:wrench:cielo",
+    background: { type: "color", value: "#eef6ff" },
+    content: [h(2, "Antes de salir"), li("check", "Confirmar la visita con el gerente"), h(2, "En la sucursal"), li("check", "Punto de venta"), li("check", "Impresoras de cocina"), li("check", "Red y wifi")],
+  } })).template;
+  await call(`/templates/${visita.id}/shares/${ids.maria}`, { method: "PUT", token: tokens.luis, body: { permission: "READ" } });
+  await call(`/templates/${visita.id}/shares/${ids.carlos}`, { method: "PUT", token: tokens.luis, body: { permission: "EDIT" } });
+
+  // Algunas visitas para "Más visitadas" (el backend cuenta una por persona cada 30 minutos).
+  for (const [who, pg] of [["luis", bienvenida], ["maria", bienvenida], ["carlos", bienvenida], ["maria", viaticos], ["carlos", viaticos], ["ana", equipo], ["luis", equipo]]) {
+    await call(`/pages/${pg.id}/visit`, { method: "POST", token: tokens[who] });
   }
 
   const summary = Object.fromEntries(Object.entries(users).map(([k, u]) => [k, { name: u.name, email: u.email, password: u.password, role: u.role, department: u.department, id: ids[k], token: tokens[k] }]));
-  writeFileSync(OUT, JSON.stringify({ createdAt: new Date().toISOString(), backend: API, users: summary, pages: { vpn: vpn.id, soporte: soporte.id, equipo: equipo.id, bienvenida: bienvenida.id } }, null, 2));
+  writeFileSync(OUT, JSON.stringify({ createdAt: new Date().toISOString(), backend: API, users: summary, pages: { vpn: vpn.id, soporte: soporte.id, equipo: equipo.id, bienvenida: bienvenida.id }, templates: { visita: visita.id } }, null, 2));
   console.log(`Listo. Usuarios y contraseñas en ${OUT} (no lo subas al repositorio).`);
 }
 

@@ -41,7 +41,7 @@ export function TemplatePicker({ open, onClose, onPick }: { open: boolean; onClo
                   const res = await loadTemplate(t.id);
                   if (res.ok) onPick(res.data); else setLoadError(res.message);
                 })}>
-                <TemplateCard template={t} />
+                <TemplateCard template={t} background={t.background} icon={t.icon} />
               </button>
             </li>
           ))}
@@ -98,7 +98,7 @@ export function SaveTemplateDialog({ open, onClose, viewer, hasSelection, defaul
         </label>
         <label className="flex flex-col gap-1 font-medium">Disponible para
           <select value={scope} onChange={(e) => setScope(e.target.value as TemplateScope)} className="h-10 rounded-lg border border-line bg-surface px-2 font-normal outline-none focus:border-basil">
-            <option value="PRIVATE">Solo yo</option>
+            <option value="PRIVATE">Privada (solo con invitación)</option>
             <option value="DEPARTMENT">Mi departamento</option>
             {viewer.role === "ADMIN" && <option value="COMPANY">Toda la empresa</option>}
           </select>

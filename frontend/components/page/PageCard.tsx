@@ -18,7 +18,9 @@ export function PageCard({ page, showViews = false }: { page: PageSummary; showV
             {page.title}
           </Link>
         </h3>
+        {page.excerpt && <p className="line-clamp-3 text-sm text-ink/80">{page.excerpt}</p>}
         <p className="text-sm text-muted">
+          {page.owner && <span>{page.owner.name} · </span>}
           {page.updatedAt ? `Editada ${timeAgo(page.updatedAt)}` : <VisibilityBadge visibility={page.visibility} />}
           {showViews && page.views !== undefined && (
             <span className="ml-3 inline-flex items-center gap-1"><Eye size={14} aria-hidden /> {page.views}</span>

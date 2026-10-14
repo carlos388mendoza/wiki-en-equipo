@@ -7,7 +7,7 @@ import { COLORS, GRADIENTS, PATTERN_COLORS, PATTERN_EMOJIS, PHOTO_GALLERY } from
 import { safeHref } from "@/lib/blocks";
 import { isOptimizableImage } from "@/lib/images";
 import type { Background, ShapePattern } from "@/lib/types";
-import { MAX_UPLOAD_MB, uploadToWiki } from "@/lib/uploads";
+import { MAX_UPLOAD_MB, uploadToWiki, type UploadTarget } from "@/lib/uploads";
 import { backgroundStyle } from "../page/PageBackground";
 import { Modal } from "../ui/Modal";
 
@@ -38,8 +38,8 @@ function Swatch({ selected, onClick, label, style, children }: { selected: boole
   );
 }
 
-export function BackgroundPicker({ open, onClose, value, onChange, pageId }: {
-  open: boolean; onClose: () => void; value: Background | null; onChange: (bg: Background | null) => void; pageId?: string;
+export function BackgroundPicker({ open, onClose, value, onChange, uploadTarget }: {
+  open: boolean; onClose: () => void; value: Background | null; onChange: (bg: Background | null) => void; uploadTarget?: UploadTarget;
 }) {
   const [tab, setTab] = useState<Tab>(value?.type === "gradient" ? "degradados" : value?.type === "color" ? "colores" : value?.type === "pattern" || value?.type === "shapes" ? "patrones" : "imagenes");
   const [query, setQuery] = useState("");
@@ -77,7 +77,7 @@ export function BackgroundPicker({ open, onClose, value, onChange, pageId }: {
   async function upload(file: File) {
     setBusy(true); setError("");
     try {
-      const up = await uploadToWiki(file, pageId, true);
+      const up = await uploadToWiki(file, uploadTarget, true);
       pick({ type: "image", url: up.url });
     } catch (e) {
       setError(e instanceof Error ? e.message : "No se pudo subir la imagen.");

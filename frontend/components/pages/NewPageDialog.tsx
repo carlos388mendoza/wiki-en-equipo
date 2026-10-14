@@ -76,7 +76,7 @@ function NewPageForm({ parentId, initialTemplateId }: { parentId?: string; initi
         <ul className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
           {option(undefined, <TemplateCard template={{ id: "blank", title: "Página en blanco", description: "Empieza desde cero.", scope: "PRIVATE", isDefault: false }} icon="📄" background={{ type: "color", value: "#ffffff" }} selected={templateId === undefined} />, "Página en blanco")}
           {!templates && !loadError && [0, 1, 2].map((i) => <li key={i} className="h-36 animate-pulse rounded-xl bg-line/70" />)}
-          {[...defaults, ...others].map((t) => option(t.id, <TemplateCard template={t} selected={templateId === t.id} />, `Plantilla ${t.title}`))}
+          {[...defaults, ...others].map((t) => option(t.id, <TemplateCard template={t} background={t.background} icon={t.icon} selected={templateId === t.id} />, `Plantilla ${t.title}`))}
         </ul>
       </section>
 

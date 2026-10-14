@@ -23,7 +23,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
         <label htmlFor="q" className="sr-only">Buscar páginas</label>
         <div className="flex items-center gap-2 rounded-xl border border-line bg-surface px-4 focus-within:border-basil">
           <Search size={18} className="text-muted" aria-hidden />
-          <input id="q" name="q" defaultValue={q} placeholder="Buscar por título…" className="h-12 flex-1 bg-transparent outline-none" />
+          <input id="q" name="q" defaultValue={q} placeholder="Buscar en títulos y contenido…" className="h-12 min-w-0 flex-1 bg-transparent outline-none" />
           <button type="submit" className="shrink-0 rounded-lg bg-ink px-3 py-1.5 text-sm font-medium text-white hover:bg-basil">Buscar</button>
         </div>
       </form>
@@ -40,7 +40,7 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
         {results.length === 1 ? "1 página" : `${results.length} páginas`}
       </p>
       {results.length === 0 ? (
-        <p className="mt-4 text-muted">No hay páginas que coincidan. Prueba con otra palabra o quita el filtro.</p>
+        <p className="mt-4 text-muted">No hay páginas que coincidan. Prueba con otra palabra (no importan las tildes) o quita el filtro.</p>
       ) : (
         <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {results.map((p) => <PageCard key={p.id} page={p} />)}

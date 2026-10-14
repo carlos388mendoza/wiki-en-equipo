@@ -4,7 +4,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { ArrowDown, ArrowUp, Check, LoaderCircle, Pencil, Plus, Sparkles, Star, X } from "lucide-react";
-import { clearCompanyWall, clearDepartmentWall, createWallPage, setCompanyWall, setDepartmentWall, setFeaturedPages } from "@/app/actions/admin";
+import { clearCompanyWall, clearDepartmentWall, createWallPage, setCompanyFeaturedPages, setCompanyWall, setDepartmentWall, setFeaturedPages, updateDepartmentInfo } from "@/app/actions/admin";
+import { IconPicker } from "../editor/IconPicker";
 import type { PageSummary } from "@/lib/types";
 import { VisibilityBadge } from "../ui/VisibilityBadge";
 
@@ -40,7 +41,7 @@ export function WallPagePicker({ target, wall, candidates }: { target: Target; w
       <h2 id="pagina-muro" className="font-display text-xl font-semibold">Página de inicio del muro</h2>
       <p className="mt-1 text-sm text-muted">
         {target.kind === "company"
-          ? "Su contenido aparece en el inicio de la empresa y queda publicado para toda la empresa. Las páginas que enlaces en ella aparecen como destacadas."
+          ? "Su contenido aparece en el inicio de la empresa y queda publicado para toda la empresa."
           : "Su contenido aparece arriba del muro. Solo la ven las personas del departamento y los administradores."}
       </p>
 
@@ -90,14 +91,16 @@ export function WallPagePicker({ target, wall, candidates }: { target: Target; w
   );
 }
 
-/** Elegir y ordenar las páginas destacadas de un departamento (máx. 12). */
-export function FeaturedEditor({ departmentId, initial, candidates }: { departmentId: string; initial: PageSummary[]; candidates: PageSummary[] }) {
+/** Elegir y ordenar las páginas destacadas de un departamento o de la empresa (máx. 12). */
+export function FeaturedEditor({ target, initial, candidates }: { target: Target; initial: PageSummary[]; candidates: PageSummary[] }) {
+  const isCompany = target.kind === "company";
   const router = useRouter();
   const [selected, setSelected] = useState(initial);
   const [pending, start] = useTransition();
   const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
   const dirty = JSON.stringify(selected.map((p) => p.id)) !== JSON.stringify(initial.map((p) => p.id));
-  const available = candidates.filter((c) => c.visibility !== "PRIVATE" && !selected.some((s) => s.id === c.id));
+  // La empresa solo destaca páginas publicadas a la empresa; un departamento, las del departamento o la empresa.
+  const available = candidates.filter((c) => (isCompany ? c.visibility === "COMPANY" : c.visibility !== "PRIVATE") && !selected.some((s) => s.id === c.id));
 
   const move = (i: number, d: -1 | 1) => setSelected((list) => {
     const next = [...list];
@@ -111,7 +114,7 @@ export function FeaturedEditor({ departmentId, initial, candidates }: { departme
         <h2 id="destacadas-editor" className="flex-1 font-display text-xl font-semibold">Páginas destacadas</h2>
         <span className="text-sm text-muted">{selected.length} de {MAX_FEATURED}</span>
       </div>
-      <p className="mt-1 text-sm text-muted">Solo se pueden destacar páginas publicadas en el departamento o en la empresa.</p>
+      <p className="mt-1 text-sm text-muted">{isCompany ? "Aparecen en el inicio de la empresa. Solo se pueden destacar páginas publicadas para toda la empresa." : "Solo se pueden destacar páginas publicadas en el departamento o en la empresa."}</p>
 
       {selected.length === 0 ? (
         <p className="mt-4 rounded-lg border border-dashed border-line px-3 py-3 text-sm text-muted">Ninguna página destacada todavía.</p>
@@ -129,7 +132,7 @@ export function FeaturedEditor({ departmentId, initial, candidates }: { departme
         </ol>
       )}
 
-      <h3 className="mb-2 mt-5 text-sm font-semibold">Páginas publicadas del departamento</h3>
+      <h3 className="mb-2 mt-5 text-sm font-semibold">{isCompany ? "Páginas publicadas para toda la empresa" : "Páginas publicadas del departamento"}</h3>
       {available.length === 0 ? (
         <p className="text-sm text-muted">No hay más páginas publicadas para destacar. Publica páginas desde “Compartir”.</p>
       ) : (
@@ -147,7 +150,8 @@ export function FeaturedEditor({ departmentId, initial, candidates }: { departme
 
       <div className="mt-5 flex flex-wrap items-center gap-3">
         <button type="button" disabled={!dirty || pending} onClick={() => start(async () => {
-          const res = await setFeaturedPages(departmentId, selected.map((p) => p.id));
+          const ids = selected.map((p) => p.id);
+          const res = target.kind === "company" ? await setCompanyFeaturedPages(ids) : await setFeaturedPages(target.departmentId, ids);
           setMessage(res.ok ? { ok: true, text: "Destacadas guardadas." } : { ok: false, text: res.message });
           if (res.ok) router.refresh();
         })} className="inline-flex h-10 items-center gap-2 rounded-lg bg-ink px-4 text-sm font-medium text-white hover:bg-basil disabled:opacity-50">
@@ -156,6 +160,43 @@ export function FeaturedEditor({ departmentId, initial, candidates }: { departme
         {dirty && <span className="text-sm text-muted">Tienes cambios sin guardar.</span>}
       </div>
       <div className="mt-3"><Feedback message={message} /></div>
+    </section>
+  );
+}
+
+/** Descripción e icono que se muestran en el encabezado del muro del departamento. */
+export function DepartmentInfoEditor({ departmentId, initial }: { departmentId: string; initial: { description: string; icon: string | null } }) {
+  const router = useRouter();
+  const [description, setDescription] = useState(initial.description);
+  const [icon, setIcon] = useState(initial.icon);
+  const [pending, start] = useTransition();
+  const [message, setMessage] = useState<{ ok: boolean; text: string } | null>(null);
+  const dirty = description !== initial.description || icon !== initial.icon;
+
+  return (
+    <section aria-labelledby="info-departamento" className="rounded-xl border border-line bg-surface p-5">
+      <h2 id="info-departamento" className="font-display text-xl font-semibold">Presentación del departamento</h2>
+      <p className="mt-1 text-sm text-muted">Aparece en el encabezado del muro.</p>
+      <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-start">
+        <div className="shrink-0"><IconPicker value={icon} onChange={setIcon} /></div>
+        <label className="flex flex-1 flex-col gap-1 text-sm">
+          <span className="font-medium">Descripción</span>
+          <textarea value={description} onChange={(e) => setDescription(e.target.value)} maxLength={500} rows={2}
+            placeholder="Por ejemplo: pagos a proveedores, facturación y cierres contables del grupo."
+            className="rounded-lg border border-line bg-surface px-3 py-2 outline-none focus:border-basil" />
+          <span className="self-end text-xs text-muted">{description.length}/500</span>
+        </label>
+      </div>
+      <div className="mt-3 flex flex-wrap items-center gap-3">
+        <button type="button" disabled={!dirty || pending} onClick={() => start(async () => {
+          const res = await updateDepartmentInfo(departmentId, { description, icon });
+          setMessage(res.ok ? { ok: true, text: "Presentación guardada." } : { ok: false, text: res.message });
+          if (res.ok) router.refresh();
+        })} className="inline-flex h-10 items-center gap-2 rounded-lg bg-ink px-4 text-sm font-medium text-white hover:bg-basil disabled:opacity-50">
+          {pending && <LoaderCircle size={14} className="animate-spin" aria-hidden />} Guardar presentación
+        </button>
+        <Feedback message={message} />
+      </div>
     </section>
   );
 }

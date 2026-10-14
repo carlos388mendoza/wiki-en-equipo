@@ -3,7 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { getTemplate, listTemplates } from "@/lib/api";
 import { backend } from "@/lib/api/client";
-import { toStoredAppearance, type WikiBlock } from "@/lib/blocks";
+import { splitAppearance, toStoredAppearance, type WikiBlock } from "@/lib/blocks";
 import { requireUser } from "@/lib/session";
 import type { Background, Template, TemplateScope, TemplateSummary } from "@/lib/types";
 import type { ActionResult } from "./sharing";
@@ -27,7 +27,7 @@ export async function createPage(input: { title: string; parentId?: string | nul
   const title = input.title.trim().slice(0, 200) || "Página sin título";
   const res = input.templateId
     ? await backend<{ page: { id: string; title: string } }>(`/pages/from-template/${encodeURIComponent(input.templateId)}`, { method: "POST", body: { title, parentId: input.parentId ?? null } })
-    : await backend<{ page: { id: string; title: string } }>("/pages", { method: "POST", body: { title, parentId: input.parentId ?? null, content: [], background: toStoredAppearance(null, "📄") } });
+    : await backend<{ page: { id: string; title: string } }>("/pages", { method: "POST", body: { title, parentId: input.parentId ?? null, content: [], icon: "📄", background: toStoredAppearance(null) } });
   if (!res.ok) {
     return { ok: false, message: failMessage(res, input.parentId ? "Solo puedes crear subpáginas en páginas que puedes editar y que sean de tu departamento." : undefined) };
   }
@@ -44,14 +44,17 @@ export type PageDraft = {
   parentId?: string | null;
 };
 
-export async function savePage(pageId: string, draft: PageDraft, expectedVersion: number): Promise<ActionResult<{ version: number; updatedAt: string }> & { currentVersion?: number }> {
+/** `autosave`: guardado automático mientras se escribe (el historial agrupa los de los últimos 10 minutos). */
+export async function savePage(pageId: string, draft: PageDraft, expectedVersion: number, autosave = false): Promise<ActionResult<{ version: number; updatedAt: string }> & { currentVersion?: number }> {
   const body = {
     title: draft.title.trim().slice(0, 200) || "Página sin título",
     content: draft.blocks,
-    background: toStoredAppearance(draft.background, draft.icon),
+    icon: draft.icon,
+    background: toStoredAppearance(draft.background),
     tags: draft.tags.slice(0, 30).map((t) => t.slice(0, 40)),
     ...(draft.parentId !== undefined && { parentId: draft.parentId }),
     expectedVersion,
+    ...(autosave && { autosave: true }),
   };
   const res = await backend<{ page: { version: number; updatedAt: string } }>(`/pages/${encodeURIComponent(pageId)}`, { method: "PATCH", body });
   if (!res.ok) {
@@ -91,7 +94,7 @@ export type TemplateDraft = { title: string; description: string; scope: Templat
 export async function createTemplate(draft: TemplateDraft): Promise<ActionResult<{ id: string }>> {
   const res = await backend<{ template: { id: string } }>("/templates", {
     method: "POST",
-    body: { title: draft.title.trim().slice(0, 200) || "Plantilla sin título", description: draft.description.slice(0, 1000), scope: draft.scope, content: draft.blocks, background: toStoredAppearance(draft.background, draft.icon) },
+    body: { title: draft.title.trim().slice(0, 200) || "Plantilla sin título", description: draft.description.slice(0, 1000), scope: draft.scope, content: draft.blocks, icon: draft.icon, background: toStoredAppearance(draft.background) },
   });
   if (!res.ok) return { ok: false, message: failMessage(res, draft.scope === "COMPANY" ? "Solo un administrador puede compartir plantillas con toda la empresa." : undefined) };
   revalidatePath("/plantillas");
@@ -106,18 +109,19 @@ export async function updateTemplate(id: string, draft: Partial<TemplateDraft> &
       ...(draft.description !== undefined && { description: draft.description.slice(0, 1000) }),
       ...(draft.scope !== undefined && { scope: draft.scope }),
       ...(draft.blocks !== undefined && { content: draft.blocks }),
-      ...((draft.background !== undefined || draft.icon !== undefined) && { background: toStoredAppearance(draft.background ?? null, draft.icon ?? null) }),
+      ...(draft.background !== undefined && { background: toStoredAppearance(draft.background) }),
+      ...(draft.icon !== undefined && { icon: draft.icon }),
       ...(draft.isDefault !== undefined && { isDefault: draft.isDefault }),
     },
   });
-  if (!res.ok) return { ok: false, message: failMessage(res, "Solo puedes modificar tus propias plantillas.") };
+  if (!res.ok) return { ok: false, message: failMessage(res, draft.scope !== undefined || draft.isDefault !== undefined ? "Solo quien creó la plantilla puede cambiar su alcance." : "Necesitas permiso de edición para cambiar esta plantilla.") };
   revalidatePath("/plantillas");
   return { ok: true, data: undefined };
 }
 
 export async function deleteTemplate(id: string): Promise<ActionResult> {
   const res = await backend(`/templates/${encodeURIComponent(id)}`, { method: "DELETE" });
-  if (!res.ok) return { ok: false, message: failMessage(res, "Solo puedes eliminar tus propias plantillas.") };
+  if (!res.ok) return { ok: false, message: failMessage(res, "Solo quien creó la plantilla puede eliminarla.") };
   revalidatePath("/plantillas");
   return { ok: true, data: undefined };
 }
@@ -133,7 +137,8 @@ export async function installDefaultTemplates(): Promise<ActionResult<{ created:
   let created = 0;
   for (const t of DEFAULT_TEMPLATES) {
     if (titles.has(t.title)) continue;
-    const res = await backend<{ template: { id: string } }>("/templates", { method: "POST", body: { title: t.title, description: t.description, scope: "COMPANY", content: t.content, background: t.background } });
+    const { background, icon } = splitAppearance(t.background);
+    const res = await backend<{ template: { id: string } }>("/templates", { method: "POST", body: { title: t.title, description: t.description, scope: "COMPANY", content: t.content, background, icon } });
     if (!res.ok) return { ok: false, message: res.message };
     const marked = await backend(`/templates/${res.data.template.id}`, { method: "PATCH", body: { isDefault: true } });
     if (!marked.ok) return { ok: false, message: marked.message };

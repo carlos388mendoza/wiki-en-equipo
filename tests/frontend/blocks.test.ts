@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { blocksToText, isInternalPath, linkedPageIds, normalizeBlocks, parseAppearance, safeHref, toStoredAppearance } from "../../frontend/lib/blocks";
+import { blocksToText, isInternalPath, linkedPageIds, normalizeBlocks, parseAppearance, safeHref, splitAppearance, toStoredAppearance } from "../../frontend/lib/blocks";
 
 describe("formato de bloques del backend", () => {
   it("entiende las plantillas por defecto del backend", () => {
@@ -57,10 +57,16 @@ describe("fondo e icono", () => {
     expect(icon).toBeNull();
   });
 
-  it("guarda el icono junto al fondo y lo recupera", () => {
-    const stored = toStoredAppearance({ type: "pattern", emoji: "🍕", color: "#fbf0da" }, "🍕");
-    expect(parseAppearance(stored)).toEqual({ background: { type: "pattern", emoji: "🍕", color: "#fbf0da" }, icon: "🍕" });
-    expect(parseAppearance(toStoredAppearance(null, "📄"))).toEqual({ background: null, icon: "📄" });
+  it("guarda solo el fondo (el icono va en su propio campo)", () => {
+    const stored = toStoredAppearance({ type: "pattern", emoji: "🍕", color: "#fbf0da" });
+    expect(stored).not.toHaveProperty("icon");
+    expect(parseAppearance(stored)).toEqual({ background: { type: "pattern", emoji: "🍕", color: "#fbf0da" }, icon: null });
+    expect(parseAppearance(toStoredAppearance(null))).toEqual({ background: null, icon: null });
+  });
+
+  it("sigue leyendo el icono guardado dentro del fondo (páginas anteriores) y lo separa", () => {
+    expect(parseAppearance({ type: "color", value: "#e3efe8", icon: "🖥️" }).icon).toBe("🖥️");
+    expect(splitAppearance({ type: "color", value: "#eef6ff", icon: "3d:acta" })).toEqual({ background: { type: "color", value: "#eef6ff" }, icon: "3d:acta" });
   });
 
   it("rechaza CSS inyectado en colores y degradados", () => {
