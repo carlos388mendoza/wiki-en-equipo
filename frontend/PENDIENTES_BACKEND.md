@@ -1,96 +1,126 @@
 # Pendientes para el backend
 
-Cosas que el frontend necesita y el backend todavía no ofrece. El frontend **no** modifica `backend/` ni `shared/`: mientras tanto usa la alternativa indicada. Ordenadas por impacto.
+Cosas que el frontend necesita y el backend todavía no ofrece. El frontend **no** modifica `backend/` ni `shared/`: mientras tanto usa la alternativa indicada. Cada punto dice qué tendría que cambiar el frontend cuando el backend lo resuelva.
+
+Ordenados por impacto: 1–6 alta, 7–17 media, 18–21 baja.
 
 ## Alta prioridad
 
-### 1. Directorio de usuarios para compartir
-- **Problema:** `GET /api/users` es solo para administradores. Un usuario normal no puede buscar a quién invitar, y `PUT /api/pages/:id/shares/:userId` necesita el `userId`.
+### 1. Directorio de usuarios para invitar
+- **Problema:** `GET /api/users` es solo para administradores. Una persona normal no puede buscar a quién invitar, y `PUT /api/pages/:id/shares/:userId` necesita el `userId`.
 - **Propuesta:** `GET /api/users/directory?q=` para cualquier usuario autenticado, que devuelva solo `{ id, name, email, departmentId }` de usuarios activos (máx. 20 resultados).
 - **Mientras tanto:** la invitación directa solo funciona para administradores; el resto comparte por enlace.
+- **Cambio en el frontend después:** en `app/(wiki)/paginas/[id]/page.tsx`, pasar a `ShareButton` el resultado del directorio para todos (hoy `people` es `null` si no eres ADMIN) y buscar mientras se escribe en `components/pages/ShareDialog.tsx`.
 
-### 2. Nombres en la lista de personas con acceso
-- **Problema:** `GET /api/pages/:id` devuelve `shares: [{ userId, permission }]` sin el nombre.
-- **Propuesta:** incluir `user: { id, name, email }` en cada `share`.
-- **Mientras tanto:** los administradores ven nombres (cruzando con `GET /api/users`); los demás ven "Persona con acceso".
+### 2. Límite de inicios de sesión compartido por todos (antes de producción)
+- **Problema:** el login se hace desde el servidor de Next, así que el backend ve siempre la misma IP. El límite de 10 intentos cada 15 min se aplica a **toda la empresa junta**.
+- **Propuesta:** en `backend/api/app.ts`, `app.set("trust proxy", <dirección del servidor de Next>)` (o `1` si hay un solo proxy). No usar `true` sin restricción: cualquiera podría falsear el encabezado.
+- **Mientras tanto:** el frontend ya envía la IP real en `X-Forwarded-For` (`app/actions/session.ts`).
+- **Cambio en el frontend después:** ninguno.
 
-### 3. `GET /api/pages/:id` registra una visita en cada lectura
-- **Problema:** cualquier lectura cuenta como visita (incluido recargar tras guardar, abrir el editor o el historial). Infla el conteo.
-- **Propuesta:** registrar visitas en una ruta aparte (`POST /api/pages/:id/visit`) o con `?visit=1`, y deduplicar por usuario/día.
+### 3. `GET /api/pages/:id` cuenta una visita en cada lectura
+- **Problema:** abrir el editor, el historial o recargar tras guardar también suma visitas. Infla "Más visitadas".
+- **Propuesta:** registrar visitas en una ruta aparte (`POST /api/pages/:id/visit`) o con `?visit=1`, y deduplicar por usuario y día.
 - **Mientras tanto:** el frontend evita pedir páginas solo para títulos o rutas (usa el listado).
+- **Cambio en el frontend después:** llamar a la ruta de visita solo desde la vista de lectura (`app/(wiki)/paginas/[id]/page.tsx`); quitar el aviso de visitas infladas del README.
 
-### 4. Edición simultánea real (Yjs) y presencia
-- **Problema:** el WebSocket `/realtime` solo notifica `page.refresh` (máx. 16 KB por mensaje); no retransmite actualizaciones de Yjs ni presencia (quién está editando). Sin eso, dos personas no ven sus cambios al instante: el frontend combina al guardar.
-- **Propuesta:** un endpoint WebSocket con el protocolo de `y-websocket` (Yjs v13, `y-protocols` sync + awareness), por ejemplo `/collab/pagina-<pageId>`:
-  - Autenticar con el mismo JWT (el frontend lo envía como `?token=`) y comprobar `canReadPage` al conectar.
-  - Ignorar actualizaciones (sync paso 2 y `update`) de quien no tenga `canEditPage`; seguir enviándole los cambios.
-  - Retransmitir *awareness* (nombre y color de cada persona) para mostrar presencia.
-  - Opcional: guardar el estado Yjs para que el documento no dependa de que alguien tenga la página abierta.
-- **Mientras tanto:** el frontend funciona con `/realtime` + fusión de tres vías. Para probar el modo en vivo en local hay un servidor de desarrollo en `frontend/scripts/collab-dev-server.mjs` (`npm run collab:dev`) que ya hace la validación de lectura/edición contra el backend; puede servir de referencia, pero **no** es para producción (documentos en memoria, sin límites ni registros).
+### 4. Edición simultánea en vivo (Yjs) y presencia
+- **Problema:** `/realtime` solo avisa `page.refresh` (máx. 16 KB); no retransmite cambios de Yjs ni quién está editando. Hoy los cambios de otra persona llegan cuando guarda.
+- **Propuesta:** WebSocket con el protocolo `y-websocket` (Yjs v13, `y-protocols` sync + awareness), sala `pagina-<pageId>`:
+  - Autenticar con el mismo JWT (`?token=`) y comprobar `canReadPage` al conectar.
+  - Ignorar actualizaciones (sync paso 2 y `update`) de quien no tenga `canEditPage`, pero seguir enviándole los cambios.
+  - Retransmitir *awareness* (nombre y color) para la presencia.
+  - Guardar el estado Yjs para que no dependa de que alguien tenga la página abierta.
+  - Referencia funcional: `frontend/scripts/collab-dev-server.mjs` (`npm run collab:dev`), **solo de desarrollo** (memoria, sin límites ni registros). Ojo: `@y/websocket-server` usa Yjs v14 y no es compatible.
+- **Cambio en el frontend después:** solo configurar `NEXT_PUBLIC_COLLAB_URL` con la dirección pública (WSS). Si el backend guarda el estado Yjs, se puede quitar la carga inicial desde REST en `components/editor/PageEditor.tsx` (`onEditorReady`).
 
-### 4b. Límite de inicios de sesión compartido por todos (importante antes de producción)
-- **Problema:** el frontend llama a `POST /api/auth/login` desde el servidor de Next, así que el backend ve siempre la IP de ese servidor. El límite de 10 intentos cada 15 minutos por IP se aplica a **toda la empresa junta**: diez contraseñas mal escritas bloquean a todo el mundo.
-- **Ya hecho en el frontend:** el login envía la IP real de la persona en `X-Forwarded-For`.
-- **Propuesta:** en `backend/api/app.ts`, `app.set("trust proxy", <dirección del servidor de Next>)` (o `1` si hay un solo proxy delante) para que `express-rate-limit` use esa IP. No usar `true` sin restricción: cualquiera podría falsear el encabezado.
+### 5. Nombres en la lista de personas con acceso
+- **Problema:** `GET /api/pages/:id` devuelve `shares: [{ userId, permission }]` sin nombre.
+- **Propuesta:** incluir `user: { id, name, email }` en cada `share`.
+- **Mientras tanto:** los administradores ven nombres (cruzando con `GET /api/users`); el resto ve "Persona con acceso".
+- **Cambio en el frontend después:** en `ShareDialog.tsx`, usar `share.user.name` en vez de `nameOf()`; agregar `user` al tipo `Share` de `lib/types.ts` y a `toPage()` de `lib/api/index.ts`.
+
+### 6. Compartir plantillas como las páginas
+- **Problema:** las plantillas solo tienen alcance (`PRIVATE`, `DEPARTMENT`, `COMPANY`) y solo quien la creó la edita. No se pueden compartir con una persona, por enlace ni con permiso de edición, como pide el requisito.
+- **Propuesta:** `TemplateShare { templateId, userId, permission }` y `TemplateShareLink`, con las mismas rutas que las páginas (`PUT/DELETE /api/templates/:id/shares/:userId`, `POST /api/templates/:id/share-links`, aceptar enlace), y que `canReadTemplate` y la edición los consideren.
+- **Mientras tanto:** el modal "Compartir plantilla" cambia el alcance y da un enlace directo (`/plantillas?plantilla=<id>`) para quien ya tiene acceso.
+- **Cambio en el frontend después:** reutilizar `ShareDialog.tsx` para plantillas (las mismas secciones de invitar, personas con acceso y enlace) en `components/templates/TemplateActions.tsx`, y permitir editar a quien tenga `EDIT` en `app/(wiki)/plantillas/[id]/editar/page.tsx`.
 
 ## Media prioridad
 
-### 5. Listado de páginas sin fondo, icono ni autor
-- `GET /api/pages` no incluye `backgroundJson` (donde el frontend guarda el icono) ni el nombre del autor. Las tarjetas y la barra lateral usan un icono y degradado por defecto.
-- **Propuesta:** incluir `backgroundJson` y `owner: { id, name }` en el listado (y en destacadas y populares).
+### 7. Listado de páginas sin fondo, icono ni autor
+- **Problema:** `GET /api/pages` (y destacadas y populares) no traen `backgroundJson` ni el autor; tarjetas y barra lateral usan icono y degradado por defecto.
+- **Propuesta:** incluir `backgroundJson` y `owner: { id, name }`.
+- **Cambio en el frontend después:** en `toSummary()` de `lib/api/index.ts`, leer `parseAppearance(p.backgroundJson)` y el autor; mostrar el autor en `PageCard.tsx`.
 
-### 6. Campo de icono para páginas y plantillas
-- El modelo `Page` no tiene icono/emoji. El frontend lo guarda dentro de `background` como `{ ..., icon: "📄" }`.
-- **Propuesta:** columna `icon String?` en `Page` y `Template`.
+### 8. Campo de icono en páginas y plantillas
+- **Problema:** no hay campo de icono; el frontend lo guarda dentro de `background` como `{ ..., icon }` (emoji, `lucide:<nombre>:<tono>` o `3d:<nombre>`).
+- **Propuesta:** columna `icon String?` en `Page` y `Template` (hasta 48 caracteres).
+- **Cambio en el frontend después:** leer y escribir `icon` directo en `parseAppearance`/`toStoredAppearance` (`lib/blocks.ts`) y en las server actions; migrar los iconos guardados en `background`.
 
-### 7. Saber qué páginas fueron compartidas conmigo
-- El listado no indica si una página está compartida con el usuario ni con qué permiso. El frontend lo deduce (privada ajena = compartida), lo que no funciona para administradores.
+### 9. Saber qué páginas están compartidas conmigo y con qué permiso
+- **Problema:** el listado no lo indica; el frontend lo deduce (privada ajena = compartida), y no funciona para administradores.
 - **Propuesta:** incluir `myPermission: "OWNER" | "EDIT" | "READ" | null` en el listado.
+- **Cambio en el frontend después:** en `getSidebar()` de `lib/api/index.ts`, filtrar "Compartidas conmigo" por `myPermission` (también para administradores).
 
-### 8. Conteo de visitas en la página
-- `GET /api/pages/:id` no trae el total de visitas; solo `GET /api/pages/popular` (top 20). Fuera del top 20 no se muestra el conteo.
-- **Propuesta:** incluir `_count.visits` en la respuesta de la página (solo si es pública).
+### 10. Conteo de visitas en la página
+- **Problema:** `GET /api/pages/:id` no trae el total; solo el top 20 de `/pages/popular`.
+- **Propuesta:** incluir `_count.visits` en la respuesta (solo si es pública).
+- **Cambio en el frontend después:** usar ese dato en `getPage()` y quitar la consulta extra a `popularPages`.
 
-### 9. Tipos de bloque en `shared/types`
-- `PageBlock["type"]` no incluye `list`, `quote`, `divider`, `subpage` ni `code`, que el editor usa. El backend los acepta porque guarda JSON libre.
-- **Propuesta:** ampliar la unión en `shared/types/index.ts` (formato en `frontend/lib/blocks.ts`).
+### 11. Tipos de bloque en `shared/types`
+- **Problema:** `PageBlock["type"]` no incluye `list`, `quote`, `divider`, `subpage` ni `code`, que el editor usa (el backend los acepta porque guarda JSON libre).
+- **Propuesta:** ampliar la unión en `shared/types/index.ts` según `frontend/lib/blocks.ts`.
+- **Cambio en el frontend después:** derivar `WikiBlockType` de `PageBlock["type"]` en `lib/blocks.ts`.
 
-### 10. Departamentos
-- Un usuario que no es administrador solo recibe su propio departamento: no se puede distinguir "no existe" de "no tienes acceso", y no hay nombres para mostrar otros departamentos.
-- `Department` no tiene descripción ni icono para el muro (el frontend usa los de la página del muro).
+### 12. Departamentos
+- **Problema:** quien no es administrador solo recibe su departamento (no se distingue "no existe" de "sin acceso"), y `Department` no tiene descripción ni icono.
+- **Propuesta:** `GET /api/departments/:slug` que responda 403 o 404 según el caso, y campos `description` e `icon`.
+- **Cambio en el frontend después:** en `getDepartmentWall()`, usar esa ruta y mostrar el mensaje correcto; usar descripción e icono en el encabezado del muro.
 
-### 11. Enlaces compartidos
-- No hay ruta para **listar** los enlaces activos de una página: solo se puede desactivar el que se acaba de crear en el modal.
-  **Propuesta:** `GET /api/pages/:id/share-links` (sin el token, con permiso, vencimiento y fecha).
-- **Aceptar un enlace puede bajar el permiso:** `acceptShareLink` hace `upsert` y reemplaza un permiso `EDIT` existente por el `READ` del enlace.
-  **Propuesta:** conservar el permiso más alto.
-- La URL usa `FRONTEND_ORIGIN`; si no está configurada sale relativa. El frontend arma la URL con el origen de la petición.
+### 13. Enlaces compartidos
+- **Problema:** no se pueden **listar** los enlaces activos (solo desactivar el recién creado); aceptar un enlace de lectura **baja** un permiso `EDIT` existente; la URL depende de `FRONTEND_ORIGIN`.
+- **Propuesta:** `GET /api/pages/:id/share-links` (sin token, con permiso, vencimiento y fecha) y conservar el permiso más alto al aceptar.
+- **Cambio en el frontend después:** lista de enlaces activos con "Desactivar" en `ShareDialog.tsx`.
 
-### 12. Archivos en plantillas y páginas copiadas
-- Un archivo subido sin `pageId` (por ejemplo, en el editor de plantillas) solo lo puede ver quien lo subió. Si la plantilla se comparte, otras personas no ven esas imágenes.
-- Al crear una página desde una plantilla o copiar bloques, los archivos siguen ligados a la página original; quien no pueda leer esa página no los verá.
-- **Propuesta:** permitir ligar archivos a plantillas (`templateId`) con los mismos permisos de lectura de la plantilla, y copiar/religar archivos al crear desde plantilla.
+### 14. Archivos en plantillas y páginas copiadas
+- **Problema:** un archivo subido sin `pageId` (editor de plantillas) solo lo ve quien lo subió; al crear desde plantilla, los archivos siguen ligados a la página original.
+- **Propuesta:** ligar archivos a plantillas (`templateId`) con los permisos de la plantilla, y copiar o religar archivos al crear desde plantilla.
+- **Cambio en el frontend después:** enviar `templateId` en `uploadToWiki()` (`lib/uploads.ts`) desde el editor de plantillas.
 
-### 13. Historial con autoguardado
-- El editor guarda automáticamente (1,5 s después de dejar de escribir) y cada guardado crea una versión en el historial.
-- **Propuesta:** agrupar versiones del mismo usuario dentro de una ventana de tiempo (por ejemplo, 10 minutos) o aceptar `createHistory: false` en guardados automáticos.
+### 15. Historial con autoguardado
+- **Problema:** cada autoguardado (1,5 s sin escribir) crea una versión.
+- **Propuesta:** agrupar versiones del mismo usuario dentro de una ventana (por ejemplo, 10 min) o aceptar `createHistory: false`.
+- **Cambio en el frontend después:** enviar el indicador en `savePage()` (`app/actions/pages.ts`) para los autoguardados.
 
-### 14. Listado de plantillas sin fondo
-- `GET /api/templates` no incluye `backgroundJson`; la pantalla de plantillas pide cada una por separado para mostrar la vista previa.
+### 16. Listado de plantillas sin fondo
+- **Problema:** `GET /api/templates` no trae `backgroundJson`; la pantalla de plantillas pide cada una por separado.
+- **Propuesta:** incluir `backgroundJson` en el listado.
+- **Cambio en el frontend después:** quitar el `Promise.all(getTemplate…)` de `app/(wiki)/plantillas/page.tsx` y usar el fondo del listado también en el diálogo "Nueva página".
 
-### 15. Destacadas de la empresa
-- Hay destacadas por departamento (`/departments/:id/featured`) pero no para el muro de la empresa. El frontend usa como destacadas las páginas enlazadas en la página del muro.
+### 17. Destacadas de la empresa
+- **Problema:** hay destacadas por departamento pero no para el muro de la empresa; el frontend usa las páginas enlazadas en la página del muro.
 - **Propuesta:** `GET/PUT /api/company/featured` (solo ADMIN, páginas COMPANY).
-
-### 16. Compartir plantillas como las páginas
-- **Problema:** las plantillas solo tienen alcance (`PRIVATE`, `DEPARTMENT`, `COMPANY`) y solo quien la creó puede editarla. No se pueden compartir con una persona, por enlace, ni dar permiso de edición, como pide el requisito ("compartirlas como privadas igual que las páginas").
-- **Propuesta:** `TemplateShare { templateId, userId, permission: READ | EDIT }` y `TemplateShareLink` con las mismas rutas que las páginas (`PUT/DELETE /api/templates/:id/shares/:userId`, `POST /api/templates/:id/share-links`, aceptar enlace) y que `canReadTemplate` y el permiso de edición los consideren.
-- **Mientras tanto:** el modal "Compartir plantilla" cambia el alcance y da un enlace directo (`/plantillas?plantilla=<id>`) que funciona para quien ya tiene acceso; explica que lo demás todavía no es posible.
+- **Cambio en el frontend después:** reutilizar `FeaturedEditor` (`components/departments/WallEditor.tsx`) en `app/(wiki)/admin/muro/page.tsx` y leerlas en `getCompanyWall()`.
 
 ## Baja prioridad
 
-- **Vaciar papelera:** no hay borrado definitivo; las páginas quedan para siempre en la papelera (las pruebas de integración dejan ahí sus páginas de prueba).
+### 18. Vaciar papelera
+- **Problema:** no hay borrado definitivo (las pruebas de integración también dejan ahí sus páginas).
+- **Propuesta:** `DELETE /api/pages/:id/permanent` (dueño o ADMIN) y retención automática.
+- **Cambio en el frontend después:** botón "Eliminar definitivamente" en `app/(wiki)/papelera/page.tsx` y limpieza en las pruebas.
 
-- **Rutas de páginas superiores:** no hay forma de pedir la ruta (padres) sin abrir cada página; el frontend usa el listado (máx. 100 páginas).
-- **Límite de inicios de sesión:** 10 intentos cada 15 min por IP. En una oficina con IP compartida puede bloquear a varias personas a la vez.
-- **Listado de usuarios inactivos:** `GET /api/users` solo devuelve activos, así que un administrador no puede ver ni reactivar cuentas desactivadas.
+### 19. Ruta de páginas superiores
+- **Problema:** no se puede pedir la ruta (padres) sin abrir cada página; el frontend la arma con el listado (máx. 100).
+- **Propuesta:** incluir `ancestors: [{ id, title }]` en `GET /api/pages/:id`.
+- **Cambio en el frontend después:** usarlo en lugar de `getAncestors()`.
+
+### 20. Usuarios inactivos
+- **Problema:** `GET /api/users` solo devuelve activos: no se puede ver ni reactivar una cuenta desactivada.
+- **Propuesta:** `GET /api/users?includeInactive=1`.
+- **Cambio en el frontend después:** filtro "Inactivos" y botón "Reactivar" en `components/admin/UsersAdmin.tsx`.
+
+### 21. Varias instancias del backend
+- **Problema:** `/realtime` guarda las salas en memoria y los archivos son locales al proceso.
+- **Propuesta:** bus compartido (Redis o similar) para `/realtime` y almacenamiento de objetos para archivos.
+- **Cambio en el frontend después:** ninguno.

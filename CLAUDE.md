@@ -36,18 +36,29 @@ Wiki interna tipo Notion para Grupo Comidas: documentación, procesos y guías o
 - Roles: `USER` (crea y publica en su departamento), `DEPARTMENT_ADMIN` (además edita el muro de su departamento), `ADMIN` (gestiona usuarios y permisos; lee todo lo público y todos los muros). Todos pertenecen a un departamento.
 - Extras: subpáginas, historial, visitas (solo páginas públicas), papelera restaurable, límites de subida.
 
-## Fases del frontend
+## Estado actual (14/10/2026)
 
-Todas las fases están hechas en la rama `frontend` (un commit `feat(frontend): fase N …` por fase):
+Frontend **terminado** en la rama `frontend`, en revisión en el PR #1 hacia `main`: https://github.com/vbgjptt89g-beep/wiki-en-equipo/pull/1 (nunca fusionarlo nosotros). Ver `git log --oneline`:
 
 0. Base (fase 1 original con datos de ejemplo).
-1. Conectar al backend real (tipos de `shared/`, `lib/api` con fetch, sesión real, login).
+1. Conexión al backend real (tipos de `shared/`, `lib/api` con fetch, sesión real, login).
 2. Compartir y publicar (modal).
 3. Contenido: editor BlockNote, crear páginas/subpáginas, fondos, etiquetas, plantillas.
 4. Administración: muros, destacadas, historial, papelera, usuarios, plantillas por defecto, límites de archivos.
 5. Avanzado: Yjs (presencia) y modo sin conexión (y-indexeddb + service worker).
+6. Revisión de código (10 hallazgos corregidos) y auditoría de requisitos: pantalla Mi cuenta (cambiar contraseña), iconos de Lucide y 3dicons, patrones de figuras, compartir plantillas (alcance + enlace), guía de demostración en `frontend/README.md`, limpieza de datos locales al cerrar sesión.
 
-Para saber en qué fase se va: `git log --oneline` (cada fase es un commit `feat(frontend): fase N ...`) y este archivo.
+Pruebas: 47 (Vitest) pasan, incluidas las de integración contra el backend local. `npm audit`: 0 vulnerabilidades.
+
+Requisitos **parciales** que dependen del backend: invitar a una persona (solo admins, pendiente 1), edición en vivo con presencia (pendiente 4), compartir plantillas por persona/enlace/edición (pendiente 6), conteo de visitas inflado (pendiente 3). Todo lo demás está cumplido.
+
+## Decisiones tomadas
+
+- **Cerrar sesión (opción a):** se borra todo lo que la wiki guardó en el dispositivo (IndexedDB de páginas y borradores, caché de páginas del service worker, `wiki-ultimo-usuario`). Si hay cambios sin subir, se listan y se pide confirmación (`components/auth/LogoutButton.tsx`, `lib/collab/local-data.ts`). Si entra otra persona en el mismo navegador, se borra la caché de páginas. Si la sesión vence sin cerrar sesión, los datos quedan hasta el siguiente cierre.
+- **Iconos:** las 8 plantillas por defecto usan **3dicons** (CC0), guardados como `3d:<nombre>`; la fuente está en `assets/templates/3dicons/` (con `LEEME.md` de licencia) y `scripts/copy-assets.mjs` los copia a `frontend/public/iconos/3d/` (ignorado por git) antes de `dev` y `build`. El selector de iconos de las páginas usa **Lucide** (`lucide:<nombre>:<tono>`) y emojis. Todo se dibuja con `components/ui/PageIcon.tsx`.
+- **Editor:** BlockNote (construido sobre TipTap, uno de los editores sugeridos).
+- **Sesión:** cookie httpOnly `wiki_token`; el navegador solo recibe el token para los WebSockets.
+- **Tiempo real sin servidor Yjs del backend:** avisos de `/realtime` + fusión de tres vías por bloque al guardar.
 
 ## Backend (lo que hay que saber)
 
@@ -64,7 +75,55 @@ corepack pnpm exec prisma migrate deploy --schema models/schema.prisma   # aplic
 corepack pnpm run dev       # http://localhost:4000 (CORS para http://localhost:3000)
 ```
 
-Datos de prueba: `cd frontend && npm run seed` (crea el primer administrador con `POST /api/auth/bootstrap`, departamentos, usuarios, páginas, compartidos y muros). Las contraseñas generadas se guardan en `frontend/.dev-users.local.json` (ignorado por git). Para empezar de cero: borrar `backend/models/dev.db` y volver a aplicar la migración.
+Datos de prueba: `cd frontend && npm run seed` (crea el primer administrador con `POST /api/auth/bootstrap`, departamentos, usuarios, páginas, compartidos, muros y las 8 plantillas de Grupo Comidas). **Contraseñas y tokens de prueba: `frontend/.dev-users.local.json`** (ignorado por git; cambian cada vez que se vuelve a correr el seed; nunca copiarlos al chat ni a archivos versionados). Usuarios: Ana Rivera (ADMIN, Tecnología), Carlos Mejía (DEPARTMENT_ADMIN, Contabilidad), Luis Paz (USER, Tecnología), María Zelaya (USER, Compras); correos `@wiki.test`.
+
+Para empezar de cero: detener el backend, borrar `backend/models/dev.db` y `backend/uploads/*`, volver a aplicar la migración (`prisma migrate deploy`), arrancar y correr `npm run seed`.
+
+### Frontend en local
+
+```bash
+cd frontend
+npm install
+npm run dev          # http://localhost:3000 (usa el puerto 3001 si el 3000 está ocupado: npm run dev -- -p 3001)
+npm test             # pruebas; las de integración necesitan el backend y el seed
+npm run build && npm start   # producción (aquí se activa el service worker / modo sin conexión)
+npm run collab:dev   # servidor Yjs de desarrollo para la edición en vivo (con NEXT_PUBLIC_COLLAB_URL=ws://localhost:1234 en .env.local)
+```
+
+## Problemas conocidos
+
+- **OneDrive y `.next`:** el repo está dentro de OneDrive; a veces Next falla con `EINVAL: readlink …\.next\…`. Solución: borrar `frontend/.next` y volver a arrancar (o excluir la carpeta de la sincronización).
+- **No correr `npm run build` con `npm run dev` abierto:** comparten `.next` y el servidor de desarrollo queda roto (404 en los JS). Detener, compilar, volver a arrancar.
+- **Puerto 3000 ocupado:** en esta máquina otra sesión usó el 3000 (servidor "table-waitlist"). Las pruebas en el navegador se hicieron en el **3001** (`.claude/launch.json` de la carpeta de la sesión). Las cookies no se separan por puerto, pero IndexedDB y el service worker sí.
+- **Límite de inicios de sesión del backend:** 10 cada 15 min por IP. Las pruebas reutilizan los tokens del seed; si se agota, reiniciar el backend (el contador vive en memoria).
+- **Visitas infladas:** cada `GET /api/pages/:id` cuenta una visita (pendiente 3).
+- **Service worker:** solo se registra en producción (o con `NEXT_PUBLIC_ENABLE_SW=1`). Si se prueba en un puerto donde corre otra app, desregistrarlo después.
+
+## Pendientes del backend
+
+Detalle, propuesta y cambio necesario en el frontend en `frontend/PENDIENTES_BACKEND.md`:
+
+1. Directorio de usuarios para invitar (alta)
+2. Límite de inicios de sesión compartido: `trust proxy` (alta, antes de producción)
+3. `GET /api/pages/:id` cuenta una visita en cada lectura (alta)
+4. Servidor Yjs (y-websocket) con permisos y presencia (alta)
+5. Nombres en la lista de personas con acceso (alta)
+6. Compartir plantillas como las páginas (alta)
+7. Listado de páginas sin fondo, icono ni autor
+8. Campo de icono en páginas y plantillas
+9. Saber qué páginas están compartidas conmigo (`myPermission`)
+10. Conteo de visitas en la página
+11. Tipos de bloque en `shared/types`
+12. Departamentos: 403 vs 404, descripción e icono
+13. Enlaces compartidos: listarlos y no bajar permisos al aceptar
+14. Archivos en plantillas y páginas copiadas
+15. Historial con autoguardado
+16. Listado de plantillas sin fondo
+17. Destacadas de la empresa
+18. Vaciar papelera (baja)
+19. Ruta de páginas superiores (baja)
+20. Usuarios inactivos (baja)
+21. Varias instancias del backend (baja)
 
 ### Sesión
 
@@ -119,7 +178,7 @@ Datos de prueba: `cd frontend && npm run seed` (crea el primer administrador con
 El backend guarda `content` y `background` como JSON libre. Acuerdo del frontend (`frontend/lib/blocks.ts`):
 
 - `content`: arreglo de bloques `{ id, type, data }` compatible con `PageBlock`. Tipos usados por las plantillas del backend: `heading {level, text}`, `paragraph {text}`, `callout {title?, text}`, `table {columns, rows}`. El frontend añade `spans` (texto con formato), `image`, `video`, `link`, `file`, y tipos extra (`list`, `quote`, `divider`, `subpage`, `code`), con hijos anidados en `data.children`. El editor BlockNote convierte desde y hacia este formato.
-- `background`: `{ type: "color" | "gradient" | "image" | "pattern", ... }` (las plantillas del backend usan `{type:"gradient", value:"linear-gradient(...)"}`), más `icon` (emoji de la página), porque el modelo de página no tiene campo de icono.
+- `background`: `{ type: "color" | "gradient" | "image" | "pattern" | "shapes", ... }` (las plantillas del backend usan `{type:"gradient", value:"linear-gradient(...)"}`; `"none"` = sin fondo), más `icon`, porque el modelo no tiene campo de icono. `icon` puede ser un emoji, `lucide:<nombre>:<tono>` o `3d:<nombre>` (validados en `lib/icons.ts`).
 
 ## Frontend
 
@@ -130,4 +189,5 @@ Next.js 15.5 (App Router) + React 19 + Tailwind CSS 4 + lucide-react + TypeScrip
 - Editor: `components/editor/PageEditor.tsx` (autoguardado con `expectedVersion`, conflictos, copia Yjs local) + `BlockEditor.tsx` (BlockNote con `withCollaboration` de `@blocknote/core/yjs`). Conversión en `lib/editor/convert.ts`, fusión en `lib/editor/merge.ts`.
 - Tiempo real: `lib/collab/useCollaboration.ts`. Sin `NEXT_PUBLIC_COLLAB_URL` usa `/realtime` del backend (avisos); con ella, y-websocket (en vivo + presencia). Servidor de prueba: `npm run collab:dev`. Ojo: `@y/websocket-server` usa Yjs v14 y **no** es compatible con BlockNote (Yjs v13).
 - Pruebas: `npm test` (Vitest, en `tests/frontend/`). Las de integración usan el backend local y los usuarios del seed (reutilizan sus tokens porque el backend limita los inicios de sesión: 10 cada 15 min por IP).
-- Lecciones: cada `GET /api/pages/:id` suma una visita; no correr `build` con `dev` abierto (comparten `.next`); dentro de OneDrive borrar `.next` si aparece `EINVAL readlink`; el service worker solo se registra en producción.
+- Las pruebas viven en `tests/frontend/` (fuera de `frontend/`): los paquetes que importan directo (`yjs`, `y-indexeddb`, `fake-indexeddb`) necesitan alias en `frontend/vitest.config.mts`.
+- Seguridad ya cubierta: rutas internas validadas con `isInternalPath` (`lib/blocks.ts`), degradados sin `url()`, `/archivos` fuera del middleware (Next corta cuerpos de más de 10 MB), IP real en el login.

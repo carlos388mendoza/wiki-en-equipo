@@ -96,8 +96,8 @@ Necesitas tres terminales y dos navegadores (o uno normal y una ventana de incó
 ### Qué falta para producción
 
 - **Backend:** un servidor Yjs con el protocolo y-websocket que valide el JWT y los permisos de lectura y edición, retransmita la presencia y guarde el estado (pendiente 4). `frontend/scripts/collab-dev-server.mjs` sirve de referencia, pero guarda los documentos en memoria, no tiene límites ni registros y no aguanta varias instancias.
-- **Backend:** `app.set("trust proxy", …)` para que el límite de inicios de sesión use la IP real que ya envía el frontend (pendiente 4b).
-- **Backend:** el canal `/realtime` y las salas viven en memoria: con varias instancias hace falta un bus compartido (Redis o similar).
+- **Backend:** `app.set("trust proxy", …)` para que el límite de inicios de sesión use la IP real que ya envía el frontend (pendiente 2).
+- **Backend:** el canal `/realtime` y las salas viven en memoria: con varias instancias hace falta un bus compartido (Redis o similar) (pendiente 21).
 - **Infraestructura:** HTTPS y WSS; configurar `BACKEND_URL`, `NEXT_PUBLIC_REALTIME_URL` y `NEXT_PUBLIC_COLLAB_URL` con las direcciones públicas; el token viaja en la URL del WebSocket (`?token=`), así que conviene que los registros del proxy no guarden la consulta.
 - **Datos locales:** al cerrar sesión se borra todo lo que la wiki guardó en el dispositivo (copias para trabajar sin conexión, borradores y páginas en caché). Si hay cambios sin subir, antes se listan y se pide confirmación (`components/auth/LogoutButton.tsx`). Si la sesión vence sin cerrar sesión, los datos quedan hasta el siguiente cierre; al entrar otra persona en el mismo navegador se borra la caché de páginas.
 
