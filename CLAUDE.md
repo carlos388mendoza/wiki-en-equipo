@@ -42,7 +42,7 @@ Desde el 14/10/2026, con permiso de B, A también resolvió los pendientes del b
 
 Dos PR abiertos hacia `main` (nunca los unimos nosotros). **Orden para unir: primero el #2 y después el #1.**
 
-- **PR #2 "Pendientes del backend"** (rama `backend-pendientes`): https://github.com/vbgjptt89g-beep/wiki-en-equipo/pull/2. Resuelve 20 de los 21 pendientes y agrega la búsqueda en el contenido, el servidor Yjs de producción, 10 migraciones y las primeras pruebas del backend (105, Vitest). Una revisión de código encontró 5 problemas, todos corregidos.
+- **PR #2 "Pendientes del backend"** (rama `backend-pendientes`): https://github.com/vbgjptt89g-beep/wiki-en-equipo/pull/2. Resuelve 20 de los 21 pendientes y agrega la búsqueda en el contenido, el servidor Yjs de producción, 8 migraciones y las primeras pruebas del backend (105, Vitest). Una revisión de código encontró 5 problemas, todos corregidos.
 - **PR #1 "Frontend"** (rama `frontend`): https://github.com/vbgjptt89g-beep/wiki-en-equipo/pull/1. Contiene el frontend completo, la rama `backend-pendientes` unida (merge) y su adaptación: invitar para todos, edición en vivo con presencia contra el backend, plantillas compartidas, enlaces activos, destacadas de la empresa, listados con fondo, icono y autor, búsqueda en el contenido, papelera definitiva, usuarios inactivos, logo, favicon y títulos de las pestañas.
 
 Todos los requisitos están cumplidos. Lo único pendiente es **varias instancias del backend** (necesita Redis u otro bus, almacenamiento de objetos y una base de datos de producción): ver `frontend/PENDIENTES_BACKEND.md`.
