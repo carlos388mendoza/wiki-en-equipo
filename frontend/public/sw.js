@@ -9,6 +9,9 @@ const VERSION = `wiki-${self.WIKI_BUILD ?? "dev"}`;
 const PAGES = `${VERSION}-paginas`;
 const STATIC = `${VERSION}-estaticos`;
 const OFFLINE_URL = "/sin-conexion";
+// Logo, favicons e iconos de la app instalable: se guardan al instalar para que se vean sin conexión.
+const BRAND_ASSETS = ["/brand/logo-grupo-comidas.png", "/brand/icon-192.png", "/icon.png", "/icon1.png", "/apple-icon.png", "/manifest.webmanifest"];
+const isBrandAsset = (pathname) => pathname.startsWith("/brand/") || /^\/(icon\d*|apple-icon)\.png$/.test(pathname) || pathname === "/manifest.webmanifest";
 
 async function precacheOffline() {
   const cache = await caches.open(PAGES);
@@ -19,7 +22,7 @@ async function precacheOffline() {
   // Guarda todos los archivos de la compilación (también los que se cargan después, como el editor).
   const assets = [...new Set([...(self.WIKI_ASSETS ?? []), ...(html.match(/\/_next\/static\/[^"'\s)]+\.(?:js|css)/g) ?? [])])];
   const statics = await caches.open(STATIC);
-  await Promise.all(assets.map((url) => statics.add(url).catch(() => {})));
+  await Promise.all([...assets, ...BRAND_ASSETS].map((url) => statics.add(url).catch(() => {})));
 }
 
 self.addEventListener("install", (event) => {
@@ -57,9 +60,10 @@ async function networkFirst(request, cacheName, fallbackUrl) {
   }
 }
 
-async function cacheFirst(request) {
+async function cacheFirst(request, ignoreSearch = false) {
   const cache = await caches.open(STATIC);
-  const cached = await cache.match(request);
+  // Next agrega ?<hash> a los favicons: se ignora para usar la copia guardada.
+  const cached = await cache.match(request, { ignoreSearch });
   if (cached) return cached;
   const res = await fetch(request);
   if (res.ok) cache.put(request, res.clone());
@@ -74,6 +78,8 @@ self.addEventListener("fetch", (event) => {
 
   if (url.pathname.startsWith("/_next/static/")) {
     event.respondWith(cacheFirst(request));
+  } else if (isBrandAsset(url.pathname)) {
+    event.respondWith(cacheFirst(request, true));
   } else if (request.mode === "navigate") {
     event.respondWith(networkFirst(request, PAGES, OFFLINE_URL));
   } else if (request.headers.get("RSC") === "1" || url.searchParams.has("_rsc") || url.pathname.startsWith("/archivos/") || url.pathname.startsWith("/_next/image")) {

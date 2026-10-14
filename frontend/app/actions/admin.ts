@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { backend } from "@/lib/api/client";
+import { BRAND_ICON } from "@/lib/icons";
 import type { UserRole } from "@/lib/types";
 import type { ActionResult } from "./sharing";
 
@@ -146,9 +147,11 @@ export async function createWallPage(target: { departmentId: string; name: strin
   const template = templates.ok ? preferred.map((t) => templates.data.templates.find((x) => x.title === t)).find(Boolean) : undefined;
   const title = target === "company" ? "Lo que todo el grupo necesita saber" : `Inicio de ${target.name}`;
   const created = template
-    ? await backend<{ page: { id: string } }>(`/pages/from-template/${template.id}`, { method: "POST", body: { title } })
-    : await backend<{ page: { id: string } }>("/pages", { method: "POST", body: { title, content: [], background: { type: "none", icon: target === "company" ? "🍽️" : "🏢" } } });
+    ? await backend<{ page: { id: string; version: number } }>(`/pages/from-template/${template.id}`, { method: "POST", body: { title } })
+    : await backend<{ page: { id: string; version: number } }>("/pages", { method: "POST", body: { title, content: [], icon: target === "company" ? BRAND_ICON : "🏢", background: { type: "none" } } });
   if (!created.ok) return fail(created);
+  // El muro de la empresa lleva el logo de Grupo Comidas como icono.
+  if (target === "company" && template) await backend(`/pages/${created.data.page.id}`, { method: "PATCH", body: { icon: BRAND_ICON, expectedVersion: created.data.page.version } });
   const assigned = target === "company" ? await setCompanyWall(created.data.page.id) : await setDepartmentWall(target.departmentId, created.data.page.id);
   if (!assigned.ok) return assigned;
   return ok({ id: created.data.page.id });

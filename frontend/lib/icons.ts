@@ -39,13 +39,19 @@ const PATTERN = /^lucide:([a-z0-9-]{1,30}):([a-z]{2,10})$/;
  */
 export const THREE_D_ICONS = ["documentacion", "bienvenida", "inicio-departamento", "proceso", "acta", "receta", "apertura-cierre", "preguntas"] as const;
 
+/** Logo oficial de Grupo Comidas como icono de página (muros, bienvenida, anuncios del grupo). */
+export const BRAND_ICON = "marca:grupo-comidas";
+export const BRAND_LOGO_SRC = "/brand/logo-grupo-comidas.png";
+
 export type ParsedIcon =
   | { kind: "emoji"; value: string }
   | { kind: "lucide"; Icon: LucideIcon; name: string; tone: IconTone }
-  | { kind: "3d"; name: string; src: string };
+  | { kind: "3d"; name: string; src: string }
+  | { kind: "brand"; src: string };
 
 export function parseIcon(icon: string | null | undefined): ParsedIcon | null {
   if (!icon) return null;
+  if (icon.startsWith("marca:")) return icon === BRAND_ICON ? { kind: "brand", src: BRAND_LOGO_SRC } : null;
   if (icon.startsWith("3d:")) {
     const name = icon.slice(3);
     return (THREE_D_ICONS as readonly string[]).includes(name) ? { kind: "3d", name, src: `/iconos/3d/${name}.webp` } : null;
@@ -62,9 +68,9 @@ export function parseIcon(icon: string | null | undefined): ParsedIcon | null {
 
 export const lucideIcon = (name: string, tone: IconTone) => `lucide:${name}:${tone}`;
 
-/** Valida el icono guardado: emoji corto, icono de Lucide o icono 3D conocidos. */
+/** Valida el icono guardado: emoji corto, icono de Lucide, icono 3D o el logo de la marca. */
 export function sanitizeIcon(value: unknown): string | null {
   if (typeof value !== "string" || !value) return null;
-  if (value.startsWith("lucide:") || value.startsWith("3d:")) return parseIcon(value) ? value : null;
+  if (value.startsWith("lucide:") || value.startsWith("3d:") || value.startsWith("marca:")) return parseIcon(value) ? value : null;
   return value.slice(0, 16);
 }

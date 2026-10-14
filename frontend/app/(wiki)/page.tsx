@@ -7,6 +7,7 @@ import { getCompanyWall, getPageSummaries } from "@/lib/api";
 import { linkedPageIds } from "@/lib/blocks";
 import { requireUser } from "@/lib/session";
 import { PageIcon } from "@/components/ui/PageIcon";
+import { BRAND_ICON } from "@/lib/icons";
 
 export default async function CompanyWall() {
   const user = await requireUser();
@@ -21,7 +22,7 @@ export default async function CompanyWall() {
         {hasCustomHero && <PageBackground background={wall.wall!.background} className="absolute inset-0" priority />}
         {hasCustomHero && <div aria-hidden className="absolute inset-0 bg-gradient-to-r from-surface/90 to-surface/40" />}
         <div aria-hidden className="pointer-events-none absolute -right-4 -top-6 select-none text-[9rem] leading-none opacity-20 sm:text-[12rem]">
-          <PageIcon icon={wall.wall?.icon} fallback="🍽️" size={150} />
+          <PageIcon icon={wall.wall?.icon} fallback={BRAND_ICON} size={150} />
         </div>
         <div className="relative">
           <p className={hasCustomHero ? "text-muted" : "text-white/80"}>Hola, {firstName}</p>

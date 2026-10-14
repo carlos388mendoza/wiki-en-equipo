@@ -1,9 +1,10 @@
 import { redirect } from "next/navigation";
 import { LoginForm } from "@/components/auth/LoginForm";
+import { BrandLogo } from "@/components/ui/BrandLogo";
 import { isInternalPath } from "@/lib/blocks";
 import { getSession } from "@/lib/session";
 
-export const metadata = { title: "Iniciar sesión" };
+export const metadata = { title: "Acceso" };
 
 export default async function LoginPage({ searchParams }: { searchParams: Promise<{ next?: string; clave?: string }> }) {
   const { next, clave } = await searchParams;
@@ -14,8 +15,8 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
   return (
     <main className="grid min-h-dvh place-items-center bg-basil px-4 py-10">
       <div className="w-full max-w-md rounded-2xl bg-surface p-6 sm:p-8">
-        <span className="text-4xl" aria-hidden>🍽️</span>
-        <h1 className="mt-3 font-display text-3xl font-bold">Wiki Grupo Comidas</h1>
+        <BrandLogo size={88} priority />
+        <h1 className="mt-4 font-display text-3xl font-bold">Wiki Grupo Comidas</h1>
         <p className="mt-1 text-muted">Procesos, guías y documentación de todo el grupo.</p>
 
         {clave === "actualizada" && (

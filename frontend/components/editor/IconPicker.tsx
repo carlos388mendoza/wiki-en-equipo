@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { ICONS } from "@/lib/backgrounds";
-import { ICON_TONES, LUCIDE_ICONS, lucideIcon, parseIcon, type IconTone } from "@/lib/icons";
+import { BRAND_ICON, ICON_TONES, LUCIDE_ICONS, lucideIcon, parseIcon, type IconTone } from "@/lib/icons";
 import { PageIcon } from "../ui/PageIcon";
 
 const toneLabel: Record<IconTone, string> = { albahaca: "Albahaca", azafran: "Azafrán", tomate: "Tomate", cielo: "Cielo", uva: "Uva", carbon: "Carbón" };
@@ -66,6 +66,10 @@ export function IconPicker({ value, onChange }: { value: string | null; onChange
                 })}
               </div>
               <p className="mt-2 text-[11px] text-muted">Iconos de Lucide.</p>
+              <button type="button" onClick={() => pick(BRAND_ICON)} aria-label="Usar el logo de Grupo Comidas"
+                className={`mt-2 flex w-full items-center gap-2 rounded-lg border border-line px-2 py-1.5 text-left text-sm hover:border-basil ${value === BRAND_ICON ? "bg-basil-soft" : ""}`}>
+                <PageIcon icon={BRAND_ICON} size={28} /> Logo de Grupo Comidas
+              </button>
             </>
           ) : (
             <>

@@ -124,10 +124,20 @@ export async function listDepartments(): Promise<Department[]> {
 
 /* ---------- Páginas ---------- */
 
+/** Una sola petición por página y render (la usan la pantalla y el título de la pestaña). */
+const rawPage = cache((id: string) => backend<{ page: PageDetail }>(`/pages/${encodeURIComponent(id)}`));
+
 /** Lee una página. No registra visitas: la vista de lectura las registra aparte (`recordVisit`). */
 export async function getPage(_viewer: User, id: string): Promise<ApiResult<Page>> {
-  const res = await backend<{ page: PageDetail }>(`/pages/${encodeURIComponent(id)}`);
+  const res = await rawPage(id);
   return res.ok ? { ok: true, data: toPage(res.data.page) } : res;
+}
+
+/** Título de la pestaña para una página (sin revelar nada si no hay acceso). */
+export async function pageTitle(id: string): Promise<string> {
+  const res = await rawPage(id);
+  if (res.ok) return res.data.page.title;
+  return res.error === "no_encontrada" ? "Página no encontrada" : res.error === "sin_acceso" ? "Sin acceso" : "Página";
 }
 
 /** Todas las páginas que el usuario puede ver (máx. 100). */
@@ -186,10 +196,10 @@ export async function getCompanyWall(viewer: User) {
   };
 }
 
-export async function getDepartment(slug: string): Promise<ApiResult<Department>> {
+export const getDepartment = cache(async (slug: string): Promise<ApiResult<Department>> => {
   const res = await backend<{ department: RawDepartment }>(`/departments/${encodeURIComponent(slug)}`);
   return res.ok ? { ok: true, data: toDepartment(res.data.department) } : res;
-}
+});
 
 export async function getDepartmentWall(viewer: User, slug: string): Promise<ApiResult<{
   department: Department; wall: Page | null; featured: PageSummary[]; mostVisited: PageSummary[]; recent: PageSummary[];
@@ -279,8 +289,16 @@ export async function listTemplates(_viewer: User): Promise<ApiResult<TemplateSu
   return res.ok ? { ok: true, data: res.data.templates.map(toTemplateSummary) } : res;
 }
 
+const rawTemplate = cache((id: string) => backend<{ template: TemplateDetail }>(`/templates/${encodeURIComponent(id)}`));
+
+/** Título de la pestaña para una plantilla. */
+export async function templateTitle(id: string): Promise<string> {
+  const res = await rawTemplate(id);
+  return res.ok ? res.data.template.title : res.error === "no_encontrada" ? "Plantilla no encontrada" : "Plantilla";
+}
+
 export async function getTemplate(_viewer: User, id: string): Promise<ApiResult<Template>> {
-  const res = await backend<{ template: TemplateDetail }>(`/templates/${encodeURIComponent(id)}`);
+  const res = await rawTemplate(id);
   if (!res.ok) return res;
   const { contentJson, shares, ...rest } = res.data.template;
   return { ok: true, data: { ...toTemplateSummary(rest), blocks: normalizeBlocks(safeParse(contentJson)), shares: (shares ?? []).map(toShare) } };

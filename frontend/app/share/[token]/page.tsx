@@ -2,7 +2,7 @@ import { redirect } from "next/navigation";
 import { AcceptShareForm } from "@/components/pages/AcceptShareForm";
 import { getSession } from "@/lib/session";
 
-export const metadata = { title: "Página compartida" };
+export const metadata = { title: "Invitación" };
 
 /** Destino de los enlaces que genera el backend (`FRONTEND_ORIGIN/share/<token>`). */
 export default async function SharePage({ params }: { params: Promise<{ token: string }> }) {

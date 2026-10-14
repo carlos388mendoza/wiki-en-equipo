@@ -3,7 +3,7 @@ import { StatusScreen } from "@/components/ui/StatusScreen";
 import { canManageUsers } from "@/lib/permissions";
 import { requireUser } from "@/lib/session";
 
-export const metadata = { title: { default: "Administración", template: "%s · Administración" } };
+export const metadata = { title: { default: "Administración", template: "%s · Administración | Wiki Grupo Comidas" } };
 
 /** Sección solo para administradores (el backend vuelve a verificar cada acción). */
 export default async function AdminLayout({ children }: { children: React.ReactNode }) {

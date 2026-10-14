@@ -1,8 +1,11 @@
 "use client";
 
+import { useEffect } from "react";
 import { StatusScreen } from "@/components/ui/StatusScreen";
 
 export default function OfflineError({ reset }: { error: Error; reset: () => void }) {
+  // Las pantallas de error no admiten metadata: el título de la pestaña se pone aquí.
+  useEffect(() => { document.title = "Sin conexión | Wiki Grupo Comidas"; }, []);
   return (
     <StatusScreen
       error="error_servidor"

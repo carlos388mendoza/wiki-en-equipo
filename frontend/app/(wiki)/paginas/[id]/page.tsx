@@ -12,12 +12,17 @@ import { Avatar } from "@/components/ui/Avatar";
 import { StatusScreen } from "@/components/ui/StatusScreen";
 import { TagChip } from "@/components/ui/TagChip";
 import { VisibilityBadge } from "@/components/ui/VisibilityBadge";
-import { getPage, getPageSummaries } from "@/lib/api";
+import { getPage, getPageSummaries, pageTitle } from "@/lib/api";
 import { linkedPageIds } from "@/lib/blocks";
 import { timeAgo } from "@/lib/format";
 import { canDelete, canEdit, canShare } from "@/lib/permissions";
 import { requireUser } from "@/lib/session";
 import { PageIcon } from "@/components/ui/PageIcon";
+import type { Metadata } from "next";
+
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  return { title: await pageTitle((await params).id) };
+}
 
 export default async function PageView({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

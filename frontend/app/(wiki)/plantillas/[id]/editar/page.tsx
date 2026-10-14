@@ -1,10 +1,13 @@
 import { notFound } from "next/navigation";
 import { PageEditor } from "@/components/editor/PageEditor";
 import { StatusScreen } from "@/components/ui/StatusScreen";
-import { getTemplate, listAccessible } from "@/lib/api";
+import { getTemplate, listAccessible, templateTitle } from "@/lib/api";
 import { requireUser } from "@/lib/session";
+import type { Metadata } from "next";
 
-export const metadata = { title: "Editar plantilla" };
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  return { title: `Editar plantilla · ${await templateTitle((await params).id)}` };
+}
 
 export default async function EditTemplatePage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;

@@ -3,11 +3,15 @@ import { notFound } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { DepartmentInfoEditor, FeaturedEditor, WallPagePicker } from "@/components/departments/WallEditor";
 import { StatusScreen } from "@/components/ui/StatusScreen";
-import { getDepartmentWall, listDepartmentPages } from "@/lib/api";
+import { getDepartment, getDepartmentWall, listDepartmentPages } from "@/lib/api";
 import { canEditWall } from "@/lib/permissions";
 import { requireUser } from "@/lib/session";
+import type { Metadata } from "next";
 
-export const metadata = { title: "Editar muro" };
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const res = await getDepartment((await params).slug);
+  return { title: res.ok ? `Editar muro · ${res.data.name}` : res.error === "sin_acceso" ? "Muro de otro departamento" : "Departamento no encontrado" };
+}
 
 export default async function EditDepartmentWall({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;

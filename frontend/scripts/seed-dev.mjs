@@ -117,7 +117,7 @@ async function main() {
   });
   const bienvenida = await page("ana", {
     title: "Bienvenido a Grupo Comidas", visibility: "COMPANY", tags: ["inducción", "general"],
-    background: { type: "gradient", value: "linear-gradient(120deg, #2e6a4f 0%, #e3a33a 100%)", icon: "👋" },
+    background: { type: "gradient", value: "linear-gradient(120deg, #2e6a4f 0%, #e3a33a 100%)", icon: "marca:grupo-comidas" },
     content: [
       p("Esta es la wiki interna del grupo. Aquí vive la documentación, los procesos y las guías de cada departamento."),
       { id: id(), type: "callout", data: { emoji: "💡", tone: "warning", text: "Tus páginas nuevas son privadas hasta que decidas compartirlas o publicarlas.", spans: [{ text: "Tus páginas nuevas son " }, { text: "privadas", bold: true }, { text: " hasta que decidas compartirlas o publicarlas." }] } },
@@ -130,7 +130,7 @@ async function main() {
   });
   const muroEmpresa = await page("ana", {
     title: "Lo que todo el grupo necesita saber", visibility: "COMPANY", tags: ["muro"],
-    background: { type: "gradient", value: "linear-gradient(135deg, #e3efe8 0%, #fbf0da 100%)", icon: "🍽️" },
+    background: { type: "gradient", value: "linear-gradient(135deg, #e3efe8 0%, #fbf0da 100%)", icon: "marca:grupo-comidas" },
     content: [
       h(2, "Anuncios"),
       { id: id(), type: "callout", data: { emoji: "📣", tone: "info", title: "Nueva wiki", text: "Desde este mes, toda la documentación del grupo vive aquí. Pide acceso a tu administrador si te falta algo." } },

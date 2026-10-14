@@ -2,15 +2,15 @@ import Image from "next/image";
 import { ICON_TONES, parseIcon } from "@/lib/icons";
 
 /**
- * Icono de una página o plantilla: emoji, icono 3D (3dicons) o icono de Lucide sobre una tesela con
+ * Icono de una página o plantilla: emoji, logo de Grupo Comidas, icono 3D (3dicons) o icono de Lucide sobre una tesela con
  * degradado, brillo y sombra (estilo 3D). `size` es la altura en píxeles.
  */
 export function PageIcon({ icon, fallback = "📄", size = 20, className = "" }: {
   icon: string | null | undefined; fallback?: string; size?: number; className?: string;
 }) {
   const parsed = parseIcon(icon) ?? parseIcon(fallback);
-  if (parsed?.kind === "3d") {
-    // Imagen local (public/iconos/3d): se optimiza con next/image.
+  if (parsed?.kind === "3d" || parsed?.kind === "brand") {
+    // Imagen local (public/iconos/3d o public/brand): se optimiza con next/image.
     return <Image src={parsed.src} alt="" aria-hidden width={size} height={size} className={`inline-block shrink-0 object-contain ${className}`} style={{ width: size, height: size }} />;
   }
   if (!parsed || parsed.kind === "emoji") {

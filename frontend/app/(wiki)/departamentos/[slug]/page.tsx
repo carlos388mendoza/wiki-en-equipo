@@ -5,11 +5,17 @@ import { WallSections } from "@/components/layout/WallSections";
 import { BlockRenderer } from "@/components/page/BlockRenderer";
 import { PageBackground } from "@/components/page/PageBackground";
 import { StatusScreen } from "@/components/ui/StatusScreen";
-import { getDepartmentWall, getPageSummaries } from "@/lib/api";
+import { getDepartment, getDepartmentWall, getPageSummaries } from "@/lib/api";
 import { linkedPageIds } from "@/lib/blocks";
 import { canEditWall } from "@/lib/permissions";
 import { requireUser } from "@/lib/session";
 import { PageIcon } from "@/components/ui/PageIcon";
+import type { Metadata } from "next";
+
+export async function generateMetadata({ params }: { params: Promise<{ slug: string }> }): Promise<Metadata> {
+  const res = await getDepartment((await params).slug);
+  return { title: res.ok ? `Muro de ${res.data.name}` : res.error === "sin_acceso" ? "Muro de otro departamento" : "Departamento no encontrado" };
+}
 
 export default async function DepartmentWall({ params }: { params: Promise<{ slug: string }> }) {
   const { slug } = await params;

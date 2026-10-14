@@ -4,8 +4,13 @@ import { TagChip } from "@/components/ui/TagChip";
 import { listTags, searchPages } from "@/lib/api";
 import { StatusScreen } from "@/components/ui/StatusScreen";
 import { requireUser } from "@/lib/session";
+import type { Metadata } from "next";
 
-export const metadata = { title: "Buscar" };
+export async function generateMetadata({ searchParams }: { searchParams: Promise<{ q?: string; etiqueta?: string }> }): Promise<Metadata> {
+  const { q, etiqueta } = await searchParams;
+  const term = q?.trim().slice(0, 60) || (etiqueta ? `#${etiqueta.slice(0, 40)}` : "");
+  return { title: term ? `Buscar: ${term}` : "Buscar" };
+}
 
 export default async function SearchPage({ searchParams }: { searchParams: Promise<{ q?: string; etiqueta?: string }> }) {
   const { q = "", etiqueta } = await searchParams;

@@ -2,7 +2,7 @@ import Link from "next/link";
 import { ArrowLeft, CloudOff } from "lucide-react";
 import { OfflineDrafts } from "@/components/offline/OfflineDrafts";
 
-export const metadata = { title: "Sin conexión" };
+export const metadata = { title: "Borradores sin conexión" };
 
 /**
  * Pantalla que funciona sin internet (el service worker la guarda al instalarse).

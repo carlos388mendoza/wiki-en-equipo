@@ -8,13 +8,16 @@ import { ActionButton } from "@/components/ui/ActionButton";
 import { Avatar } from "@/components/ui/Avatar";
 import { StatusScreen } from "@/components/ui/StatusScreen";
 import { VisibilityBadge } from "@/components/ui/VisibilityBadge";
-import { getHistory, getPage } from "@/lib/api";
+import { getHistory, getPage, pageTitle } from "@/lib/api";
 import { timeAgo } from "@/lib/format";
 import { canEdit } from "@/lib/permissions";
 import { requireUser } from "@/lib/session";
 import { PageIcon } from "@/components/ui/PageIcon";
+import type { Metadata } from "next";
 
-export const metadata = { title: "Historial" };
+export async function generateMetadata({ params }: { params: Promise<{ id: string }> }): Promise<Metadata> {
+  return { title: `Historial · ${await pageTitle((await params).id)}` };
+}
 
 const fullDate = (iso: string) => new Date(iso).toLocaleString("es", { dateStyle: "medium", timeStyle: "short" });
 

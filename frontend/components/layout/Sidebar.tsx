@@ -9,6 +9,7 @@ import type { PageSummary, SidebarSections, User } from "@/lib/types";
 import { LogoutButton } from "../auth/LogoutButton";
 import { NewPageButton } from "../pages/NewPageDialog";
 import { Avatar } from "../ui/Avatar";
+import { BrandLogo } from "../ui/BrandLogo";
 import { PageIcon } from "../ui/PageIcon";
 
 
@@ -87,9 +88,9 @@ export function Sidebar({ user, sections }: { user: User; sections: SidebarSecti
 
   const panel = (
     <div className="flex h-full flex-col gap-5 overflow-y-auto px-3 py-4">
-      <Link href="/" className="flex items-center gap-2 px-2">
-        <span className="grid h-8 w-8 place-items-center rounded-lg bg-basil text-lg" aria-hidden>🍽️</span>
-        <span className="font-display text-lg font-bold leading-none">Wiki Grupo Comidas</span>
+      <Link href="/" className="flex items-center gap-2.5 px-2" aria-label="Wiki Grupo Comidas: inicio">
+        <BrandLogo size={40} priority decorative />
+        <span className="font-display text-lg font-bold leading-tight">Wiki Grupo Comidas</span>
       </Link>
 
       <NewPageButton />
@@ -128,7 +129,10 @@ export function Sidebar({ user, sections }: { user: User; sections: SidebarSecti
         <button type="button" onClick={() => setMobileOpen(true)} aria-label="Abrir menú" className="grid h-9 w-9 place-items-center rounded-md hover:bg-line/60">
           <Menu size={20} />
         </button>
-        <span className="font-display font-bold">Wiki Grupo Comidas</span>
+        <Link href="/" className="flex min-w-0 items-center gap-2" aria-label="Wiki Grupo Comidas: inicio">
+          <BrandLogo size={32} priority decorative />
+          <span className="truncate font-display font-bold">Wiki Grupo Comidas</span>
+        </Link>
       </header>
 
       {/* Escritorio */}
