@@ -82,7 +82,8 @@ Están en `permissions/access.ts`:
 - Quien solo puede leer recibe el documento y los cambios, pero sus cambios se ignoran.
 - Vuelve a comprobar permisos en el latido (30 s), antes de aplicar cambios si la última comprobación tiene más de 10 s y al instante cuando la API cambia permisos. Sin acceso se cierra con el código `4403`.
 - Presencia: cada conexión solo publica sus propios estados y el nombre es siempre el de su cuenta.
-- Guarda el documento en `PageCollabState` con la versión de la página; si la página cambió por otra vía (restaurar o sincronizar), el estado viejo se descarta y el editor carga el contenido guardado.
+- Guarda el documento en `PageCollabState` con la versión de la página; si la página cambió por otra vía, el estado viejo se descarta y el editor carga el contenido guardado.
+- Al restaurar una versión o sincronizar cambios sin conexión, la sala se reinicia: las conexiones se cierran con `4409` y el editor debe volver a cargar la página.
 
 ## Realtime y modo sin conexión
 

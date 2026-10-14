@@ -57,6 +57,8 @@ describe("compartir plantillas con una persona", () => {
     expect(editada.body.template.title).toBe("Acta (revisada)");
     expect((await api.as(maria).put(`/templates/${t.id}/shares/${pedro.id}`, { permission: "READ" })).status).toBe(200);
     expect((await api.as(maria).patch(`/templates/${t.id}`, { scope: "DEPARTMENT" })).status).toBe(403);
+    // El editor guarda enviando el alcance actual: eso no es un cambio de alcance.
+    expect((await api.as(maria).patch(`/templates/${t.id}`, { title: "Acta", scope: "PRIVATE" })).status).toBe(200);
     expect((await api.as(maria).delete(`/templates/${t.id}`)).status).toBe(403);
     expect((await api.as(luis).patch(`/templates/${t.id}`, { scope: "DEPARTMENT" })).body.template.departmentId).toBe(luis.departmentId);
   });

@@ -10,8 +10,10 @@
  * - Los permisos se vuelven a comprobar: cada 30 s (latido), antes de aplicar cambios si la última
  *   comprobación tiene más de 10 s, y al instante cuando la API cambia permisos (refreshPage/refreshUser).
  *   Si pierde el acceso se cierra con el código 4403.
- * - Presencia (awareness): cada conexión solo puede publicar sus propios estados y el nombre que ven
- *   los demás es siempre el de su cuenta.
+ * - Si el contenido se reemplaza por otra vía (restaurar una versión, sincronizar cambios sin conexión),
+ *   resetPage() cierra las conexiones con 4409 y descarta el documento: el editor vuelve a cargar la página.
+ * - Presencia (awareness): cada conexión solo puede publicar sus propios estados (los de quien sale quedan
+ *   reservados un minuto para su reconexión) y el nombre que ven los demás es siempre el de su cuenta.
  * - El documento se guarda en PageCollabState (2 s después del último cambio, como máximo cada 10 s,
  *   y al salir la última persona), junto con la versión de la página a la que corresponde.
  * - Límites: tamaño de mensaje, conexiones por persona y por página, y latido para cerrar conexiones muertas.
@@ -62,6 +64,10 @@ type Room = {
   saveTimer?: NodeJS.Timeout;
   dirtySince?: number;
   saving: Promise<void>;
+  /** La sala se descartó (resetPage): no se guarda nada más de ella. */
+  discarded: boolean;
+  /** clientIDs de quien acaba de salir: quedan reservados un minuto para esa persona (reconexión). */
+  reserved: Map<number, { userId: string; until: number }>;
 };
 
 export type CollabOptions = {
@@ -159,6 +165,7 @@ export class CollabServer {
     try {
       await room.loaded;
       if (socket.destroyed) return;
+      if (room.discarded) return reject(socket, 503, "Service Unavailable");
       await new Promise<void>((resolve) => {
         // Si el saludo falla, ws no llama al callback: el cierre del socket libera la espera.
         socket.once("close", () => resolve());
@@ -199,6 +206,8 @@ export class CollabServer {
     if (!room.clients.delete(client)) return;
     const count = (this.connectionsByUser.get(client.identity.actor.id) ?? 1) - 1;
     if (count > 0) this.connectionsByUser.set(client.identity.actor.id, count); else this.connectionsByUser.delete(client.identity.actor.id);
+    const until = Date.now() + 60_000;
+    for (const clientId of client.clientIds) room.reserved.set(clientId, { userId: client.identity.actor.id, until });
     if (client.clientIds.size) awarenessProtocol.removeAwarenessStates(room.awareness, [...client.clientIds], null);
     if (!room.clients.size) void this.closeRoomIfIdle(room);
   }
@@ -243,6 +252,9 @@ export class CollabServer {
       const clientId = decoding.readVarUint(decoder);
       const clock = decoding.readVarUint(decoder);
       const state = JSON.parse(decoding.readVarString(decoder)) as Record<string, unknown> | null;
+      const reservation = room.reserved.get(clientId);
+      if (reservation && reservation.until > Date.now() && reservation.userId !== client.identity.actor.id) return null;
+      room.reserved.delete(clientId);
       for (const other of room.clients) {
         if (other === client || !other.clientIds.has(clientId)) continue;
         // La misma persona que se reconecta (la conexión vieja aún no se cerró) recupera su estado; nadie más.
@@ -278,6 +290,24 @@ export class CollabServer {
     if (room) for (const client of room.clients) client.queue = client.queue.then(() => this.recheck(room, client)).catch(() => client.socket.terminate());
   }
 
+  /**
+   * El contenido de la página se reemplazó por otra vía (restaurar una versión, sincronizar cambios sin
+   * conexión): el documento en memoria y el guardado ya no sirven. Se cierran las conexiones con 4409
+   * para que el editor vuelva a cargar la página, y se borra el estado guardado.
+   */
+  async resetPage(pageId: string) {
+    const room = this.rooms.get(pageId);
+    if (room) {
+      room.discarded = true;
+      if (room.saveTimer) clearTimeout(room.saveTimer);
+      this.rooms.delete(pageId);
+      for (const client of room.clients) client.socket.close(4409, "document replaced");
+      await room.saving;
+      room.doc.destroy();
+    }
+    await prisma.pageCollabState.deleteMany({ where: { pageId } });
+  }
+
   /** Cambios que afectan a varias páginas a la vez (muros). */
   refreshAll() {
     for (const pageId of this.rooms.keys()) this.refreshPage(pageId);
@@ -298,7 +328,7 @@ export class CollabServer {
     const doc = new Y.Doc({ gc: true });
     const awareness = new awarenessProtocol.Awareness(doc);
     awareness.setLocalState(null);
-    const room: Room = { pageId, doc, awareness, clients: new Set(), pending: 0, loaded: Promise.resolve(), saving: Promise.resolve() };
+    const room: Room = { pageId, doc, awareness, clients: new Set(), pending: 0, loaded: Promise.resolve(), saving: Promise.resolve(), discarded: false, reserved: new Map() };
     doc.on("update", (update: Uint8Array, origin: unknown) => {
       if (origin === LOAD_ORIGIN) return;
       const encoder = encoding.createEncoder();
@@ -345,13 +375,13 @@ export class CollabServer {
 
   private save(room: Room): Promise<void> {
     if (room.saveTimer) { clearTimeout(room.saveTimer); room.saveTimer = undefined; }
-    if (room.dirtySince === undefined) return room.saving;
+    if (room.dirtySince === undefined || room.discarded) return room.saving;
     room.dirtySince = undefined;
     const state = Y.encodeStateAsUpdate(room.doc);
     room.saving = room.saving.then(async () => {
       if (state.byteLength > this.options.maxStateBytes) { console.error(`[colaboración] pagina-${room.pageId} supera el tamaño máximo; no se guarda.`); return; }
       const page = await prisma.page.findUnique({ where: { id: room.pageId }, select: { version: true } });
-      if (!page) return;
+      if (!page || room.discarded) return;
       await prisma.pageCollabState.upsert({ where: { pageId: room.pageId }, create: { pageId: room.pageId, state: Buffer.from(state), pageVersion: page.version }, update: { state: Buffer.from(state), pageVersion: page.version } });
     }).catch((error) => console.error(`[colaboración] no se pudo guardar pagina-${room.pageId}:`, error));
     return room.saving;

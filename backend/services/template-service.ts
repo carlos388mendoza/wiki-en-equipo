@@ -62,7 +62,9 @@ export async function createTemplate(actor: Actor, input: { title: string; descr
 /** Quien tiene permiso de edición cambia el contenido; el alcance y "predeterminada" solo el dueño o un ADMIN. */
 export async function updateTemplate(actor: Actor, id: string, input: { title?: string; description?: string; icon?: string | null; content?: unknown; background?: unknown; scope?: string; isDefault?: boolean }) {
   const template = await findEditableTemplate(actor, id);
-  if ((input.scope !== undefined || input.isDefault !== undefined) && !canManageTemplate(template, actor)) throw forbidden("Solo quien creó la plantilla puede cambiar su alcance.");
+  // El editor envía el alcance en cada guardado: solo cuenta como cambio si es distinto.
+  const scopeChanged = input.scope !== undefined && input.scope !== template.scope;
+  if ((scopeChanged || input.isDefault !== undefined) && !canManageTemplate(template, actor)) throw forbidden("Solo quien creó la plantilla puede cambiar su alcance.");
   if (input.isDefault !== undefined && actor.role !== "ADMIN") throw forbidden("Solo un administrador puede administrar las plantillas predeterminadas.");
   if (input.scope && !SCOPES.includes(input.scope)) throw badRequest("El alcance de la plantilla no es válido.");
   if (input.scope === "COMPANY" && actor.role !== "ADMIN") throw forbidden("Solo un administrador puede compartir plantillas con toda la empresa.");

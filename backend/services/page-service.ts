@@ -208,16 +208,20 @@ export async function listTrash(actor: Actor) {
 }
 
 /**
- * Borra para siempre páginas que están en la papelera, con sus subpáginas que también estén en la
- * papelera, su historial, visitas, permisos y archivos (también del disco).
+ * Borra para siempre páginas que están en la papelera, con sus subpáginas del mismo dueño que también
+ * estén en la papelera, su historial, visitas, permisos y archivos (también del disco). Las subpáginas de
+ * otras personas no se tocan: quedan en su papelera, sin página superior.
  */
 async function purgeTrashedPages(rootIds: string[]) {
-  const ids = [...rootIds];
-  let frontier = rootIds;
-  while (frontier.length) {
-    const children = await prisma.page.findMany({ where: { parentId: { in: frontier }, deletedAt: { not: null } }, select: { id: true } });
-    frontier = children.map((child) => child.id).filter((childId) => !ids.includes(childId));
-    ids.push(...frontier);
+  const roots = await prisma.page.findMany({ where: { id: { in: rootIds }, deletedAt: { not: null } }, select: { id: true, ownerId: true } });
+  const ids = roots.map((root) => root.id);
+  for (const root of roots) {
+    let frontier = [root.id];
+    while (frontier.length) {
+      const children = await prisma.page.findMany({ where: { parentId: { in: frontier }, ownerId: root.ownerId, deletedAt: { not: null } }, select: { id: true } });
+      frontier = children.map((child) => child.id).filter((childId) => !ids.includes(childId));
+      ids.push(...frontier);
+    }
   }
   const files = await prisma.fileAsset.findMany({ where: { pageId: { in: ids } }, select: { id: true, storageName: true } });
   await prisma.$transaction([

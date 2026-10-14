@@ -35,6 +35,12 @@ describe("límite de inicios de sesión con la IP real (trust proxy)", () => {
     for (let i = 0; i < 12; i++) expect((await login(maria.email, PASSWORD, "192.0.2.44")).status).toBe(200);
   });
 
+  it("una misma cuenta no admite más de 30 fallos aunque cambie de IP", async () => {
+    const victima = await createUser("Rosa Lainez", luis.departmentId, "USER", { passwordHash: await hashPassword(PASSWORD) });
+    for (let i = 0; i < 30; i++) expect((await login(victima.email, "incorrecta", `198.18.0.${i + 1}`)).status).toBe(401);
+    expect((await login(victima.email, PASSWORD, "198.18.1.1")).status).toBe(429);
+  });
+
   it("TRUST_PROXY nunca acepta `true` y entiende saltos y listas", () => {
     expect(() => trustProxySetting("true")).toThrow();
     expect(trustProxySetting("1")).toBe(1);

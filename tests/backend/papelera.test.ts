@@ -49,6 +49,19 @@ describe("eliminar definitivamente", () => {
     expect(await prisma.page.findUnique({ where: { id: hija.id } })).toBeNull();
   });
 
+  it("no borra las subpáginas de otras personas: quedan en su papelera", async () => {
+    const padre = await createPage(api, luis);
+    await api.as(luis).put(`/pages/${padre.id}/shares/${ana.id}`, { permission: "EDIT" });
+    const deAna = await createPage(api, ana, { parentId: padre.id });
+    await api.as(luis).delete(`/pages/${padre.id}`);
+    expect((await prisma.page.findUnique({ where: { id: deAna.id } }))?.deletedAt).not.toBeNull();
+    await api.as(luis).delete(`/pages/${padre.id}/permanent`);
+    const sobrevive = await prisma.page.findUnique({ where: { id: deAna.id } });
+    expect(sobrevive).not.toBeNull();
+    expect(sobrevive!.parentId).toBeNull();
+    expect((await api.as(ana).post(`/pages/${deAna.id}/restore`)).status).toBe(200);
+  });
+
   it("nadie más puede eliminar definitivamente la página de otra persona (salvo un administrador)", async () => {
     const page = await enPapelera(luis);
     expect((await api.as(maria).delete(`/pages/${page.id}/permanent`)).status).toBe(403);

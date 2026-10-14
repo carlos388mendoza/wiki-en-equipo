@@ -23,6 +23,8 @@ const limiterDefaults = { standardHeaders: true, legacyHeaders: false, message: 
 const loginEmailKey = (req: Request) => `${ipKeyGenerator(req.ip ?? "")}|${typeof req.body?.email === "string" ? req.body.email.trim().toLowerCase().slice(0, 254) : ""}`;
 const loginLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 10, skipSuccessfulRequests: true, keyGenerator: loginEmailKey, ...limiterDefaults });
 const loginIpLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 50, skipSuccessfulRequests: true, ...limiterDefaults });
+// Respaldo por cuenta, sin importar la IP: si alguien falsea o rota IPs, una misma cuenta no admite más de 30 fallos.
+const loginAccountLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 30, skipSuccessfulRequests: true, keyGenerator: (req) => `cuenta|${typeof req.body?.email === "string" ? req.body.email.trim().toLowerCase().slice(0, 254) : ""}`, ...limiterDefaults });
 const bootstrapLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 5, ...limiterDefaults });
 // El buscador consulta mientras se escribe: 120 búsquedas por minuto y persona evitan que se use para volcar el directorio.
 const directoryLimiter = rateLimit({ windowMs: 60 * 1000, limit: 120, keyGenerator: (req) => req.auth?.sub ?? ipKeyGenerator(req.ip ?? ""), ...limiterDefaults });
@@ -46,7 +48,7 @@ router.post("/auth/bootstrap", bootstrapLimiter, async (req, res) => {
   res.status(201).json(await auth.bootstrapAdmin(body));
 });
 
-router.post("/auth/login", loginIpLimiter, loginLimiter, async (req, res) => {
+router.post("/auth/login", loginIpLimiter, loginAccountLimiter, loginLimiter, async (req, res) => {
   const body = objectBody(z.object({ email, password: z.string().min(1).max(200) }), req);
   res.json(await auth.login(body.email, body.password));
 });
@@ -60,7 +62,9 @@ router.use((req, res, next) => {
     if (res.statusCode >= 400) return;
     const pageId = /^\/pages\/([^/]+)/.exec(req.path)?.[1];
     if (pageId && !["trash", "from-template"].includes(pageId) && !req.path.endsWith("/visit")) collab.refreshPage(pageId);
-    if (/^\/(departments\/[^/]+|company)\/wall$/.test(req.path)) collab.refreshAll();
+    // Enviar a la papelera también afecta a las subpáginas, y los muros a varias páginas.
+    if (/^\/(departments\/[^/]+|company)\/wall$/.test(req.path) || (req.method === "DELETE" && /^\/pages\/[^/]+$/.test(req.path))) collab.refreshAll();
+    if (/^\/share\/[^/]+\/accept$/.test(req.path) && req.auth) collab.refreshUser(req.auth.sub);
     const userId = /^\/users\/([^/]+)$/.exec(req.path)?.[1];
     if (userId) collab.refreshUser(userId);
     if (req.path === "/auth/password" && req.auth) collab.refreshUser(req.auth.sub);
@@ -172,7 +176,10 @@ router.delete("/pages/:pageId", async (req, res) => {
 router.get("/pages/:pageId/history", async (req, res) => res.json({ history: await pages.pageHistory(actor(req), param(req, "pageId")) }));
 router.post("/pages/:pageId/history/:version/restore", async (req, res) => {
   const version = z.coerce.number().int().positive().parse(req.params.version);
-  res.json({ page: await pages.restoreVersion(actor(req), param(req, "pageId"), version) });
+  const page = await pages.restoreVersion(actor(req), param(req, "pageId"), version);
+  // El contenido cambió fuera del editor en vivo: quienes lo tienen abierto vuelven a cargarlo.
+  await collab.resetPage(page.id);
+  res.json({ page });
 });
 router.put("/pages/:pageId/shares/:userId", async (req, res) => {
   const body = objectBody(z.object({ permission }), req);
@@ -201,6 +208,7 @@ router.post("/share/:token/accept", async (req, res) => {
 router.post("/sync/pages/:pageId", async (req, res) => {
   const body = objectBody(z.object({ operationId: z.string().uuid(), baseVersion: z.number().int().positive(), title: title.optional(), icon, content: z.unknown(), background: z.unknown().optional() }), req);
   const result = await syncPage(actor(req), { ...body, pageId: param(req, "pageId") });
+  if (result.status === "synced") await collab.resetPage(param(req, "pageId"));
   if (result.status === "synced") hub.broadcast(param(req, "pageId"), { type: "page.refresh", pageId: param(req, "pageId"), version: result.page.version });
   res.json(result);
 });
