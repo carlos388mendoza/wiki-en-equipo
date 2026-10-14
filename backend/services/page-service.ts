@@ -1,7 +1,7 @@
 import { createHash, randomBytes } from "node:crypto";
 import type { Prisma, Page } from "@prisma/client";
 import type { Actor, PageAccessRecord } from "../permissions/access.js";
-import { assertCanEditPage, assertCanReadPage } from "../permissions/access.js";
+import { assertCanEditPage, assertCanReadPage, canReadPage } from "../permissions/access.js";
 import { prisma } from "../models/client.js";
 import { badRequest, conflict, forbidden, notFound } from "./errors.js";
 
@@ -27,12 +27,32 @@ export async function findAccessiblePage(id: string, actor: Actor) {
     { visibility: "DEPARTMENT", departmentId: actor.departmentId },
     { isWall: true, departmentId: actor.departmentId },
   ];
-  const page = await prisma.page.findFirst({ where: { id, deletedAt: null }, include: { ...accessInclude, children: { where: childWhere, select: { id: true, title: true, icon: true, visibility: true, updatedAt: true } }, owner: { select: { id: true, name: true } }, _count: { select: { visits: true } } } });
+  const page = await prisma.page.findFirst({ where: { id, deletedAt: null }, include: { ...accessInclude, shares: { select: shareWithUserSelect, orderBy: { createdAt: "asc" } }, children: { where: childWhere, select: { id: true, title: true, icon: true, visibility: true, updatedAt: true } }, owner: { select: { id: true, name: true } }, _count: { select: { visits: true } } } });
   if (!page) throw notFound("No se encontró la página.");
   assertCanReadPage(page as PageAccessRecord, actor);
   // Leer no cuenta visitas (el editor y el historial también leen): ver recordVisit().
   const { _count, ...rest } = page;
-  return { ...rest, visitCount: page.visibility === "PRIVATE" ? null : _count.visits };
+  return { ...rest, visitCount: page.visibility === "PRIVATE" ? null : _count.visits, ancestors: await readableAncestors(page.parentId, actor) };
+}
+
+/** Personas con acceso con su nombre y departamento (nunca el correo: también lo ven quienes solo leen). */
+export const shareWithUserSelect = { userId: true, permission: true, user: { select: { id: true, name: true, department: { select: { name: true } } } } } as const;
+
+/**
+ * Ruta de páginas superiores, de la raíz a la página padre. Se corta en la primera que la persona
+ * no puede leer para no revelar títulos de páginas privadas.
+ */
+async function readableAncestors(parentId: string | null, actor: Actor) {
+  const chain: { id: string; title: string; icon: string | null }[] = [];
+  const seen = new Set<string>();
+  while (parentId && chain.length < 20 && !seen.has(parentId)) {
+    seen.add(parentId);
+    const parent = await prisma.page.findFirst({ where: { id: parentId, deletedAt: null }, include: { shares: { select: { userId: true, permission: true } }, departmentWall: { select: { id: true } } } });
+    if (!parent || !canReadPage(parent as PageAccessRecord, actor)) break;
+    chain.unshift({ id: parent.id, title: parent.title, icon: parent.icon });
+    parentId = parent.parentId;
+  }
+  return chain;
 }
 
 /** Minutos en los que otra visita de la misma persona a la misma página no vuelve a contar (recargas). */
@@ -223,16 +243,34 @@ export async function createShareLink(actor: Actor, id: string, permission: "REA
   const token = randomBytes(32).toString("base64url");
   const tokenHash = createHash("sha256").update(token).digest("hex");
   const expiresAt = expiresInHours ? new Date(Date.now() + expiresInHours * 3_600_000) : null;
-  const record = await prisma.pageShareLink.create({ data: { pageId: id, tokenHash, permission, expiresAt } });
+  const record = await prisma.pageShareLink.create({ data: { pageId: id, tokenHash, permission, expiresAt, createdById: actor.id } });
   return { id: record.id, token, permission, expiresAt };
 }
 
+/** Enlaces activos de una página (sin el token, que solo se ve al crearlo). Solo quien puede editarla. */
+export async function listShareLinks(actor: Actor, id: string) {
+  const page = await prisma.page.findFirst({ where: { id, deletedAt: null }, include: accessInclude });
+  if (!page) throw notFound("No se encontró la página.");
+  assertCanEditPage(page as PageAccessRecord, actor);
+  return prisma.pageShareLink.findMany({ where: { pageId: id, ...activeLink() }, orderBy: { createdAt: "desc" }, select: shareLinkSelect });
+}
+
+export const shareLinkSelect = { id: true, permission: true, expiresAt: true, createdAt: true, createdBy: { select: { id: true, name: true } } } as const;
+export const activeLink = () => ({ revokedAt: null, OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }] });
+export const hashShareToken = (token: string) => createHash("sha256").update(token).digest("hex");
+/** Aceptar un enlace nunca baja un permiso: si ya podía editar, sigue editando. */
+export const strongestPermission = (current: string | undefined, offered: string) => (current === "EDIT" || offered === "EDIT" ? "EDIT" : "READ");
+
+/** Acepta un enlace de página; devuelve `null` si el token no es de una página (puede ser de una plantilla). */
 export async function acceptShareLink(actor: Actor, token: string) {
-  const tokenHash = createHash("sha256").update(token).digest("hex");
-  const link = await prisma.pageShareLink.findUnique({ where: { tokenHash }, include: { page: true } });
-  if (!link || link.revokedAt || (link.expiresAt && link.expiresAt < new Date()) || link.page.deletedAt) throw notFound("El enlace no existe, venció o fue revocado.");
-  await prisma.pageShare.upsert({ where: { pageId_userId: { pageId: link.pageId, userId: actor.id } }, create: { pageId: link.pageId, userId: actor.id, permission: link.permission }, update: { permission: link.permission } });
-  return { pageId: link.pageId, permission: link.permission };
+  const link = await prisma.pageShareLink.findUnique({ where: { tokenHash: hashShareToken(token) }, include: { page: true } });
+  if (!link) return null;
+  if (link.revokedAt || (link.expiresAt && link.expiresAt < new Date()) || link.page.deletedAt) throw notFound("El enlace no existe, venció o fue revocado.");
+  if (link.page.ownerId === actor.id) return { type: "page" as const, pageId: link.pageId, permission: "EDIT" };
+  const current = await prisma.pageShare.findUnique({ where: { pageId_userId: { pageId: link.pageId, userId: actor.id } } });
+  const permission = strongestPermission(current?.permission, link.permission);
+  await prisma.pageShare.upsert({ where: { pageId_userId: { pageId: link.pageId, userId: actor.id } }, create: { pageId: link.pageId, userId: actor.id, permission }, update: { permission } });
+  return { type: "page" as const, pageId: link.pageId, permission };
 }
 
 export async function revokeShareLink(actor: Actor, id: string, linkId: string) {

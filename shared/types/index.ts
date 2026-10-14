@@ -21,9 +21,10 @@ export interface DirectoryUser {
   department: { name: string };
 }
 
+/** Bloque de contenido (el backend guarda el arreglo como JSON). Los hijos anidados van en `data.children`. */
 export interface PageBlock {
   id: string;
-  type: "paragraph" | "heading" | "image" | "video" | "link" | "table" | "file" | "callout";
+  type: "paragraph" | "heading" | "image" | "video" | "link" | "table" | "file" | "callout" | "list" | "quote" | "divider" | "subpage" | "code";
   data: Record<string, unknown>;
 }
 
@@ -51,6 +52,60 @@ export interface PageListItem extends PageSummary {
   tags: { name: string }[];
   myPermission: MyPermission;
 }
+
+/** Persona con acceso a una página o plantilla, con nombre y departamento (sin correo). */
+export interface ShareEntry {
+  userId: string;
+  permission: PagePermission;
+  user: { id: string; name: string; department: { name: string } };
+}
+
+export interface PageAncestor {
+  id: string;
+  title: string;
+  icon: string | null;
+}
+
+/** `GET /api/pages/:id`. `contentJson` y `backgroundJson` llegan como texto JSON. */
+export interface PageDetail extends PageSummary {
+  icon: string | null;
+  contentJson: string;
+  backgroundJson: string | null;
+  isWall: boolean;
+  isCompanyWall: boolean;
+  createdAt: string;
+  owner: { id: string; name: string };
+  tags: { name: string }[];
+  shares: ShareEntry[];
+  children: { id: string; title: string; icon: string | null; visibility: PageVisibility; updatedAt: string }[];
+  /** Páginas superiores que la persona puede leer, de la raíz a la página padre. */
+  ancestors: PageAncestor[];
+  /** Visitas registradas; `null` en páginas privadas. */
+  visitCount: number | null;
+}
+
+/** Enlace compartido activo (`GET /api/pages/:id/share-links`). El token solo se ve al crearlo. */
+export interface ShareLinkSummary {
+  id: string;
+  permission: PagePermission;
+  expiresAt: string | null;
+  createdAt: string;
+  createdBy: { id: string; name: string } | null;
+}
+
+/** Respuesta al crear un enlace (`POST .../share-links`). */
+export interface CreatedShareLink {
+  id: string;
+  token: string;
+  permission: PagePermission;
+  expiresAt: string | null;
+  url: string;
+}
+
+/** `POST /api/share/:token/accept`. Aceptar nunca baja un permiso que ya se tenía. */
+export type ShareAcceptResult =
+  | { type: "page"; pageId: string; permission: PagePermission }
+  | { type: "template"; templateId: string; permission: PagePermission };
 
 /**
  * Respuesta de `POST /api/pages/:id/visit` (solo la vista de lectura la llama). Cuenta una vez cada

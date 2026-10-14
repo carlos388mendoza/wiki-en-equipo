@@ -39,6 +39,7 @@ model User {
   templates      Template[]
   uploads        FileAsset[]
   syncOperations SyncOperation[]
+  shareLinks     PageShareLink[] @relation("PageShareLinkCreator")
 }
 
 model Page {
@@ -95,7 +96,10 @@ model PageShareLink {
   permission  String
   expiresAt   DateTime?
   revokedAt   DateTime?
+  createdById String?
+  createdBy   User?    @relation("PageShareLinkCreator", fields: [createdById], references: [id], onDelete: SetNull)
   createdAt   DateTime @default(now())
+  @@index([pageId, revokedAt])
 }
 
 model PageHistory {

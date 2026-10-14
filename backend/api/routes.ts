@@ -163,9 +163,12 @@ router.post("/pages/:pageId/share-links", async (req, res) => {
 router.delete("/pages/:pageId/share-links/:linkId", async (req, res) => {
   await pages.revokeShareLink(actor(req), param(req, "pageId"), param(req, "linkId")); res.status(204).end();
 });
+router.get("/pages/:pageId/share-links", async (req, res) => res.json({ links: await pages.listShareLinks(actor(req), param(req, "pageId")) }));
 router.post("/share/:token/accept", async (req, res) => {
   const token = z.string().min(20).max(200).parse(req.params.token);
-  res.json(await pages.acceptShareLink(actor(req), token));
+  const accepted = await pages.acceptShareLink(actor(req), token);
+  if (!accepted) throw notFound("El enlace no existe, venció o fue revocado.");
+  res.json(accepted);
 });
 
 router.post("/sync/pages/:pageId", async (req, res) => {
