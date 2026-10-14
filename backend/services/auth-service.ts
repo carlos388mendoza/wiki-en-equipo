@@ -3,6 +3,7 @@ import { hashPassword, verifyPassword } from "../auth/password.js";
 import { signAccessToken } from "../auth/token.js";
 import type { Actor } from "../permissions/access.js";
 import { badRequest, conflict, forbidden, unauthorized } from "./errors.js";
+import { foldText } from "./search-text.js";
 
 const publicUser = (user: { id: string; name: string; email: string; role: string; departmentId: string; department?: { id: string; name: string; slug: string } }) => ({
   id: user.id, name: user.name, email: user.email, role: user.role,
@@ -81,9 +82,6 @@ export async function createUser(input: { name: string; email: string; password:
 export async function listUsers(includeInactive = false) {
   return prisma.user.findMany({ where: includeInactive ? {} : { active: true }, orderBy: [{ active: "desc" }, { name: "asc" }], select: { id: true, name: true, email: true, role: true, departmentId: true, active: true, department: { select: { name: true, slug: true } } } });
 }
-
-/** Minúsculas y sin tildes, para buscar "mejia" y encontrar "Mejía". */
-export const foldText = (value: string) => value.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 
 /**
  * Directorio para invitar a páginas y plantillas (cualquier persona con sesión).

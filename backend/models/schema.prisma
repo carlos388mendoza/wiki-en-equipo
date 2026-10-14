@@ -48,6 +48,8 @@ model Page {
   icon           String?
   contentJson    String   @default("[]")
   backgroundJson String?
+  /// Título y texto del contenido en minúsculas y sin tildes, para buscar (lo calcula services/search-text.ts).
+  searchText     String   @default("")
   visibility     String   @default("PRIVATE")
   version        Int      @default(1)
   isWall         Boolean  @default(false)

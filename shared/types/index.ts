@@ -51,6 +51,9 @@ export interface PageListItem extends PageSummary {
   owner: { id: string; name: string };
   tags: { name: string }[];
   myPermission: MyPermission;
+  /** Solo al buscar (`?q=`): dónde coincidió y un fragmento del contenido con la palabra encontrada. */
+  match?: "title" | "content";
+  excerpt?: string | null;
 }
 
 /** Persona con acceso a una página o plantilla, con nombre y departamento (sin correo). */

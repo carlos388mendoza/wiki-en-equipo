@@ -4,6 +4,7 @@ import type { Actor, PageAccessRecord } from "../permissions/access.js";
 import { assertCanEditPage, assertCanReadPage, canReadPage } from "../permissions/access.js";
 import { prisma } from "../models/client.js";
 import { badRequest, conflict, forbidden, notFound } from "./errors.js";
+import { foldText, pageSearchText, searchExcerpt, searchTerms } from "./search-text.js";
 
 const accessInclude = { shares: { select: { userId: true, permission: true } }, departmentWall: { select: { id: true } }, tags: { select: { name: true } } } satisfies Prisma.PageInclude;
 const snapshot = (page: Page & { tags?: { name: string }[] }) => JSON.stringify({ title: page.title, icon: page.icon, contentJson: page.contentJson, backgroundJson: page.backgroundJson, visibility: page.visibility, parentId: page.parentId, tags: page.tags?.map((tag) => tag.name) ?? [] });
@@ -78,7 +79,9 @@ export async function recordVisit(actor: Actor, id: string) {
 
 export async function listAccessiblePages(actor: Actor, query: { q?: string; tag?: string; departmentId?: string; parentId?: string }) {
   const where: Prisma.PageWhereInput = { deletedAt: null };
-  if (query.q) where.title = { contains: query.q.trim() };
+  // Busca en el título y en el texto del contenido; todas las palabras deben aparecer.
+  const terms = query.q ? searchTerms(query.q) : [];
+  if (terms.length) where.AND = terms.map((term) => ({ searchText: { contains: term } }));
   if (query.departmentId) where.departmentId = query.departmentId;
   if (query.parentId) where.parentId = query.parentId;
   if (actor.role === "ADMIN") { /* admins can list every active page */ }
@@ -93,8 +96,17 @@ export async function listAccessiblePages(actor: Actor, query: { q?: string; tag
     where.OR = [{ ownerId: actor.id }, { shares: { some: { userId: actor.id } } }, { visibility: "COMPANY" }];
   }
   if (query.tag) where.tags = { some: { name: query.tag } };
-  const pages = await prisma.page.findMany({ where, orderBy: { updatedAt: "desc" }, take: 100, select: { ...pageCardSelect, ...myShareSelect(actor) } });
-  return pages.map((page) => withMyPermission(actor, page));
+  if (!terms.length) {
+    const pages = await prisma.page.findMany({ where, orderBy: { updatedAt: "desc" }, take: 100, select: { ...pageCardSelect, ...myShareSelect(actor) } });
+    return pages.map((page) => withMyPermission(actor, page));
+  }
+  // Con búsqueda: primero las que coinciden en el título; las demás traen un fragmento del contenido.
+  const found = await prisma.page.findMany({ where, orderBy: { updatedAt: "desc" }, take: 100, select: { ...pageCardSelect, ...myShareSelect(actor), contentJson: true } });
+  const results = found.map(({ contentJson, ...page }) => {
+    const inTitle = terms.every((term) => foldText(page.title).includes(term));
+    return { ...withMyPermission(actor, page), match: inTitle ? "title" as const : "content" as const, excerpt: searchExcerpt(contentJson, terms) };
+  });
+  return [...results.filter((page) => page.match === "title"), ...results.filter((page) => page.match === "content")];
 }
 
 async function tagsConnect(names: string[] | undefined) {
@@ -113,7 +125,8 @@ export async function createPage(actor: Actor, input: { title: string; icon?: st
     if (parent.departmentId !== actor.departmentId && actor.role !== "ADMIN") throw forbidden("La subpágina debe pertenecer a tu departamento.");
   }
   const tags = await tagsConnect(input.tags);
-  return prisma.page.create({ data: { title: input.title.trim(), icon: input.icon ?? null, contentJson: JSON.stringify(input.content ?? []), backgroundJson: input.background === undefined ? null : JSON.stringify(input.background), visibility, ownerId: actor.id, departmentId: actor.departmentId, parentId: input.parentId ?? null, tags: { connect: tags } }, include: { tags: { select: { name: true } } } });
+  const contentJson = JSON.stringify(input.content ?? []);
+  return prisma.page.create({ data: { title: input.title.trim(), icon: input.icon ?? null, contentJson, searchText: pageSearchText(input.title.trim(), contentJson), backgroundJson: input.background === undefined ? null : JSON.stringify(input.background), visibility, ownerId: actor.id, departmentId: actor.departmentId, parentId: input.parentId ?? null, tags: { connect: tags } }, include: { tags: { select: { name: true } } } });
 }
 
 export async function updatePage(actor: Actor, id: string, input: { title?: string; icon?: string | null; content?: unknown; background?: unknown; visibility?: string; parentId?: string | null; tags?: string[]; expectedVersion?: number }) {
@@ -145,6 +158,7 @@ export async function updatePage(actor: Actor, id: string, input: { title?: stri
       ...(input.title === undefined ? {} : { title: input.title.trim() }),
       ...(input.icon === undefined ? {} : { icon: input.icon }),
       ...(input.content === undefined ? {} : { contentJson: JSON.stringify(input.content) }),
+      ...(input.title === undefined && input.content === undefined ? {} : { searchText: pageSearchText(input.title?.trim() ?? page.title, input.content === undefined ? page.contentJson : JSON.stringify(input.content)) }),
       ...(input.background === undefined ? {} : { backgroundJson: JSON.stringify(input.background) }),
       ...(input.visibility === undefined ? {} : { visibility: input.visibility }),
       ...(input.parentId === undefined ? {} : { parentId: input.parentId }),
@@ -216,7 +230,7 @@ export async function restoreVersion(actor: Actor, id: string, version: number) 
   return prisma.$transaction(async (tx) => {
     await tx.pageHistory.create({ data: { pageId: id, changedById: actor.id, version: page.version, snapshotJson: snapshot(page) } });
     const tagIds = oldTags ? await Promise.all(oldTags.map((name) => tx.tag.upsert({ where: { name }, create: { name }, update: {} }).then((tag) => ({ id: tag.id })))) : undefined;
-    return tx.page.update({ where: { id }, data: { ...pageData, ...(tagIds ? { tags: { set: tagIds } } : {}), version: { increment: 1 } } });
+    return tx.page.update({ where: { id }, data: { ...pageData, searchText: pageSearchText(pageData.title, pageData.contentJson), ...(tagIds ? { tags: { set: tagIds } } : {}), version: { increment: 1 } } });
   });
 }
 
