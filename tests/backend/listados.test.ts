@@ -62,6 +62,14 @@ describe("campo de icono", () => {
     expect((await api.as(luis).patch(`/pages/${page.id}`, { icon: "x".repeat(49), expectedVersion: quitado.body.page.version })).status).toBe(400);
   });
 
+  it("un conflicto al sincronizar sin conexión devuelve el icono actual", async () => {
+    const page = await createPage(api, luis, { icon: "🧾" });
+    await api.as(luis).patch(`/pages/${page.id}`, { icon: "📌", expectedVersion: page.version });
+    const res = await api.as(luis).post(`/sync/pages/${page.id}`, { operationId: crypto.randomUUID(), baseVersion: page.version, content: [] });
+    expect(res.status).toBe(409);
+    expect(res.body.error.details.current.icon).toBe("📌");
+  });
+
   it("restaurar una versión del historial recupera el icono", async () => {
     const page = await createPage(api, luis, { icon: "🍕" });
     await api.as(luis).patch(`/pages/${page.id}`, { icon: "🌮", expectedVersion: page.version });
