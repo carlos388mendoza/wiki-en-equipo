@@ -6,7 +6,17 @@ import { prisma } from "../models/client.js";
 import { badRequest, conflict, forbidden, notFound } from "./errors.js";
 
 const accessInclude = { shares: { select: { userId: true, permission: true } }, departmentWall: { select: { id: true } }, tags: { select: { name: true } } } satisfies Prisma.PageInclude;
-const snapshot = (page: Page & { tags?: { name: string }[] }) => JSON.stringify({ title: page.title, contentJson: page.contentJson, backgroundJson: page.backgroundJson, visibility: page.visibility, parentId: page.parentId, tags: page.tags?.map((tag) => tag.name) ?? [] });
+const snapshot = (page: Page & { tags?: { name: string }[] }) => JSON.stringify({ title: page.title, icon: page.icon, contentJson: page.contentJson, backgroundJson: page.backgroundJson, visibility: page.visibility, parentId: page.parentId, tags: page.tags?.map((tag) => tag.name) ?? [] });
+
+/** Campos de las páginas en listados (barra lateral, tarjetas, destacadas, más visitadas, búsqueda). */
+export const pageCardSelect = { id: true, title: true, icon: true, backgroundJson: true, visibility: true, version: true, ownerId: true, owner: { select: { id: true, name: true } }, departmentId: true, parentId: true, updatedAt: true, tags: { select: { name: true } } } satisfies Prisma.PageSelect;
+
+/** Relación directa con la página: dueño o permiso compartido. `null` si se ve por estar publicada o por ser administrador. */
+export type MyPermission = "OWNER" | "EDIT" | "READ" | null;
+export const myShareSelect = (actor: Actor) => ({ shares: { where: { userId: actor.id }, select: { permission: true } } }) satisfies Prisma.PageSelect;
+export function withMyPermission<T extends { ownerId: string; shares: { permission: string }[] }>(actor: Actor, { shares, ...page }: T) {
+  return { ...page, myPermission: (page.ownerId === actor.id ? "OWNER" : shares[0]?.permission ?? null) as MyPermission };
+}
 
 export async function findAccessiblePage(id: string, actor: Actor) {
   const childWhere: Prisma.PageWhereInput = { deletedAt: null };
@@ -17,7 +27,7 @@ export async function findAccessiblePage(id: string, actor: Actor) {
     { visibility: "DEPARTMENT", departmentId: actor.departmentId },
     { isWall: true, departmentId: actor.departmentId },
   ];
-  const page = await prisma.page.findFirst({ where: { id, deletedAt: null }, include: { ...accessInclude, children: { where: childWhere, select: { id: true, title: true, visibility: true, updatedAt: true } }, owner: { select: { id: true, name: true } }, _count: { select: { visits: true } } } });
+  const page = await prisma.page.findFirst({ where: { id, deletedAt: null }, include: { ...accessInclude, children: { where: childWhere, select: { id: true, title: true, icon: true, visibility: true, updatedAt: true } }, owner: { select: { id: true, name: true } }, _count: { select: { visits: true } } } });
   if (!page) throw notFound("No se encontró la página.");
   assertCanReadPage(page as PageAccessRecord, actor);
   // Leer no cuenta visitas (el editor y el historial también leen): ver recordVisit().
@@ -63,8 +73,8 @@ export async function listAccessiblePages(actor: Actor, query: { q?: string; tag
     where.OR = [{ ownerId: actor.id }, { shares: { some: { userId: actor.id } } }, { visibility: "COMPANY" }];
   }
   if (query.tag) where.tags = { some: { name: query.tag } };
-  const pages = await prisma.page.findMany({ where, orderBy: { updatedAt: "desc" }, take: 100, select: { id: true, title: true, visibility: true, version: true, ownerId: true, departmentId: true, parentId: true, updatedAt: true, tags: { select: { name: true } } } });
-  return pages;
+  const pages = await prisma.page.findMany({ where, orderBy: { updatedAt: "desc" }, take: 100, select: { ...pageCardSelect, ...myShareSelect(actor) } });
+  return pages.map((page) => withMyPermission(actor, page));
 }
 
 async function tagsConnect(names: string[] | undefined) {
@@ -72,7 +82,7 @@ async function tagsConnect(names: string[] | undefined) {
   return Promise.all(clean.map((name) => prisma.tag.upsert({ where: { name }, create: { name }, update: {} }).then((tag) => ({ id: tag.id }))));
 }
 
-export async function createPage(actor: Actor, input: { title: string; content?: unknown; background?: unknown; visibility?: string; parentId?: string | null; tags?: string[] }) {
+export async function createPage(actor: Actor, input: { title: string; icon?: string | null; content?: unknown; background?: unknown; visibility?: string; parentId?: string | null; tags?: string[] }) {
   const visibility = input.visibility ?? "PRIVATE";
   if (!["PRIVATE", "DEPARTMENT", "COMPANY"].includes(visibility)) throw badRequest("El nivel de visibilidad no es válido.");
   if (visibility === "COMPANY" && actor.role !== "ADMIN") throw forbidden("Solo un administrador puede publicar a nivel empresa.");
@@ -83,10 +93,10 @@ export async function createPage(actor: Actor, input: { title: string; content?:
     if (parent.departmentId !== actor.departmentId && actor.role !== "ADMIN") throw forbidden("La subpágina debe pertenecer a tu departamento.");
   }
   const tags = await tagsConnect(input.tags);
-  return prisma.page.create({ data: { title: input.title.trim(), contentJson: JSON.stringify(input.content ?? []), backgroundJson: input.background === undefined ? null : JSON.stringify(input.background), visibility, ownerId: actor.id, departmentId: actor.departmentId, parentId: input.parentId ?? null, tags: { connect: tags } }, include: { tags: { select: { name: true } } } });
+  return prisma.page.create({ data: { title: input.title.trim(), icon: input.icon ?? null, contentJson: JSON.stringify(input.content ?? []), backgroundJson: input.background === undefined ? null : JSON.stringify(input.background), visibility, ownerId: actor.id, departmentId: actor.departmentId, parentId: input.parentId ?? null, tags: { connect: tags } }, include: { tags: { select: { name: true } } } });
 }
 
-export async function updatePage(actor: Actor, id: string, input: { title?: string; content?: unknown; background?: unknown; visibility?: string; parentId?: string | null; tags?: string[]; expectedVersion?: number }) {
+export async function updatePage(actor: Actor, id: string, input: { title?: string; icon?: string | null; content?: unknown; background?: unknown; visibility?: string; parentId?: string | null; tags?: string[]; expectedVersion?: number }) {
   return prisma.$transaction(async (tx) => {
     const page = await tx.page.findFirst({ where: { id, deletedAt: null }, include: accessInclude });
     if (!page) throw notFound("No se encontró la página.");
@@ -113,6 +123,7 @@ export async function updatePage(actor: Actor, id: string, input: { title?: stri
     const tags = input.tags === undefined ? undefined : await Promise.all([...new Set(input.tags.map((name) => name.trim().slice(0, 40)).filter(Boolean))].map((name) => tx.tag.upsert({ where: { name }, create: { name }, update: {} }).then((tag) => ({ id: tag.id }))));
     return tx.page.update({ where: { id }, data: {
       ...(input.title === undefined ? {} : { title: input.title.trim() }),
+      ...(input.icon === undefined ? {} : { icon: input.icon }),
       ...(input.content === undefined ? {} : { contentJson: JSON.stringify(input.content) }),
       ...(input.background === undefined ? {} : { backgroundJson: JSON.stringify(input.background) }),
       ...(input.visibility === undefined ? {} : { visibility: input.visibility }),
@@ -146,7 +157,7 @@ export async function trashPage(actor: Actor, id: string) {
 }
 
 export async function listTrash(actor: Actor) {
-  return prisma.page.findMany({ where: { deletedAt: { not: null }, ...(actor.role === "ADMIN" ? {} : { ownerId: actor.id }) }, orderBy: { deletedAt: "desc" }, select: { id: true, title: true, deletedAt: true, ownerId: true } });
+  return prisma.page.findMany({ where: { deletedAt: { not: null }, ...(actor.role === "ADMIN" ? {} : { ownerId: actor.id }) }, orderBy: { deletedAt: "desc" }, select: { id: true, title: true, icon: true, deletedAt: true, ownerId: true } });
 }
 
 export async function restorePage(actor: Actor, id: string) {
@@ -179,7 +190,7 @@ export async function restoreVersion(actor: Actor, id: string, version: number) 
   assertCanEditPage(page as PageAccessRecord, actor);
   const old = await prisma.pageHistory.findUnique({ where: { pageId_version: { pageId: id, version } } });
   if (!old) throw notFound("No se encontró esa versión.");
-  const data = JSON.parse(old.snapshotJson) as { title: string; contentJson: string; backgroundJson: string | null; visibility: string; parentId: string | null; tags?: string[] };
+  const data = JSON.parse(old.snapshotJson) as { title: string; icon?: string | null; contentJson: string; backgroundJson: string | null; visibility: string; parentId: string | null; tags?: string[] };
   if (data.visibility === "COMPANY" && actor.role !== "ADMIN") throw forbidden("Solo un administrador puede restaurar una versión publicada a nivel empresa.");
   const { tags: oldTags, ...pageData } = data;
   return prisma.$transaction(async (tx) => {
@@ -236,6 +247,6 @@ export async function getMostVisited(actor: Actor, departmentId?: string) {
   const where: Prisma.PageWhereInput = { deletedAt: null, visibility: { in: ["DEPARTMENT", "COMPANY"] } };
   if (actor.role !== "ADMIN") where.OR = [{ visibility: "COMPANY" }, { visibility: "DEPARTMENT", departmentId: actor.departmentId }];
   if (departmentId && (actor.role === "ADMIN" || departmentId === actor.departmentId)) where.departmentId = departmentId;
-  const pages = await prisma.page.findMany({ where, select: { id: true, title: true, visibility: true, departmentId: true, _count: { select: { visits: true } } }, orderBy: { visits: { _count: "desc" } }, take: 20 });
-  return pages;
+  const pages = await prisma.page.findMany({ where, select: { ...pageCardSelect, ...myShareSelect(actor), _count: { select: { visits: true } } }, orderBy: { visits: { _count: "desc" } }, take: 20 });
+  return pages.map((page) => withMyPermission(actor, page));
 }

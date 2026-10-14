@@ -33,6 +33,8 @@ const role = z.enum(["USER", "DEPARTMENT_ADMIN", "ADMIN"]);
 const visibility = z.enum(["PRIVATE", "DEPARTMENT", "COMPANY"]);
 const permission = z.enum(["READ", "EDIT"]);
 const tags = z.array(z.string().trim().min(1).max(40)).max(30).optional();
+// Emoji, `lucide:<nombre>:<tono>` o `3d:<nombre>` (lo valida el frontend al mostrarlo); null lo quita.
+const icon = z.string().trim().min(1).max(48).nullable().optional();
 const objectBody = <T extends z.ZodType>(schema: T, req: Request) => schema.parse(req.body) as z.infer<T>;
 const actor = (req: Request): Actor => ({ id: req.auth!.sub, role: req.auth!.role, departmentId: req.auth!.departmentId });
 const currentUserId = (req: Request) => req.auth?.sub as string;
@@ -121,19 +123,19 @@ router.get("/pages", async (req, res) => {
   res.json({ pages: await pages.listAccessiblePages(actor(req), { q, tag, departmentId, parentId }) });
 });
 router.post("/pages", async (req, res) => {
-  const body = objectBody(z.object({ title, content: z.unknown().optional(), background: z.unknown().optional(), visibility: visibility.optional(), parentId: id.nullable().optional(), tags }), req);
+  const body = objectBody(z.object({ title, icon, content: z.unknown().optional(), background: z.unknown().optional(), visibility: visibility.optional(), parentId: id.nullable().optional(), tags }), req);
   res.status(201).json({ page: await pages.createPage(actor(req), body) });
 });
 router.post("/pages/from-template/:templateId", async (req, res) => {
   const template = await templates.getTemplate(actor(req), param(req, "templateId"));
   const body = objectBody(z.object({ title: title.optional(), parentId: id.nullable().optional() }), req);
-  const page = await pages.createPage(actor(req), { title: body.title ?? template.title, content: JSON.parse(template.contentJson), background: template.backgroundJson ? JSON.parse(template.backgroundJson) : undefined, parentId: body.parentId });
+  const page = await pages.createPage(actor(req), { title: body.title ?? template.title, icon: template.icon, content: JSON.parse(template.contentJson), background: template.backgroundJson ? JSON.parse(template.backgroundJson) : undefined, parentId: body.parentId });
   res.status(201).json({ page });
 });
 router.get("/pages/:pageId", async (req, res) => res.json({ page: await pages.findAccessiblePage(param(req, "pageId"), actor(req)) }));
 router.post("/pages/:pageId/visit", async (req, res) => res.json(await pages.recordVisit(actor(req), param(req, "pageId"))));
 router.patch("/pages/:pageId", async (req, res) => {
-  const body = objectBody(z.object({ title: title.optional(), content: z.unknown().optional(), background: z.unknown().optional(), visibility: visibility.optional(), parentId: id.nullable().optional(), tags, expectedVersion: z.number().int().positive() }).refine((data) => Object.keys(data).length > 1), req);
+  const body = objectBody(z.object({ title: title.optional(), icon, content: z.unknown().optional(), background: z.unknown().optional(), visibility: visibility.optional(), parentId: id.nullable().optional(), tags, expectedVersion: z.number().int().positive() }).refine((data) => Object.keys(data).length > 1), req);
   const page = await pages.updatePage(actor(req), param(req, "pageId"), body);
   hub.broadcast(page.id, { type: "page.refresh", pageId: page.id, version: page.version });
   res.json({ page });
@@ -167,7 +169,7 @@ router.post("/share/:token/accept", async (req, res) => {
 });
 
 router.post("/sync/pages/:pageId", async (req, res) => {
-  const body = objectBody(z.object({ operationId: z.string().uuid(), baseVersion: z.number().int().positive(), title: title.optional(), content: z.unknown(), background: z.unknown().optional() }), req);
+  const body = objectBody(z.object({ operationId: z.string().uuid(), baseVersion: z.number().int().positive(), title: title.optional(), icon, content: z.unknown(), background: z.unknown().optional() }), req);
   const result = await syncPage(actor(req), { ...body, pageId: param(req, "pageId") });
   if (result.status === "synced") hub.broadcast(param(req, "pageId"), { type: "page.refresh", pageId: param(req, "pageId"), version: result.page.version });
   res.json(result);
@@ -175,12 +177,12 @@ router.post("/sync/pages/:pageId", async (req, res) => {
 
 router.get("/templates", async (req, res) => res.json({ templates: await templates.listTemplates(actor(req)) }));
 router.post("/templates", async (req, res) => {
-  const body = objectBody(z.object({ title, description: z.string().max(1000).optional(), content: z.unknown().optional(), background: z.unknown().optional(), scope: z.enum(["PRIVATE", "DEPARTMENT", "COMPANY"]).optional() }), req);
+  const body = objectBody(z.object({ title, description: z.string().max(1000).optional(), icon, content: z.unknown().optional(), background: z.unknown().optional(), scope: z.enum(["PRIVATE", "DEPARTMENT", "COMPANY"]).optional() }), req);
   res.status(201).json({ template: await templates.createTemplate(actor(req), body) });
 });
 router.get("/templates/:templateId", async (req, res) => res.json({ template: await templates.getTemplate(actor(req), param(req, "templateId")) }));
 router.patch("/templates/:templateId", async (req, res) => {
-  const body = objectBody(z.object({ title: title.optional(), description: z.string().max(1000).optional(), content: z.unknown().optional(), background: z.unknown().optional(), scope: z.enum(["PRIVATE", "DEPARTMENT", "COMPANY"]).optional(), isDefault: z.boolean().optional() }).refine((data) => Object.keys(data).length > 0), req);
+  const body = objectBody(z.object({ title: title.optional(), description: z.string().max(1000).optional(), icon, content: z.unknown().optional(), background: z.unknown().optional(), scope: z.enum(["PRIVATE", "DEPARTMENT", "COMPANY"]).optional(), isDefault: z.boolean().optional() }).refine((data) => Object.keys(data).length > 0), req);
   res.json({ template: await templates.updateTemplate(actor(req), param(req, "templateId"), body) });
 });
 router.delete("/templates/:templateId", async (req, res) => { await templates.deleteTemplate(actor(req), param(req, "templateId")); res.status(204).end(); });

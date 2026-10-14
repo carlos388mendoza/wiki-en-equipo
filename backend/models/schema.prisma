@@ -44,6 +44,7 @@ model User {
 model Page {
   id             String   @id @default(cuid())
   title          String
+  icon           String?
   contentJson    String   @default("[]")
   backgroundJson String?
   visibility     String   @default("PRIVATE")
@@ -130,6 +131,7 @@ model Template {
   id            String   @id @default(cuid())
   title         String
   description   String   @default("")
+  icon          String?
   contentJson   String   @default("[]")
   backgroundJson String?
   scope         String   @default("PRIVATE")

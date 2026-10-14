@@ -8,7 +8,7 @@ function canReadTemplate(template: { scope: string; ownerId: string | null; depa
 
 export async function listTemplates(actor: Actor) {
   const where = actor.role === "ADMIN" ? {} : { OR: [{ scope: "COMPANY" }, { ownerId: actor.id }, { scope: "DEPARTMENT", departmentId: actor.departmentId }] };
-  return prisma.template.findMany({ where, orderBy: [{ isDefault: "desc" }, { title: "asc" }], select: { id: true, title: true, description: true, scope: true, isDefault: true, ownerId: true, departmentId: true, updatedAt: true } });
+  return prisma.template.findMany({ where, orderBy: [{ isDefault: "desc" }, { title: "asc" }], select: { id: true, title: true, description: true, icon: true, scope: true, isDefault: true, ownerId: true, departmentId: true, updatedAt: true } });
 }
 
 export async function getTemplate(actor: Actor, id: string) {
@@ -17,14 +17,14 @@ export async function getTemplate(actor: Actor, id: string) {
   return template;
 }
 
-export async function createTemplate(actor: Actor, input: { title: string; description?: string; content?: unknown; background?: unknown; scope?: string }) {
+export async function createTemplate(actor: Actor, input: { title: string; description?: string; icon?: string | null; content?: unknown; background?: unknown; scope?: string }) {
   const scope = input.scope ?? "PRIVATE";
   if (!["PRIVATE", "DEPARTMENT", "COMPANY"].includes(scope)) throw badRequest("El alcance de la plantilla no es válido.");
   if (scope === "COMPANY" && actor.role !== "ADMIN") throw forbidden("Solo un administrador puede compartir plantillas con toda la empresa.");
-  return prisma.template.create({ data: { title: input.title.trim(), description: input.description?.trim() ?? "", contentJson: JSON.stringify(input.content ?? []), backgroundJson: input.background === undefined ? null : JSON.stringify(input.background), scope, ownerId: actor.id, departmentId: scope === "DEPARTMENT" ? actor.departmentId : null } });
+  return prisma.template.create({ data: { title: input.title.trim(), description: input.description?.trim() ?? "", icon: input.icon ?? null, contentJson: JSON.stringify(input.content ?? []), backgroundJson: input.background === undefined ? null : JSON.stringify(input.background), scope, ownerId: actor.id, departmentId: scope === "DEPARTMENT" ? actor.departmentId : null } });
 }
 
-export async function updateTemplate(actor: Actor, id: string, input: { title?: string; description?: string; content?: unknown; background?: unknown; scope?: string; isDefault?: boolean }) {
+export async function updateTemplate(actor: Actor, id: string, input: { title?: string; description?: string; icon?: string | null; content?: unknown; background?: unknown; scope?: string; isDefault?: boolean }) {
   const template = await prisma.template.findUnique({ where: { id } });
   if (!template) throw notFound("No se encontró la plantilla.");
   if (actor.role !== "ADMIN" && template.ownerId !== actor.id) throw forbidden("Solo puedes modificar tus propias plantillas.");
@@ -35,6 +35,7 @@ export async function updateTemplate(actor: Actor, id: string, input: { title?: 
   return prisma.template.update({ where: { id }, data: {
     ...(input.title === undefined ? {} : { title: input.title.trim() }),
     ...(input.description === undefined ? {} : { description: input.description.trim() }),
+    ...(input.icon === undefined ? {} : { icon: input.icon }),
     ...(input.content === undefined ? {} : { contentJson: JSON.stringify(input.content) }),
     ...(input.background === undefined ? {} : { backgroundJson: JSON.stringify(input.background) }),
     ...(input.scope === undefined ? {} : { scope: input.scope, departmentId: input.scope === "DEPARTMENT" ? actor.departmentId : null }),

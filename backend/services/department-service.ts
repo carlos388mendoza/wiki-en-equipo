@@ -2,6 +2,7 @@ import { prisma } from "../models/client.js";
 import type { Actor } from "../permissions/access.js";
 import { canManageDepartment } from "../permissions/access.js";
 import { badRequest, forbidden, notFound } from "./errors.js";
+import { myShareSelect, pageCardSelect, withMyPermission } from "./page-service.js";
 
 function makeSlug(value: string) {
   return value.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
@@ -57,8 +58,8 @@ export async function setFeaturedPages(actor: Actor, departmentId: string, pageI
 
 export async function listFeaturedPages(actor: Actor, departmentId: string) {
   if (actor.role !== "ADMIN" && actor.departmentId !== departmentId) throw forbidden("Solo puedes ver las páginas destacadas de tu departamento.");
-  const records = await prisma.departmentFeaturedPage.findMany({ where: { departmentId, page: { deletedAt: null, visibility: { in: ["DEPARTMENT", "COMPANY"] } } }, orderBy: { sortOrder: "asc" }, include: { page: { select: { id: true, title: true, visibility: true, updatedAt: true } } } });
-  return records.map(({ page }) => page);
+  const records = await prisma.departmentFeaturedPage.findMany({ where: { departmentId, page: { deletedAt: null, visibility: { in: ["DEPARTMENT", "COMPANY"] } } }, orderBy: { sortOrder: "asc" }, include: { page: { select: { ...pageCardSelect, ...myShareSelect(actor) } } } });
+  return records.map(({ page }) => withMyPermission(actor, page));
 }
 
 export async function setCompanyWall(actor: Actor, pageId: string) {
