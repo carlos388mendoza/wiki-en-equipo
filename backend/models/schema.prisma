@@ -123,6 +123,7 @@ model PageVisit {
   user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
   visitedAt DateTime @default(now())
   @@index([pageId, visitedAt])
+  @@index([pageId, userId, visitedAt])
 }
 
 model Template {

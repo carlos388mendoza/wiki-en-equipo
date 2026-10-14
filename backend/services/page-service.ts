@@ -17,11 +17,33 @@ export async function findAccessiblePage(id: string, actor: Actor) {
     { visibility: "DEPARTMENT", departmentId: actor.departmentId },
     { isWall: true, departmentId: actor.departmentId },
   ];
-  const page = await prisma.page.findFirst({ where: { id, deletedAt: null }, include: { ...accessInclude, children: { where: childWhere, select: { id: true, title: true, visibility: true, updatedAt: true } }, owner: { select: { id: true, name: true } } } });
+  const page = await prisma.page.findFirst({ where: { id, deletedAt: null }, include: { ...accessInclude, children: { where: childWhere, select: { id: true, title: true, visibility: true, updatedAt: true } }, owner: { select: { id: true, name: true } }, _count: { select: { visits: true } } } });
   if (!page) throw notFound("No se encontró la página.");
   assertCanReadPage(page as PageAccessRecord, actor);
-  if (page.visibility !== "PRIVATE") await prisma.pageVisit.create({ data: { pageId: page.id, userId: actor.id } });
-  return page;
+  // Leer no cuenta visitas (el editor y el historial también leen): ver recordVisit().
+  const { _count, ...rest } = page;
+  return { ...rest, visitCount: page.visibility === "PRIVATE" ? null : _count.visits };
+}
+
+/** Minutos en los que otra visita de la misma persona a la misma página no vuelve a contar (recargas). */
+export const VISIT_WINDOW_MINUTES = 30;
+
+/**
+ * Registra que alguien vio la página (la vista de lectura llama a POST /pages/:id/visit).
+ * Solo cuenta en páginas publicadas al departamento o a la empresa, y una vez cada 30 minutos por persona.
+ */
+export async function recordVisit(actor: Actor, id: string) {
+  const page = await prisma.page.findFirst({ where: { id, deletedAt: null }, include: accessInclude });
+  if (!page) throw notFound("No se encontró la página.");
+  assertCanReadPage(page as PageAccessRecord, actor);
+  if (page.visibility === "PRIVATE") return { counted: false, visits: null };
+  const since = new Date(Date.now() - VISIT_WINDOW_MINUTES * 60_000);
+  const counted = await prisma.$transaction(async (tx) => {
+    if (await tx.pageVisit.findFirst({ where: { pageId: id, userId: actor.id, visitedAt: { gte: since } }, select: { id: true } })) return false;
+    await tx.pageVisit.create({ data: { pageId: id, userId: actor.id } });
+    return true;
+  });
+  return { counted, visits: await prisma.pageVisit.count({ where: { pageId: id } }) };
 }
 
 export async function listAccessiblePages(actor: Actor, query: { q?: string; tag?: string; departmentId?: string; parentId?: string }) {

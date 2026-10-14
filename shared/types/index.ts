@@ -38,6 +38,15 @@ export interface PageSummary {
   updatedAt: string;
 }
 
+/**
+ * Respuesta de `POST /api/pages/:id/visit` (solo la vista de lectura la llama). Cuenta una vez cada
+ * 30 minutos por persona y solo en páginas publicadas; en las privadas `visits` es `null`.
+ */
+export interface VisitResult {
+  counted: boolean;
+  visits: number | null;
+}
+
 export interface ApiError {
   error: { code: string; message: string; details?: unknown };
 }

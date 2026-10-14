@@ -131,6 +131,7 @@ router.post("/pages/from-template/:templateId", async (req, res) => {
   res.status(201).json({ page });
 });
 router.get("/pages/:pageId", async (req, res) => res.json({ page: await pages.findAccessiblePage(param(req, "pageId"), actor(req)) }));
+router.post("/pages/:pageId/visit", async (req, res) => res.json(await pages.recordVisit(actor(req), param(req, "pageId"))));
 router.patch("/pages/:pageId", async (req, res) => {
   const body = objectBody(z.object({ title: title.optional(), content: z.unknown().optional(), background: z.unknown().optional(), visibility: visibility.optional(), parentId: id.nullable().optional(), tags, expectedVersion: z.number().int().positive() }).refine((data) => Object.keys(data).length > 1), req);
   const page = await pages.updatePage(actor(req), param(req, "pageId"), body);
