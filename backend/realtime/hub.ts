@@ -1,5 +1,6 @@
 import { WebSocket, WebSocketServer } from "ws";
-import type { Server } from "node:http";
+import type { IncomingMessage } from "node:http";
+import type { Duplex } from "node:stream";
 import { verifyAccessToken } from "../auth/token.js";
 import { prisma } from "../models/client.js";
 import { canEditPage, canReadPage } from "../permissions/access.js";
@@ -10,12 +11,12 @@ export class RealtimeHub {
   private readonly wss = new WebSocketServer({ noServer: true, maxPayload: 16 * 1024 });
   private readonly rooms = new Map<string, Set<RoomClient>>();
 
-  attach(server: Server) {
-    server.on("upgrade", (request, socket, head) => {
-      if (new URL(request.url ?? "/", "http://localhost").pathname !== "/realtime") { socket.destroy(); return; }
-      this.wss.handleUpgrade(request, socket, head, (client) => this.wss.emit("connection", client, request));
-    });
+  constructor() {
     this.wss.on("connection", (socket) => this.onConnection(socket));
+  }
+
+  handleUpgrade(request: IncomingMessage, socket: Duplex, head: Buffer) {
+    this.wss.handleUpgrade(request, socket, head, (client) => this.wss.emit("connection", client, request));
   }
 
   broadcast(pageId: string, message: object, except?: WebSocket) {

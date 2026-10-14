@@ -1,7 +1,9 @@
 import { prisma } from "../models/client.js";
 import { hashPassword, verifyPassword } from "../auth/password.js";
 import { signAccessToken } from "../auth/token.js";
+import type { Actor } from "../permissions/access.js";
 import { badRequest, conflict, forbidden, unauthorized } from "./errors.js";
+import { foldText } from "./search-text.js";
 
 const publicUser = (user: { id: string; name: string; email: string; role: string; departmentId: string; department?: { id: string; name: string; slug: string } }) => ({
   id: user.id, name: user.name, email: user.email, role: user.role,
@@ -20,7 +22,7 @@ export async function bootstrapAdmin(input: { name: string; email: string; passw
     const user = await tx.user.create({ data: { name: input.name.trim(), email, passwordHash: await hashPassword(input.password), role: "ADMIN", departmentId: department.id }, include: { department: true } });
     const defaults = [
       {
-        title: "Documentación de proceso", description: "Estructura clara para documentar un proceso de trabajo.", scope: "COMPANY", isDefault: true,
+        title: "Documentación de proceso", description: "Estructura clara para documentar un proceso de trabajo.", icon: "3d:documentacion", scope: "COMPANY", isDefault: true,
         contentJson: JSON.stringify([
           { id: "purpose", type: "heading", data: { level: 1, text: "Propósito y alcance" } },
           { id: "summary", type: "paragraph", data: { text: "Explica qué resuelve este proceso, a quién aplica y cuándo debe utilizarse." } },
@@ -33,7 +35,7 @@ export async function bootstrapAdmin(input: { name: string; email: string; passw
         ]), backgroundJson: JSON.stringify({ type: "gradient", value: "linear-gradient(135deg, #eef6ff 0%, #f7f3ff 100%)" }), ownerId: user.id,
       },
       {
-        title: "Bienvenida al departamento", description: "Guía de bienvenida con contactos, herramientas y primeros pasos.", scope: "COMPANY", isDefault: true,
+        title: "Bienvenida al departamento", description: "Guía de bienvenida con contactos, herramientas y primeros pasos.", icon: "3d:bienvenida", scope: "COMPANY", isDefault: true,
         contentJson: JSON.stringify([
           { id: "welcome", type: "heading", data: { level: 1, text: "¡Bienvenido/a al equipo!" } },
           { id: "intro", type: "paragraph", data: { text: "Presenta qué hace el departamento y cómo su trabajo apoya a Grupo Comidas." } },
@@ -46,7 +48,7 @@ export async function bootstrapAdmin(input: { name: string; email: string; passw
         ]), backgroundJson: JSON.stringify({ type: "gradient", value: "linear-gradient(135deg, #e7f7f0 0%, #eef6ff 100%)" }), ownerId: user.id,
       },
       {
-        title: "Inicio del departamento", description: "Base para crear el muro con prioridades, enlaces y páginas destacadas.", scope: "COMPANY", isDefault: true,
+        title: "Inicio del departamento", description: "Base para crear el muro con prioridades, enlaces y páginas destacadas.", icon: "3d:inicio-departamento", scope: "COMPANY", isDefault: true,
         contentJson: JSON.stringify([
           { id: "overview", type: "heading", data: { level: 1, text: "Departamento: visión general" } },
           { id: "mission", type: "callout", data: { title: "Nuestra misión", text: "Resume en una o dos frases el propósito del departamento." } },
@@ -77,8 +79,25 @@ export async function createUser(input: { name: string; email: string; password:
   return publicUser(user);
 }
 
-export async function listUsers() {
-  return prisma.user.findMany({ where: { active: true }, orderBy: { name: "asc" }, select: { id: true, name: true, email: true, role: true, departmentId: true, department: { select: { name: true, slug: true } } } });
+export async function listUsers(includeInactive = false) {
+  return prisma.user.findMany({ where: includeInactive ? {} : { active: true }, orderBy: [{ active: "desc" }, { name: "asc" }], select: { id: true, name: true, email: true, role: true, departmentId: true, active: true, department: { select: { name: true, slug: true } } } });
+}
+
+/**
+ * Directorio para invitar a páginas y plantillas (cualquier persona con sesión).
+ * Solo cuentas activas y solo id, nombre y departamento: nunca correo ni rol.
+ * Busca por nombre (sin importar tildes) o por el correo completo exacto.
+ */
+export async function searchDirectory(actor: Actor, query: string, limit: number) {
+  const q = foldText(query.trim());
+  const users = await prisma.user.findMany({ where: { active: true, id: { not: actor.id } }, orderBy: { name: "asc" }, select: { id: true, name: true, email: true, departmentId: true, department: { select: { name: true } } } });
+  const score = (name: string) => (name.startsWith(q) ? 0 : name.split(/\s+/).some((word) => word.startsWith(q)) ? 1 : name.includes(q) ? 2 : 3);
+  return users
+    .map((user) => ({ user, score: user.email === q ? 0 : score(foldText(user.name)) }))
+    .filter((match) => match.score < 3)
+    .sort((a, b) => a.score - b.score)
+    .slice(0, limit)
+    .map(({ user }) => ({ id: user.id, name: user.name, departmentId: user.departmentId, department: user.department }));
 }
 
 export async function updateUser(id: string, patch: { name?: string; role?: string; departmentId?: string; active?: boolean }) {

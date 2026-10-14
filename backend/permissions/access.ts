@@ -1,4 +1,4 @@
-import type { Page, User } from "@prisma/client";
+import type { Page, Template, User } from "@prisma/client";
 import { forbidden } from "../services/errors.js";
 
 export type Actor = Pick<User, "id" | "role" | "departmentId">;
@@ -29,6 +29,26 @@ export function assertCanReadPage(page: PageAccessRecord, actor: Actor): void {
 
 export function assertCanEditPage(page: PageAccessRecord, actor: Actor): void {
   if (!canEditPage(page, actor)) throw forbidden("Necesitas permiso de edición para cambiar esta página.");
+}
+
+export type TemplateAccessRecord = Pick<Template, "scope" | "ownerId" | "departmentId"> & { shares?: { userId: string; permission: string }[] };
+
+/** Leer una plantilla (y usarla): ADMIN; empresa; su departamento; dueño; compartida con la persona. */
+export function canReadTemplate(template: TemplateAccessRecord, actor: Actor): boolean {
+  if (actor.role === "ADMIN" || template.scope === "COMPANY" || template.ownerId === actor.id) return true;
+  if (template.scope === "DEPARTMENT" && template.departmentId === actor.departmentId) return true;
+  return Boolean(template.shares?.some((share) => share.userId === actor.id));
+}
+
+/** Editar el contenido y compartirla (como las páginas): ADMIN, dueño o compartida con EDIT. */
+export function canEditTemplate(template: TemplateAccessRecord, actor: Actor): boolean {
+  if (actor.role === "ADMIN" || template.ownerId === actor.id) return true;
+  return Boolean(template.shares?.some((share) => share.userId === actor.id && share.permission === "EDIT"));
+}
+
+/** Cambiar el alcance, marcarla como predeterminada o eliminarla: solo el dueño o un ADMIN. */
+export function canManageTemplate(template: TemplateAccessRecord, actor: Actor): boolean {
+  return actor.role === "ADMIN" || template.ownerId === actor.id;
 }
 
 export function canManageUsers(actor: Actor): boolean { return actor.role === "ADMIN"; }
