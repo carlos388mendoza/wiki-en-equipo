@@ -110,6 +110,33 @@ export type ShareAcceptResult =
   | { type: "page"; pageId: string; permission: PagePermission }
   | { type: "template"; templateId: string; permission: PagePermission };
 
+/** Plantilla en `GET /api/templates` (incluye las compartidas con la persona). */
+export interface TemplateListItem {
+  id: string;
+  title: string;
+  description: string;
+  icon: string | null;
+  backgroundJson: string | null;
+  scope: TemplateScope;
+  isDefault: boolean;
+  ownerId: string | null;
+  owner: { id: string; name: string } | null;
+  departmentId: string | null;
+  updatedAt: string;
+  myPermission: MyPermission;
+  /** Puede cambiar el contenido y compartirla (dueño, ADMIN o compartida con EDIT). */
+  canEdit: boolean;
+  /** Puede cambiar el alcance y eliminarla (dueño o ADMIN). */
+  canManage: boolean;
+}
+
+/** `GET /api/templates/:id`. */
+export interface TemplateDetail extends TemplateListItem {
+  contentJson: string;
+  createdAt: string;
+  shares: ShareEntry[];
+}
+
 /**
  * Respuesta de `POST /api/pages/:id/visit` (solo la vista de lectura la llama). Cuenta una vez cada
  * 30 minutos por persona y solo en páginas publicadas; en las privadas `visits` es `null`.

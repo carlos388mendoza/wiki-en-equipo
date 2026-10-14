@@ -127,10 +127,8 @@ router.post("/pages", async (req, res) => {
   res.status(201).json({ page: await pages.createPage(actor(req), body) });
 });
 router.post("/pages/from-template/:templateId", async (req, res) => {
-  const template = await templates.getTemplate(actor(req), param(req, "templateId"));
   const body = objectBody(z.object({ title: title.optional(), parentId: id.nullable().optional() }), req);
-  const page = await pages.createPage(actor(req), { title: body.title ?? template.title, icon: template.icon, content: JSON.parse(template.contentJson), background: template.backgroundJson ? JSON.parse(template.backgroundJson) : undefined, parentId: body.parentId });
-  res.status(201).json({ page });
+  res.status(201).json({ page: await templates.createPageFromTemplate(actor(req), param(req, "templateId"), body) });
 });
 router.get("/pages/:pageId", async (req, res) => res.json({ page: await pages.findAccessiblePage(param(req, "pageId"), actor(req)) }));
 router.post("/pages/:pageId/visit", async (req, res) => res.json(await pages.recordVisit(actor(req), param(req, "pageId"))));
@@ -166,7 +164,8 @@ router.delete("/pages/:pageId/share-links/:linkId", async (req, res) => {
 router.get("/pages/:pageId/share-links", async (req, res) => res.json({ links: await pages.listShareLinks(actor(req), param(req, "pageId")) }));
 router.post("/share/:token/accept", async (req, res) => {
   const token = z.string().min(20).max(200).parse(req.params.token);
-  const accepted = await pages.acceptShareLink(actor(req), token);
+  // El mismo enlace /share/<token> sirve para páginas y plantillas.
+  const accepted = await pages.acceptShareLink(actor(req), token) ?? await templates.acceptTemplateShareLink(actor(req), token);
   if (!accepted) throw notFound("El enlace no existe, venció o fue revocado.");
   res.json(accepted);
 });
@@ -189,11 +188,28 @@ router.patch("/templates/:templateId", async (req, res) => {
   res.json({ template: await templates.updateTemplate(actor(req), param(req, "templateId"), body) });
 });
 router.delete("/templates/:templateId", async (req, res) => { await templates.deleteTemplate(actor(req), param(req, "templateId")); res.status(204).end(); });
+router.put("/templates/:templateId/shares/:userId", async (req, res) => {
+  const body = objectBody(z.object({ permission }), req);
+  res.json({ share: await templates.shareTemplate(actor(req), param(req, "templateId"), param(req, "userId"), body.permission) });
+});
+router.delete("/templates/:templateId/shares/:userId", async (req, res) => {
+  await templates.revokeTemplateShare(actor(req), param(req, "templateId"), param(req, "userId")); res.status(204).end();
+});
+router.get("/templates/:templateId/share-links", async (req, res) => res.json({ links: await templates.listTemplateShareLinks(actor(req), param(req, "templateId")) }));
+router.post("/templates/:templateId/share-links", async (req, res) => {
+  const body = objectBody(z.object({ permission, expiresInHours: z.number().int().positive().max(8760).optional() }), req);
+  const link = await templates.createTemplateShareLink(actor(req), param(req, "templateId"), body.permission, body.expiresInHours);
+  res.status(201).json({ ...link, url: `${process.env.FRONTEND_ORIGIN ?? ""}/share/${link.token}` });
+});
+router.delete("/templates/:templateId/share-links/:linkId", async (req, res) => {
+  await templates.revokeTemplateShareLink(actor(req), param(req, "templateId"), param(req, "linkId")); res.status(204).end();
+});
 
 router.post("/files", (req, res, next) => uploadSingleFile.single("file")(req, res, next), async (req, res) => {
   if (!req.file) throw badRequest("Debes adjuntar un archivo en el campo 'file'.");
   const pageId = typeof req.body.pageId === "string" ? id.parse(req.body.pageId) : undefined;
-  const file = await files.saveUploadedFile(actor(req), req.file, pageId);
+  const templateId = typeof req.body.templateId === "string" ? id.parse(req.body.templateId) : undefined;
+  const file = await files.saveUploadedFile(actor(req), req.file, { pageId, templateId });
   res.status(201).json({ file, url: `/api/files/${file.id}/content` });
 });
 router.get("/pages/:pageId/files", async (req, res) => res.json({ files: await files.listPageFiles(actor(req), param(req, "pageId")) }));

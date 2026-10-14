@@ -81,6 +81,26 @@ export async function startApi() {
   };
 }
 
+/** PNG de 1×1 para probar subidas. */
+const PNG = Uint8Array.from(Buffer.from("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==", "base64"));
+
+/** Sube una imagen (multipart) como `user`, opcionalmente para una página o plantilla. */
+export async function uploadImage(api: TestApi, user: TestUser, target: { pageId?: string; templateId?: string } = {}) {
+  const form = new FormData();
+  form.set("file", new Blob([PNG], { type: "image/png" }), "foto.png");
+  if (target.pageId) form.set("pageId", target.pageId);
+  if (target.templateId) form.set("templateId", target.templateId);
+  const res = await fetch(`${api.base}/api/files`, { method: "POST", headers: { Authorization: `Bearer ${user.token}` }, body: form });
+  return { status: res.status, body: await res.json() as any };
+}
+
+/** Lee un archivo como `user` y devuelve solo el estado. */
+export async function readFileStatus(api: TestApi, user: TestUser, fileId: string) {
+  const res = await fetch(`${api.base}/api/files/${fileId}/content`, { headers: { Authorization: `Bearer ${user.token}` } });
+  await res.arrayBuffer();
+  return res.status;
+}
+
 /** Crea una página como `owner` y devuelve su registro. */
 export async function createPage(api: TestApi, owner: TestUser, data: Record<string, unknown> = {}) {
   const res = await api.as(owner).post("/pages", { title: `Página ${++counter}`, ...data });
