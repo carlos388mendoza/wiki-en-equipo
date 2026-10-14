@@ -62,6 +62,25 @@ export async function listFeaturedPages(actor: Actor, departmentId: string) {
   return records.map(({ page }) => withMyPermission(actor, page));
 }
 
+/** Destacadas del muro de la empresa: las ve cualquier persona con sesión (son páginas publicadas a la empresa). */
+export async function listCompanyFeaturedPages(actor: Actor) {
+  const records = await prisma.companyFeaturedPage.findMany({ where: { page: { deletedAt: null, visibility: "COMPANY" } }, orderBy: { sortOrder: "asc" }, include: { page: { select: { ...pageCardSelect, ...myShareSelect(actor) } } } });
+  return records.map(({ page }) => withMyPermission(actor, page));
+}
+
+export async function setCompanyFeaturedPages(actor: Actor, pageIds: string[]) {
+  if (actor.role !== "ADMIN") throw forbidden("Solo un administrador puede elegir las destacadas de la empresa.");
+  if (pageIds.length > 12 || new Set(pageIds).size !== pageIds.length) throw badRequest("Puedes destacar hasta 12 páginas distintas.");
+  const pages = await prisma.page.findMany({ where: { id: { in: pageIds }, deletedAt: null }, select: { visibility: true } });
+  if (pages.length !== pageIds.length) throw badRequest("No se encontraron todas las páginas.");
+  if (pages.some((page) => page.visibility !== "COMPANY")) throw badRequest("Solo se pueden destacar páginas publicadas para toda la empresa.");
+  await prisma.$transaction([
+    prisma.companyFeaturedPage.deleteMany(),
+    prisma.companyFeaturedPage.createMany({ data: pageIds.map((pageId, sortOrder) => ({ pageId, sortOrder })) }),
+  ]);
+  return listCompanyFeaturedPages(actor);
+}
+
 export async function setCompanyWall(actor: Actor, pageId: string) {
   if (actor.role !== "ADMIN") throw forbidden("Solo un administrador puede cambiar el muro de la empresa.");
   return prisma.$transaction(async (tx) => {

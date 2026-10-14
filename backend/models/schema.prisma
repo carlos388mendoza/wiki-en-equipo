@@ -75,6 +75,7 @@ model Page {
   files           FileAsset[]
   tags            Tag[]
   featuredIn      DepartmentFeaturedPage[]
+  companyFeatured CompanyFeaturedPage?
 
   @@index([departmentId, visibility, deletedAt])
   @@index([ownerId, deletedAt])
@@ -225,4 +226,13 @@ model DepartmentFeaturedPage {
   sortOrder    Int @default(0)
   @@unique([departmentId, pageId])
   @@index([departmentId, sortOrder])
+}
+
+/// Páginas destacadas del muro de la empresa (solo páginas publicadas a la empresa; máximo 12).
+model CompanyFeaturedPage {
+  id        String @id @default(cuid())
+  pageId    String @unique
+  page      Page   @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  sortOrder Int    @default(0)
+  @@index([sortOrder])
 }

@@ -91,6 +91,11 @@ router.put("/company/wall", requireRole("ADMIN"), async (req, res) => {
   const body = objectBody(z.object({ pageId: id }), req);
   res.json({ page: await departments.setCompanyWall(actor(req), body.pageId) });
 });
+router.get("/company/featured", async (req, res) => res.json({ pages: await departments.listCompanyFeaturedPages(actor(req)) }));
+router.put("/company/featured", requireRole("ADMIN"), async (req, res) => {
+  const body = objectBody(z.object({ pageIds: z.array(id).max(12) }), req);
+  res.json({ pages: await departments.setCompanyFeaturedPages(actor(req), body.pageIds) });
+});
 router.delete("/company/wall", requireRole("ADMIN"), async (req, res) => {
   await departments.clearCompanyWall(actor(req)); res.status(204).end();
 });
