@@ -33,10 +33,23 @@ export type IconTone = keyof typeof ICON_TONES;
 
 const PATTERN = /^lucide:([a-z0-9-]{1,30}):([a-z]{2,10})$/;
 
-export type ParsedIcon = { kind: "emoji"; value: string } | { kind: "lucide"; Icon: LucideIcon; name: string; tone: IconTone };
+/**
+ * Iconos 3D (3dicons, CC0) para las plantillas por defecto. Se guardan como `3d:<nombre>`;
+ * los archivos viven en assets/templates/3dicons y se sirven en /iconos/3d/<nombre>.webp.
+ */
+export const THREE_D_ICONS = ["documentacion", "bienvenida", "inicio-departamento", "proceso", "acta", "receta", "apertura-cierre", "preguntas"] as const;
+
+export type ParsedIcon =
+  | { kind: "emoji"; value: string }
+  | { kind: "lucide"; Icon: LucideIcon; name: string; tone: IconTone }
+  | { kind: "3d"; name: string; src: string };
 
 export function parseIcon(icon: string | null | undefined): ParsedIcon | null {
   if (!icon) return null;
+  if (icon.startsWith("3d:")) {
+    const name = icon.slice(3);
+    return (THREE_D_ICONS as readonly string[]).includes(name) ? { kind: "3d", name, src: `/iconos/3d/${name}.webp` } : null;
+  }
   const m = icon.match(PATTERN);
   if (m) {
     if (!Object.hasOwn(LUCIDE_ICONS, m[1])) return null;
@@ -49,9 +62,9 @@ export function parseIcon(icon: string | null | undefined): ParsedIcon | null {
 
 export const lucideIcon = (name: string, tone: IconTone) => `lucide:${name}:${tone}`;
 
-/** Valida el icono guardado: emoji corto o un icono de Lucide conocido. */
+/** Valida el icono guardado: emoji corto, icono de Lucide o icono 3D conocidos. */
 export function sanitizeIcon(value: unknown): string | null {
   if (typeof value !== "string" || !value) return null;
-  if (value.startsWith("lucide:")) return parseIcon(value)?.kind === "lucide" ? value : null;
+  if (value.startsWith("lucide:") || value.startsWith("3d:")) return parseIcon(value) ? value : null;
   return value.slice(0, 16);
 }

@@ -3,7 +3,8 @@
 import Link from "next/link";
 import { useEffect, useState } from "react";
 import { CloudOff } from "lucide-react";
-import { rememberUser } from "@/lib/collab/drafts";
+import { lastUser, rememberUser } from "@/lib/collab/drafts";
+import { clearPageCache } from "@/lib/collab/local-data";
 
 /**
  * Aviso global de conexión y registro del service worker (que guarda las páginas
@@ -14,6 +15,9 @@ export function OfflineBanner({ user }: { user: { id: string; name: string } }) 
   const [offline, setOffline] = useState(false);
 
   useEffect(() => {
+    // Si antes usaba este navegador otra persona, se borra la caché de páginas (eran de su sesión).
+    const previous = lastUser();
+    if (previous && previous.id !== user.id) void clearPageCache();
     rememberUser(user);
     setOffline(!navigator.onLine);
     const on = () => setOffline(false);

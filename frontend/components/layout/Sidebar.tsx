@@ -3,10 +3,10 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
-import { Building2, ChevronRight, Home, LayoutTemplate, Shield, LogOut, Menu, Search, Trash2, X } from "lucide-react";
-import { signOut } from "@/app/actions/session";
+import { Building2, ChevronRight, Home, LayoutTemplate, Shield, Menu, Search, Trash2, X } from "lucide-react";
 import { canManageUsers, roleLabel } from "@/lib/permissions";
 import type { PageSummary, SidebarSections, User } from "@/lib/types";
+import { LogoutButton } from "../auth/LogoutButton";
 import { NewPageButton } from "../pages/NewPageDialog";
 import { Avatar } from "../ui/Avatar";
 import { PageIcon } from "../ui/PageIcon";
@@ -115,11 +115,7 @@ export function Sidebar({ user, sections }: { user: User; sections: SidebarSecti
             <p className="truncate text-sm font-semibold">{user.name}</p>
             <p className="truncate text-xs text-muted">{roleLabel[user.role]}</p>
           </Link>
-          <form action={signOut} onSubmit={() => navigator.serviceWorker?.controller?.postMessage("limpiar")}>
-            <button type="submit" aria-label="Cerrar sesión" className="grid h-8 w-8 place-items-center rounded-md text-muted hover:bg-line/60 hover:text-ink">
-              <LogOut size={16} />
-            </button>
-          </form>
+          <LogoutButton userId={user.id} />
         </div>
       </div>
     </div>

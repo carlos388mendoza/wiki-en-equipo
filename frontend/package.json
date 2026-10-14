@@ -10,7 +10,9 @@
     "seed": "node --disable-warning=MODULE_TYPELESS_PACKAGE_JSON scripts/seed-dev.mjs",
     "test": "vitest run",
     "collab:dev": "node scripts/collab-dev-server.mjs",
-    "postbuild": "node scripts/sw-assets.mjs"
+    "postbuild": "node scripts/sw-assets.mjs",
+    "predev": "node scripts/copy-assets.mjs",
+    "prebuild": "node scripts/copy-assets.mjs"
   },
   "dependencies": {
     "@blocknote/core": "0.55.0",
