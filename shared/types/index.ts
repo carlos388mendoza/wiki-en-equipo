@@ -110,6 +110,17 @@ export type ShareAcceptResult =
   | { type: "page"; pageId: string; permission: PagePermission }
   | { type: "template"; templateId: string; permission: PagePermission };
 
+/** `GET /api/departments` y `GET /api/departments/:idOrSlug` (403 si no es tu departamento, 404 si no existe). */
+export interface DepartmentSummary {
+  id: string;
+  name: string;
+  slug: string;
+  description: string;
+  icon: string | null;
+  wallPage: { id: string; title: string; updatedAt: string } | null;
+  _count: { users: number; pages: number };
+}
+
 /** Plantilla en `GET /api/templates` (incluye las compartidas con la persona). */
 export interface TemplateListItem {
   id: string;

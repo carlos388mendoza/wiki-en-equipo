@@ -8,14 +8,37 @@ function makeSlug(value: string) {
   return value.trim().toLowerCase().normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
 }
 
+const departmentSelect = { id: true, name: true, slug: true, description: true, icon: true, wallPage: { select: { id: true, title: true, updatedAt: true } }, _count: { select: { users: true, pages: true } } } as const;
+
 export async function listDepartments(actor: Actor) {
-  return prisma.department.findMany({ where: actor.role === "ADMIN" ? {} : { id: actor.departmentId }, orderBy: { name: "asc" }, select: { id: true, name: true, slug: true, wallPage: { select: { id: true, title: true, updatedAt: true } }, _count: { select: { users: true, pages: true } } } });
+  return prisma.department.findMany({ where: actor.role === "ADMIN" ? {} : { id: actor.departmentId }, orderBy: { name: "asc" }, select: departmentSelect });
 }
 
-export async function createDepartment(name: string) {
-  const slug = makeSlug(name);
+/** Un departamento por id o slug: 404 si no existe y 403 si existe pero la persona no pertenece a él. */
+export async function getDepartment(actor: Actor, idOrSlug: string) {
+  const department = await prisma.department.findFirst({ where: { OR: [{ id: idOrSlug }, { slug: idOrSlug }] }, select: departmentSelect });
+  if (!department) throw notFound("No se encontró el departamento.");
+  if (actor.role !== "ADMIN" && actor.departmentId !== department.id) throw forbidden("Solo los miembros del departamento pueden ver su muro.");
+  return department;
+}
+
+export async function createDepartment(input: { name: string; description?: string; icon?: string | null }) {
+  const slug = makeSlug(input.name);
   if (!slug) throw badRequest("El nombre del departamento no es válido.");
-  return prisma.department.create({ data: { name: name.trim(), slug } });
+  return prisma.department.create({ data: { name: input.name.trim(), slug, description: input.description?.trim() ?? "", icon: input.icon ?? null } });
+}
+
+/** Descripción e icono: ADMIN o el administrador del departamento. El nombre solo un ADMIN (el slug no cambia para no romper enlaces). */
+export async function updateDepartment(actor: Actor, departmentId: string, input: { name?: string; description?: string; icon?: string | null }) {
+  if (!canManageDepartment(actor, departmentId)) throw forbidden("No puedes administrar este departamento.");
+  if (input.name !== undefined && actor.role !== "ADMIN") throw forbidden("Solo un administrador puede cambiar el nombre del departamento.");
+  if (!await prisma.department.findUnique({ where: { id: departmentId } })) throw notFound("No se encontró el departamento.");
+  await prisma.department.update({ where: { id: departmentId }, data: {
+    ...(input.name === undefined ? {} : { name: input.name.trim() }),
+    ...(input.description === undefined ? {} : { description: input.description.trim() }),
+    ...(input.icon === undefined ? {} : { icon: input.icon }),
+  } });
+  return getDepartment(actor, departmentId);
 }
 
 export async function setDepartmentWall(actor: Actor, departmentId: string, pageId: string) {

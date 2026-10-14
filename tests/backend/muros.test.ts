@@ -19,6 +19,38 @@ afterAll(() => api.close());
 
 const ids = (res: { body: { pages: { id: string }[] } }) => res.body.pages.map((p) => p.id);
 
+describe("departamentos", () => {
+  it("distingue 'no existe' (404) de 'sin acceso' (403)", async () => {
+    expect((await api.as(maria).get("/departments/tecnologia")).status).toBe(403);
+    expect((await api.as(maria).get("/departments/no-existe")).status).toBe(404);
+    expect((await api.as(luis).get("/departments/tecnologia")).body.department).toMatchObject({ name: "Tecnología", slug: "tecnologia", description: "", icon: null });
+    expect((await api.as(ana).get("/departments/contabilidad")).status).toBe(200);
+    expect((await api.as(luis).get(`/departments/${luis.departmentId}`)).status).toBe(200);
+  });
+
+  it("su administrador cambia descripción e icono; el nombre solo un administrador", async () => {
+    const res = await api.as(carlos).patch(`/departments/${carlos.departmentId}`, { description: "Pagos, facturas y cierres", icon: "lucide:calculator:verde" });
+    expect(res.status).toBe(200);
+    expect(res.body.department).toMatchObject({ description: "Pagos, facturas y cierres", icon: "lucide:calculator:verde" });
+    expect((await api.as(carlos).patch(`/departments/${carlos.departmentId}`, { name: "Finanzas" })).status).toBe(403);
+    expect((await api.as(carlos).patch(`/departments/${luis.departmentId}`, { description: "x" })).status).toBe(403);
+    expect((await api.as(luis).patch(`/departments/${luis.departmentId}`, { description: "x" })).status).toBe(403);
+    const renombrado = await api.as(ana).patch(`/departments/${carlos.departmentId}`, { name: "Contabilidad y Finanzas" });
+    expect(renombrado.body.department).toMatchObject({ name: "Contabilidad y Finanzas", slug: "contabilidad" });
+  });
+
+  it("el listado trae descripción e icono", async () => {
+    const list = (await api.as(ana).get("/departments")).body.departments;
+    expect(list.find((d: { id: string }) => d.id === carlos.departmentId)).toMatchObject({ description: "Pagos, facturas y cierres", icon: "lucide:calculator:verde" });
+  });
+
+  it("un administrador crea departamentos con descripción e icono", async () => {
+    const res = await api.as(ana).post("/departments", { name: "Operaciones", description: "Restaurantes", icon: "🍽️" });
+    expect(res.body.department).toMatchObject({ slug: "operaciones", description: "Restaurantes", icon: "🍽️" });
+    expect((await api.as(carlos).post("/departments", { name: "Otro" })).status).toBe(403);
+  });
+});
+
 describe("destacadas de la empresa", () => {
   it("un administrador elige y ordena páginas de la empresa; todos las ven", async () => {
     const a = await createPage(api, ana, { title: "Beneficios", visibility: "COMPANY", icon: "🎁" });

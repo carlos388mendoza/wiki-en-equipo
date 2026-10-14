@@ -66,8 +66,13 @@ router.post("/auth/password", async (req, res) => {
 
 router.get("/departments", async (req, res) => res.json({ departments: await departments.listDepartments(actor(req)) }));
 router.post("/departments", requireRole("ADMIN"), async (req, res) => {
-  const body = objectBody(z.object({ name: z.string().trim().min(2).max(100) }), req);
-  res.status(201).json({ department: await departments.createDepartment(body.name) });
+  const body = objectBody(z.object({ name: z.string().trim().min(2).max(100), description: z.string().max(500).optional(), icon }), req);
+  res.status(201).json({ department: await departments.createDepartment(body) });
+});
+router.get("/departments/:department", async (req, res) => res.json({ department: await departments.getDepartment(actor(req), param(req, "department")) }));
+router.patch("/departments/:departmentId", async (req, res) => {
+  const body = objectBody(z.object({ name: z.string().trim().min(2).max(100).optional(), description: z.string().max(500).optional(), icon }).refine((data) => Object.keys(data).length > 0), req);
+  res.json({ department: await departments.updateDepartment(actor(req), param(req, "departmentId"), body) });
 });
 router.put("/departments/:departmentId/wall", async (req, res) => {
   const body = objectBody(z.object({ pageId: id }), req);
