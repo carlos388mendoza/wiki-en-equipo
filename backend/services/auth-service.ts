@@ -1,6 +1,7 @@
 import { prisma } from "../models/client.js";
 import { hashPassword, verifyPassword } from "../auth/password.js";
 import { signAccessToken } from "../auth/token.js";
+import type { Actor } from "../permissions/access.js";
 import { badRequest, conflict, forbidden, unauthorized } from "./errors.js";
 
 const publicUser = (user: { id: string; name: string; email: string; role: string; departmentId: string; department?: { id: string; name: string; slug: string } }) => ({
@@ -77,8 +78,28 @@ export async function createUser(input: { name: string; email: string; password:
   return publicUser(user);
 }
 
-export async function listUsers() {
-  return prisma.user.findMany({ where: { active: true }, orderBy: { name: "asc" }, select: { id: true, name: true, email: true, role: true, departmentId: true, department: { select: { name: true, slug: true } } } });
+export async function listUsers(includeInactive = false) {
+  return prisma.user.findMany({ where: includeInactive ? {} : { active: true }, orderBy: [{ active: "desc" }, { name: "asc" }], select: { id: true, name: true, email: true, role: true, departmentId: true, active: true, department: { select: { name: true, slug: true } } } });
+}
+
+/** Minúsculas y sin tildes, para buscar "mejia" y encontrar "Mejía". */
+export const foldText = (value: string) => value.normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+
+/**
+ * Directorio para invitar a páginas y plantillas (cualquier persona con sesión).
+ * Solo cuentas activas y solo id, nombre y departamento: nunca correo ni rol.
+ * Busca por nombre (sin importar tildes) o por el correo completo exacto.
+ */
+export async function searchDirectory(actor: Actor, query: string, limit: number) {
+  const q = foldText(query.trim());
+  const users = await prisma.user.findMany({ where: { active: true, id: { not: actor.id } }, orderBy: { name: "asc" }, select: { id: true, name: true, email: true, departmentId: true, department: { select: { name: true } } } });
+  const score = (name: string) => (name.startsWith(q) ? 0 : name.split(/\s+/).some((word) => word.startsWith(q)) ? 1 : name.includes(q) ? 2 : 3);
+  return users
+    .map((user) => ({ user, score: user.email === q ? 0 : score(foldText(user.name)) }))
+    .filter((match) => match.score < 3)
+    .sort((a, b) => a.score - b.score)
+    .slice(0, limit)
+    .map(({ user }) => ({ id: user.id, name: user.name, departmentId: user.departmentId, department: user.department }));
 }
 
 export async function updateUser(id: string, patch: { name?: string; role?: string; departmentId?: string; active?: boolean }) {

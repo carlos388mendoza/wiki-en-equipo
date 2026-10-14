@@ -23,6 +23,8 @@ const loginEmailKey = (req: Request) => `${ipKeyGenerator(req.ip ?? "")}|${typeo
 const loginLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 10, skipSuccessfulRequests: true, keyGenerator: loginEmailKey, ...limiterDefaults });
 const loginIpLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 50, skipSuccessfulRequests: true, ...limiterDefaults });
 const bootstrapLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 5, ...limiterDefaults });
+// El buscador consulta mientras se escribe: 120 búsquedas por minuto y persona evitan que se use para volcar el directorio.
+const directoryLimiter = rateLimit({ windowMs: 60 * 1000, limit: 120, keyGenerator: (req) => req.auth?.sub ?? ipKeyGenerator(req.ip ?? ""), ...limiterDefaults });
 const id = z.string().min(1).max(100);
 const email = z.string().email().max(254);
 const password = z.string().min(12).max(200);
@@ -91,7 +93,11 @@ router.delete("/company/wall", requireRole("ADMIN"), async (req, res) => {
   await departments.clearCompanyWall(actor(req)); res.status(204).end();
 });
 
-router.get("/users", requireRole("ADMIN"), async (_req, res) => res.json({ users: await auth.listUsers() }));
+router.get("/users/directory", directoryLimiter, async (req, res) => {
+  const query = z.object({ q: z.string().trim().min(2).max(100), limit: z.coerce.number().int().min(1).max(20).default(10) }).parse(req.query);
+  res.json({ users: await auth.searchDirectory(actor(req), query.q, query.limit) });
+});
+router.get("/users", requireRole("ADMIN"), async (req, res) => res.json({ users: await auth.listUsers(req.query.includeInactive === "1" || req.query.includeInactive === "true") }));
 router.post("/users", requireRole("ADMIN"), async (req, res) => {
   const body = objectBody(z.object({ name: z.string().trim().min(1).max(100), email, password, role, departmentId: id }), req);
   res.status(201).json({ user: await auth.createUser(body) });

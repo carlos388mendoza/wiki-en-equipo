@@ -9,6 +9,16 @@ export interface UserSummary {
   email: string;
   role: UserRole;
   departmentId: string;
+  /** Solo en `GET /api/users?includeInactive=1` (administradores). */
+  active?: boolean;
+}
+
+/** Persona del directorio para invitar (`GET /api/users/directory?q=`): sin correo ni rol. */
+export interface DirectoryUser {
+  id: string;
+  name: string;
+  departmentId: string;
+  department: { name: string };
 }
 
 export interface PageBlock {
