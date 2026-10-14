@@ -129,7 +129,16 @@ export async function createPage(actor: Actor, input: { title: string; icon?: st
   return prisma.page.create({ data: { title: input.title.trim(), icon: input.icon ?? null, contentJson, searchText: pageSearchText(input.title.trim(), contentJson), backgroundJson: input.background === undefined ? null : JSON.stringify(input.background), visibility, ownerId: actor.id, departmentId: actor.departmentId, parentId: input.parentId ?? null, tags: { connect: tags } }, include: { tags: { select: { name: true } } } });
 }
 
-export async function updatePage(actor: Actor, id: string, input: { title?: string; icon?: string | null; content?: unknown; background?: unknown; visibility?: string; parentId?: string | null; tags?: string[]; expectedVersion?: number }) {
+/** Minutos en los que los autoguardados de la misma persona se agrupan en una sola versión del historial. */
+export const HISTORY_GROUP_MINUTES = 10;
+
+/** ¿La última versión guardada es de esta persona y de hace menos de 10 minutos? */
+async function recentOwnSnapshot(tx: Prisma.TransactionClient, pageId: string, userId: string) {
+  const last = await tx.pageHistory.findFirst({ where: { pageId }, orderBy: { version: "desc" }, select: { changedById: true, createdAt: true } });
+  return Boolean(last && last.changedById === userId && last.createdAt > new Date(Date.now() - HISTORY_GROUP_MINUTES * 60_000));
+}
+
+export async function updatePage(actor: Actor, id: string, input: { title?: string; icon?: string | null; content?: unknown; background?: unknown; visibility?: string; parentId?: string | null; tags?: string[]; expectedVersion?: number; autosave?: boolean }) {
   return prisma.$transaction(async (tx) => {
     const page = await tx.page.findFirst({ where: { id, deletedAt: null }, include: accessInclude });
     if (!page) throw notFound("No se encontró la página.");
@@ -152,7 +161,8 @@ export async function updatePage(actor: Actor, id: string, input: { title?: stri
         }
       }
     }
-    await tx.pageHistory.create({ data: { pageId: id, changedById: actor.id, version: page.version, snapshotJson: snapshot(page) } });
+    // Un autoguardado no crea otra versión si la persona ya guardó una hace poco: el historial queda legible.
+    if (!input.autosave || !await recentOwnSnapshot(tx, id, actor.id)) await tx.pageHistory.create({ data: { pageId: id, changedById: actor.id, version: page.version, snapshotJson: snapshot(page) } });
     const tags = input.tags === undefined ? undefined : await Promise.all([...new Set(input.tags.map((name) => name.trim().slice(0, 40)).filter(Boolean))].map((name) => tx.tag.upsert({ where: { name }, create: { name }, update: {} }).then((tag) => ({ id: tag.id }))));
     return tx.page.update({ where: { id }, data: {
       ...(input.title === undefined ? {} : { title: input.title.trim() }),
