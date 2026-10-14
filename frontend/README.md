@@ -5,7 +5,7 @@ Editor BlockNote, Yjs + y-indexeddb para edición simultánea y modo sin conexi�
 
 ## Arrancar en local
 
-1. Levanta el backend (ver `../backend/README.md` o `../CLAUDE.md`). Queda en http://localhost:4000.
+1. Levanta el backend (ver `../backend/README.md` o `../CLAUDE.md`). Queda en http://localhost:4000, con la edición en vivo en `ws://localhost:4000/collab`.
 2. En esta carpeta:
 
 ```bash
@@ -24,7 +24,7 @@ Abre http://localhost:3000 e inicia sesión con un usuario de `.dev-users.local.
 | Luis Paz | Usuario | Tecnología |
 | María Zelaya | Usuario | Compras |
 
-Casos para probar: María no puede abrir "Mis notas" de Luis (privada); ve "Borrador: guía de VPN" en solo lectura y puede editar "Checklist de soporte en sucursales". María no entra al muro de Tecnología. Carlos edita el muro de Contabilidad. Ana ve "Administración".
+Casos para probar: María no puede abrir "Mis notas" de Luis (privada); ve "Borrador: guía de VPN" en solo lectura y puede editar "Checklist de soporte en sucursales". María no entra al muro de Tecnología. Carlos edita el muro de Contabilidad. Ana ve "Administración". Cualquier persona puede invitar a otra desde "Compartir" (buscador por nombre). Luis compartió la plantilla "Visita técnica a sucursal" con María (lectura) y con Carlos (edición).
 
 > **OneDrive:** si el repositorio está dentro de una carpeta sincronizada con OneDrive, `.next` puede quedar con archivos "solo en la nube" y Next falla con `EINVAL: readlink`. Borra `.next` y vuelve a arrancar, o excluye la carpeta de la sincronización.
 
@@ -37,13 +37,12 @@ Casos para probar: María no puede abrir "Mis notas" de Luis (privada); ve "Borr
 | `npm start` | Sirve la compilación de producción (aquí se activa el modo sin conexión) |
 | `npm test` | Pruebas (Vitest) de `../tests/frontend`; las de integración se omiten si el backend o el seed no están |
 | `npm run seed` | Datos de prueba en el backend local (usuarios, páginas, muros y plantillas de Grupo Comidas) |
-| `npm run collab:dev` | Servidor Yjs **solo de desarrollo** para probar la edición en vivo (ver abajo) |
 
 No corras `npm run build` con `npm run dev` abierto: ambos usan `.next`.
 
 ## Variables (`.env.local`)
 
-`BACKEND_URL`, `NEXT_PUBLIC_REALTIME_URL`, `NEXT_PUBLIC_COLLAB_URL`, `NEXT_PUBLIC_MAX_UPLOAD_MB`, `UNSPLASH_ACCESS_KEY`, `NEXT_PUBLIC_ENABLE_SW`. Detalle en [.env.example](.env.example).
+`BACKEND_URL`, `NEXT_PUBLIC_REALTIME_URL`, `NEXT_PUBLIC_COLLAB_URL`, `NEXT_PUBLIC_MAX_UPLOAD_MB`, `NEXT_PUBLIC_TRASH_RETENTION_DAYS`, `UNSPLASH_ACCESS_KEY`, `NEXT_PUBLIC_ENABLE_SW`. Detalle en [.env.example](.env.example).
 
 ## Estructura
 
@@ -69,36 +68,34 @@ No corras `npm run build` con `npm run dev` abierto: ambos usan `.next`.
       session.ts permissions.ts uploads.ts default-templates.ts backgrounds.ts
     public/sw.js                   Service worker (páginas visitadas disponibles sin conexión)
     ../assets/templates/3dicons/   Iconos 3D (CC0) de las plantillas por defecto; se copian a public/iconos/3d al compilar
-    scripts/                       seed, servidor Yjs de desarrollo y lista de archivos del service worker
+    public/brand/                  Logo de Grupo Comidas (el original está en ../assets/brand/)
+    app/icon.png, icon1.png, apple-icon.png, manifest.ts   Favicon e iconos de la app instalable
+    scripts/                       seed, copia de iconos 3D y lista de archivos del service worker
 
-## Edición simultánea y sin conexión (fase 5)
+## Edición simultánea y sin conexión
 
-- Cada página que se edita tiene un documento **Yjs** guardado en **IndexedDB** (y-indexeddb). Si se cae la red, se sigue editando; al volver se sube con `POST /api/sync/pages/:id` (con `operationId` para no duplicar).
+- **En vivo con presencia:** el editor se conecta al servidor Yjs del backend (`/collab`, protocolo y-websocket). Lo que escribe una persona aparece al instante en las demás, con su cursor, y arriba a la derecha se ve **En vivo** y quién más está editando ("También editando"). Quien solo puede leer no puede abrir el editor y, aunque lo intentara, el servidor ignora sus cambios.
+- Por defecto usa `ws://<host actual>:4000/collab`. En producción, `NEXT_PUBLIC_COLLAB_URL` con la dirección pública (WSS). Con `NEXT_PUBLIC_COLLAB_URL=off` se usa solo el canal de avisos `/realtime` (los cambios de otra persona llegan cuando guarda, sin presencia).
+- Cada página que se edita tiene además un documento **Yjs** guardado en **IndexedDB** (y-indexeddb). Si se cae la red, se sigue editando; al volver se sube con `POST /api/sync/pages/:id` (con `operationId` para no duplicar).
 - Si alguien más cambió la página, se hace una **fusión de tres vías por bloque** (`lib/editor/merge.ts`): lo que no choca se combina solo; si dos personas editaron el mismo bloque, se muestra un diálogo para elegir.
-- **Modo actual con el backend:** el canal `/realtime` avisa cuando otra persona guarda y el editor incorpora sus cambios. El indicador muestra "En línea", "Conectando…" o "Sin conexión".
-- **Modo en vivo (con presencia):** si se define `NEXT_PUBLIC_COLLAB_URL`, el documento Yjs se sincroniza al instante y se ve quién más está editando. El backend aún no ofrece ese servidor ([PENDIENTES_BACKEND.md](PENDIENTES_BACKEND.md), punto 4); para probarlo en local: `npm run collab:dev` y `NEXT_PUBLIC_COLLAB_URL=ws://localhost:1234`.
-- **Sin conexión fuera del editor:** en producción, el service worker guarda las páginas visitadas y los archivos de la aplicación. Sin internet se pueden abrir y editar esas páginas, y crear **borradores nuevos** en `/sin-conexion` que luego se suben como páginas privadas. Al cerrar sesión se borra la copia de páginas del dispositivo.
+- Si alguien restaura una versión del historial mientras otras personas editan, el servidor cierra la sala (código 4409): el editor borra su copia local y vuelve a cargar la versión restaurada. Si a alguien le quitan el acceso, se le avisa (4403).
+- **Sin conexión fuera del editor:** en producción, el service worker guarda las páginas visitadas, los archivos de la aplicación y el logo. Sin internet se pueden abrir y editar esas páginas, y crear **borradores nuevos** en `/sin-conexion` que luego se suben como páginas privadas. Al cerrar sesión se borra la copia de páginas del dispositivo.
 
 ### Demostración paso a paso
 
-Necesitas tres terminales y dos navegadores (o uno normal y una ventana de incógnito, para tener dos sesiones distintas).
+Necesitas dos terminales y dos navegadores (o uno normal y una ventana de incógnito, para tener dos sesiones distintas).
 
 1. **Backend** (terminal 1): `cd backend && corepack pnpm run dev`. Si la base está vacía, en `frontend/` corre `npm run seed`.
-2. **Servidor Yjs de desarrollo** (terminal 2): `cd frontend && npm run collab:dev` → `ws://localhost:1234`.
-3. **Frontend** (terminal 3): crea `frontend/.env.local` con la línea `NEXT_PUBLIC_COLLAB_URL=ws://localhost:1234` y corre `npm run dev`.
-4. En el navegador A entra como **Luis** y en el B como **María** (contraseñas en `frontend/.dev-users.local.json`). Ambos abren **Checklist de soporte en sucursales** → **Editar** (Luis es el dueño; María tiene permiso de edición).
-5. Arriba a la derecha cada uno ve **En vivo** y el avatar de la otra persona ("También editando"). Lo que escribe uno aparece al instante en el otro, con su cursor.
-6. **Solo lectura:** María abre **Borrador: guía de VPN**: no tiene botón Editar y, si entra a `/editar`, ve "Solo puedes leer esta página". El servidor de desarrollo también ignora cambios de quien solo tiene lectura.
+2. **Frontend** (terminal 2): `cd frontend && npm run dev`.
+3. En el navegador A entra como **Luis** y en el B como **María** (contraseñas en `frontend/.dev-users.local.json`). Ambos abren **Checklist de soporte en sucursales** → **Editar** (Luis es el dueño; María tiene permiso de edición).
+4. Arriba a la derecha cada uno ve **En vivo** y el avatar de la otra persona ("También editando"). Lo que escribe uno aparece al instante en el otro, con su cursor.
+5. **Solo lectura:** María abre **Borrador: guía de VPN**: no tiene botón Editar y, si entra a `/editar`, ve "Solo puedes leer esta página". El servidor también ignora los cambios de quien solo tiene lectura.
+6. **Invitar:** María (usuaria normal) abre **Compartir** en el checklist, escribe "mejia" y ve a Carlos Mejía (solo nombre y departamento); lo invita con "Puede ver". La lista de acceso muestra los nombres y la sección de enlaces muestra los activos, que se pueden desactivar.
 7. **Sin conexión y conflictos:** en el navegador B abre las herramientas de desarrollo → *Network* → *Offline*. María cambia un bloque; Luis cambia **el mismo** bloque y agrega otro. Al volver a *Online*, María ve el diálogo para elegir en el bloque en conflicto; el bloque nuevo de Luis se combina solo.
-8. **Sin servidor Yjs** (como funciona hoy con el backend): borra `.env.local` y reinicia. El indicador dice **En línea**: cuando una persona guarda, los cambios aparecen en la otra a los pocos segundos (aviso por `/realtime` y fusión), pero sin presencia.
-9. **Borradores sin conexión:** `npm run build && npm start`, abre algunas páginas, corta la red y entra a `/sin-conexion` → **Nuevo borrador**. Al volver la red, **Subir a la wiki**.
+8. **Borradores sin conexión:** `npm run build && npm start`, abre algunas páginas, corta la red y entra a `/sin-conexion` → **Nuevo borrador**. Al volver la red, **Subir a la wiki**.
 
 ### Qué falta para producción
 
-- **Backend:** un servidor Yjs con el protocolo y-websocket que valide el JWT y los permisos de lectura y edición, retransmita la presencia y guarde el estado (pendiente 4). `frontend/scripts/collab-dev-server.mjs` sirve de referencia, pero guarda los documentos en memoria, no tiene límites ni registros y no aguanta varias instancias.
-- **Backend:** `app.set("trust proxy", …)` para que el límite de inicios de sesión use la IP real que ya envía el frontend (pendiente 2).
-- **Backend:** el canal `/realtime` y las salas viven en memoria: con varias instancias hace falta un bus compartido (Redis o similar) (pendiente 21).
-- **Infraestructura:** HTTPS y WSS; configurar `BACKEND_URL`, `NEXT_PUBLIC_REALTIME_URL` y `NEXT_PUBLIC_COLLAB_URL` con las direcciones públicas; el token viaja en la URL del WebSocket (`?token=`), así que conviene que los registros del proxy no guarden la consulta.
+- **Infraestructura:** HTTPS y WSS; configurar `BACKEND_URL`, `NEXT_PUBLIC_REALTIME_URL` y `NEXT_PUBLIC_COLLAB_URL` con las direcciones públicas; el token viaja en la URL del WebSocket (`?token=`), así que conviene que los registros del proxy no guarden la consulta. El proxy delante de Next debe agregar la IP real en `X-Forwarded-For` (el login la reenvía al backend).
+- **Backend:** una sola instancia por ahora (ver [PENDIENTES_BACKEND.md](PENDIENTES_BACKEND.md)).
 - **Datos locales:** al cerrar sesión se borra todo lo que la wiki guardó en el dispositivo (copias para trabajar sin conexión, borradores y páginas en caché). Si hay cambios sin subir, antes se listan y se pide confirmación (`components/auth/LogoutButton.tsx`). Si la sesión vence sin cerrar sesión, los datos quedan hasta el siguiente cierre; al entrar otra persona en el mismo navegador se borra la caché de páginas.
-
-Lo que falta en el backend está en [PENDIENTES_BACKEND.md](PENDIENTES_BACKEND.md).
