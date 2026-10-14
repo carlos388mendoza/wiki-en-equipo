@@ -8,10 +8,23 @@ import { makeRouter } from "./routes.js";
 import { RealtimeHub } from "../realtime/hub.js";
 import { HttpError } from "../services/errors.js";
 
+/**
+ * Qué proxies pueden informar la IP real en `X-Forwarded-For` (el login pasa por el servidor de Next).
+ * `TRUST_PROXY`: "loopback" (por defecto, Next en la misma máquina), un número de saltos o una lista
+ * de IP/subredes separadas por comas; "false" lo desactiva. Nunca `true`: cualquiera podría falsear su IP.
+ */
+export function trustProxySetting(value = "loopback"): string | number | false {
+  const setting = value.trim();
+  if (!setting || setting === "false" || setting === "0") return false;
+  if (setting === "true") throw new Error("TRUST_PROXY=true permitiría falsear la IP. Usa loopback, un número de saltos o las IP del proxy.");
+  return /^\d+$/.test(setting) ? Number(setting) : setting;
+}
+
 export const realtimeHub = new RealtimeHub();
 export const app = express();
 
 app.disable("x-powered-by");
+app.set("trust proxy", trustProxySetting(process.env.TRUST_PROXY));
 app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
 app.use(cors({ origin: process.env.FRONTEND_ORIGIN ?? "http://localhost:3000", methods: ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"], allowedHeaders: ["Authorization", "Content-Type"] }));
 app.use(express.json({ limit: "2mb", strict: true }));

@@ -1,5 +1,5 @@
 import { Router, type Request } from "express";
-import { rateLimit } from "express-rate-limit";
+import { ipKeyGenerator, rateLimit } from "express-rate-limit";
 import { z } from "zod";
 import { requireAuth, requireRole } from "../auth/middleware.js";
 import { prisma } from "../models/client.js";
@@ -16,8 +16,13 @@ import { openFile } from "../services/file-service.js";
 import type { RealtimeHub } from "../realtime/hub.js";
 
 const router = Router();
-const loginLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 10, standardHeaders: true, legacyHeaders: false });
-const bootstrapLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 5, standardHeaders: true, legacyHeaders: false });
+const limiterDefaults = { standardHeaders: true, legacyHeaders: false, message: { error: { code: "TOO_MANY_REQUESTS", message: "Hiciste demasiados intentos. Espera unos minutos e inténtalo de nuevo." } } } as const;
+// Con `trust proxy`, req.ip es la IP real de la persona. Solo cuentan los intentos fallidos:
+// 10 por cuenta desde la misma IP y 50 en total por IP (varias personas pueden compartir la IP de un restaurante).
+const loginEmailKey = (req: Request) => `${ipKeyGenerator(req.ip ?? "")}|${typeof req.body?.email === "string" ? req.body.email.trim().toLowerCase().slice(0, 254) : ""}`;
+const loginLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 10, skipSuccessfulRequests: true, keyGenerator: loginEmailKey, ...limiterDefaults });
+const loginIpLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 50, skipSuccessfulRequests: true, ...limiterDefaults });
+const bootstrapLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 5, ...limiterDefaults });
 const id = z.string().min(1).max(100);
 const email = z.string().email().max(254);
 const password = z.string().min(12).max(200);
@@ -36,7 +41,7 @@ router.post("/auth/bootstrap", bootstrapLimiter, async (req, res) => {
   res.status(201).json(await auth.bootstrapAdmin(body));
 });
 
-router.post("/auth/login", loginLimiter, async (req, res) => {
+router.post("/auth/login", loginIpLimiter, loginLimiter, async (req, res) => {
   const body = objectBody(z.object({ email, password: z.string().min(1).max(200) }), req);
   res.json(await auth.login(body.email, body.password));
 });
