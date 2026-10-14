@@ -1,4 +1,7 @@
 import { createHash, randomBytes } from "node:crypto";
+import { rm } from "node:fs/promises";
+import path from "node:path";
+import { uploadDirectory } from "../storage/files.js";
 import type { Prisma, Page } from "@prisma/client";
 import type { Actor, PageAccessRecord } from "../permissions/access.js";
 import { assertCanEditPage, assertCanReadPage, canReadPage } from "../permissions/access.js";
@@ -202,6 +205,50 @@ export async function trashPage(actor: Actor, id: string) {
 
 export async function listTrash(actor: Actor) {
   return prisma.page.findMany({ where: { deletedAt: { not: null }, ...(actor.role === "ADMIN" ? {} : { ownerId: actor.id }) }, orderBy: { deletedAt: "desc" }, select: { id: true, title: true, icon: true, deletedAt: true, ownerId: true } });
+}
+
+/**
+ * Borra para siempre páginas que están en la papelera, con sus subpáginas que también estén en la
+ * papelera, su historial, visitas, permisos y archivos (también del disco).
+ */
+async function purgeTrashedPages(rootIds: string[]) {
+  const ids = [...rootIds];
+  let frontier = rootIds;
+  while (frontier.length) {
+    const children = await prisma.page.findMany({ where: { parentId: { in: frontier }, deletedAt: { not: null } }, select: { id: true } });
+    frontier = children.map((child) => child.id).filter((childId) => !ids.includes(childId));
+    ids.push(...frontier);
+  }
+  const files = await prisma.fileAsset.findMany({ where: { pageId: { in: ids } }, select: { id: true, storageName: true } });
+  await prisma.$transaction([
+    prisma.fileAsset.deleteMany({ where: { id: { in: files.map((file) => file.id) } } }),
+    prisma.syncOperation.deleteMany({ where: { pageId: { in: ids } } }),
+    prisma.page.deleteMany({ where: { id: { in: ids }, deletedAt: { not: null } } }),
+  ]);
+  await Promise.all(files.map((file) => rm(path.join(uploadDirectory, path.basename(file.storageName)), { force: true })));
+  return ids.length;
+}
+
+/** Eliminar definitivamente una página de la papelera: su dueño o un ADMIN. */
+export async function deletePagePermanently(actor: Actor, id: string) {
+  const page = await prisma.page.findUnique({ where: { id }, select: { ownerId: true, deletedAt: true } });
+  if (!page) throw notFound("No se encontró la página.");
+  if (actor.role !== "ADMIN" && page.ownerId !== actor.id) throw forbidden("Solo quien creó la página puede eliminarla definitivamente.");
+  if (!page.deletedAt) throw conflict("Primero envía la página a la papelera.");
+  await purgeTrashedPages([id]);
+}
+
+/** Vaciar papelera: las páginas propias (también para administradores, que ven la papelera de todos). */
+export async function emptyTrash(actor: Actor) {
+  const pages = await prisma.page.findMany({ where: { ownerId: actor.id, deletedAt: { not: null } }, select: { id: true } });
+  return { deleted: pages.length ? await purgeTrashedPages(pages.map((page) => page.id)) : 0 };
+}
+
+/** Retención: borra lo que lleva más de `days` días en la papelera (TRASH_RETENTION_DAYS; 0 lo desactiva). */
+export async function purgeExpiredTrash(days: number) {
+  if (!(days > 0)) return 0;
+  const pages = await prisma.page.findMany({ where: { deletedAt: { lt: new Date(Date.now() - days * 86_400_000) } }, select: { id: true } });
+  return pages.length ? purgeTrashedPages(pages.map((page) => page.id)) : 0;
 }
 
 export async function restorePage(actor: Actor, id: string) {

@@ -123,6 +123,8 @@ router.patch("/users/:userId", requireRole("ADMIN"), async (req, res) => {
 
 router.get("/pages/popular", async (req, res) => res.json({ pages: await pages.getMostVisited(actor(req), typeof req.query.departmentId === "string" ? req.query.departmentId : undefined) }));
 router.get("/pages/trash", async (req, res) => res.json({ pages: await pages.listTrash(actor(req)) }));
+router.delete("/pages/trash", async (req, res) => res.json(await pages.emptyTrash(actor(req))));
+router.delete("/pages/:pageId/permanent", async (req, res) => { await pages.deletePagePermanently(actor(req), param(req, "pageId")); res.status(204).end(); });
 router.post("/pages/:pageId/restore", async (req, res) => res.json({ page: await pages.restorePage(actor(req), param(req, "pageId")) }));
 
 router.get("/pages", async (req, res) => {
