@@ -152,8 +152,16 @@ router.get("/pages", async (req, res) => {
   const parentId = typeof req.query.parentId === "string" ? id.parse(req.query.parentId) : undefined;
   const q = typeof req.query.q === "string" ? req.query.q.slice(0, 100) : undefined;
   const tag = typeof req.query.tag === "string" ? req.query.tag.slice(0, 40) : undefined;
-  const cursor = typeof req.query.cursor === "string" ? req.query.cursor : undefined;
-  const limit = typeof req.query.limit === "string" ? parseInt(req.query.limit, 10) : undefined;
+  // ?ids=a,b,c: páginas concretas (subpáginas y menciones del contenido), hasta 100.
+  if (req.query.ids !== undefined) {
+    const rawIds = z.string().parse(req.query.ids).split(",").filter(Boolean);
+    const ids = z.array(id).max(100).parse([...new Set(rawIds)]);
+    const result = await pages.listAccessiblePages(actor(req), { q, tag, departmentId, parentId, ids });
+    res.json({ pages: result.pages });
+    return;
+  }
+  const cursor = typeof req.query.cursor === "string" ? id.parse(req.query.cursor) : undefined;
+  const limit = z.coerce.number().int().min(1).max(100).catch(100).parse(req.query.limit ?? 100);
   res.json(await pages.listAccessiblePages(actor(req), { q, tag, departmentId, parentId, cursor, limit }));
 });
 router.post("/pages", async (req, res) => {
