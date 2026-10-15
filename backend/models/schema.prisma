@@ -11,6 +11,8 @@ model Department {
   id          String   @id @default(cuid())
   name        String   @unique
   slug        String   @unique
+  description String   @default("")
+  icon        String?
   createdAt   DateTime @default(now())
   users       User[]
   pages       Page[]  @relation("DepartmentPages")
@@ -39,13 +41,19 @@ model User {
   templates      Template[]
   uploads        FileAsset[]
   syncOperations SyncOperation[]
+  shareLinks     PageShareLink[] @relation("PageShareLinkCreator")
+  templateShares TemplateShare[]
+  templateShareLinks TemplateShareLink[] @relation("TemplateShareLinkCreator")
 }
 
 model Page {
   id             String   @id @default(cuid())
   title          String
+  icon           String?
   contentJson    String   @default("[]")
   backgroundJson String?
+  /// Título y texto del contenido en minúsculas y sin tildes, para buscar (lo calcula services/search-text.ts).
+  searchText     String   @default("")
   visibility     String   @default("PRIVATE")
   version        Int      @default(1)
   isWall         Boolean  @default(false)
@@ -69,6 +77,8 @@ model Page {
   files           FileAsset[]
   tags            Tag[]
   featuredIn      DepartmentFeaturedPage[]
+  companyFeatured CompanyFeaturedPage?
+  collabState     PageCollabState?
 
   @@index([departmentId, visibility, deletedAt])
   @@index([ownerId, deletedAt])
@@ -94,7 +104,10 @@ model PageShareLink {
   permission  String
   expiresAt   DateTime?
   revokedAt   DateTime?
+  createdById String?
+  createdBy   User?    @relation("PageShareLinkCreator", fields: [createdById], references: [id], onDelete: SetNull)
   createdAt   DateTime @default(now())
+  @@index([pageId, revokedAt])
 }
 
 model PageHistory {
@@ -123,12 +136,14 @@ model PageVisit {
   user      User?    @relation(fields: [userId], references: [id], onDelete: SetNull)
   visitedAt DateTime @default(now())
   @@index([pageId, visitedAt])
+  @@index([pageId, userId, visitedAt])
 }
 
 model Template {
   id            String   @id @default(cuid())
   title         String
   description   String   @default("")
+  icon          String?
   contentJson   String   @default("[]")
   backgroundJson String?
   scope         String   @default("PRIVATE")
@@ -139,7 +154,36 @@ model Template {
   department    Department? @relation(fields: [departmentId], references: [id], onDelete: Cascade)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
+  shares        TemplateShare[]
+  shareLinks    TemplateShareLink[]
+  files         FileAsset[]
   @@index([scope, departmentId, isDefault])
+}
+
+model TemplateShare {
+  id          String   @id @default(cuid())
+  templateId  String
+  template    Template @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  userId      String
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  permission  String
+  createdAt   DateTime @default(now())
+  @@unique([templateId, userId])
+  @@index([userId])
+}
+
+model TemplateShareLink {
+  id          String   @id @default(cuid())
+  templateId  String
+  template    Template @relation(fields: [templateId], references: [id], onDelete: Cascade)
+  tokenHash   String   @unique
+  permission  String
+  expiresAt   DateTime?
+  revokedAt   DateTime?
+  createdById String?
+  createdBy   User?    @relation("TemplateShareLinkCreator", fields: [createdById], references: [id], onDelete: SetNull)
+  createdAt   DateTime @default(now())
+  @@index([templateId, revokedAt])
 }
 
 model FileAsset {
@@ -152,8 +196,11 @@ model FileAsset {
   owner       User     @relation(fields: [ownerId], references: [id], onDelete: Restrict)
   pageId      String?
   page        Page?    @relation(fields: [pageId], references: [id], onDelete: SetNull)
+  templateId  String?
+  template    Template? @relation(fields: [templateId], references: [id], onDelete: SetNull)
   createdAt   DateTime @default(now())
   @@index([ownerId, createdAt])
+  @@index([templateId])
 }
 
 model SyncOperation {
@@ -182,4 +229,23 @@ model DepartmentFeaturedPage {
   sortOrder    Int @default(0)
   @@unique([departmentId, pageId])
   @@index([departmentId, sortOrder])
+}
+
+/// Páginas destacadas del muro de la empresa (solo páginas publicadas a la empresa; máximo 12).
+model CompanyFeaturedPage {
+  id        String @id @default(cuid())
+  pageId    String @unique
+  page      Page   @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  sortOrder Int    @default(0)
+  @@index([sortOrder])
+}
+
+/// Estado Yjs de la edición en vivo (realtime/collab.ts). Solo se usa si `pageVersion` coincide con la
+/// versión actual de la página: si alguien la cambió por REST (restaurar, sincronizar), se descarta.
+model PageCollabState {
+  pageId      String   @id
+  page        Page     @relation(fields: [pageId], references: [id], onDelete: Cascade)
+  state       Bytes
+  pageVersion Int
+  updatedAt   DateTime @updatedAt
 }
