@@ -1,0 +1,8 @@
+fix(#13): add pagination to listAccessiblePages (remove hardcoded take: 100)
+
+- Add cursor-based pagination (cursor + limit) to listAccessiblePages
+- Default limit: 50, max: 100
+- Return { pages, hasMore, nextCursor } for frontend pagination
+- Update API route to accept cursor and limit query params
+
+Closes #13

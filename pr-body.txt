@@ -1,0 +1,33 @@
+## Cambios en esta PR
+
+### #7 (B5): Paginación en getDirectoryUsers
+- Añadido parámetro `offset` a `searchDirectory` con default 0
+- Ventana paginada de usuarios (máx 100) en lugar de cargar todos
+- Filtrado/scoring en JS para búsqueda sin tildes (compatibilidad SQLite)
+- Retorna `{ users, hasMore }` para paginación en frontend
+- Actualizada ruta API para aceptar `offset` query param
+
+### #11 (B9): Normalizar respuestas 404 vs 403 en operaciones de lectura
+- `findAccessiblePage`: verifica existencia primero (404), luego filtro de permiso (403)
+- `recordVisit`: mismo patrón - check de existencia luego filtro de permiso
+- `findReadableFile` (file-service): mismo patrón para acceso a archivos vía página
+- `listPageFiles` (file-service): mismo patrón
+- Para operaciones de escritura (saveUploadedFile, deleteFile), se mantiene 403 como apropiado
+
+### #4 (B2): Preservar visibilidad original al mover a papelera
+- Backend: `listTrash` ahora retorna campo `visibility` de la BD
+- Frontend: `listTrash` usa la visibilidad retornada en lugar de hardcodear "PRIVATE"
+- Al restaurar, se preserva la visibilidad original
+
+### #13 (B11): Paginación en listAccessiblePages (quitar take: 100 hardcodeado)
+- Paginación basada en cursor (cursor + limit) en listAccessiblePages
+- Default limit: 50, máx: 100
+- Retorna `{ pages, hasMore, nextCursor }` para paginación en frontend
+- Actualizada ruta API para aceptar parámetros `cursor` y `limit`
+
+### Verificaciones
+- Backend: `corepack pnpm test` → 105/105
+- Frontend: `npm test` → 59/59
+- Frontend: `npm run build` → OK
+
+**Nota**: Mi compañero va a trabajar en paralelo en el frontend, avísame antes de hacer merge.
