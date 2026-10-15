@@ -8,6 +8,14 @@ import { linkedPageIds } from "@/lib/blocks";
 import { requireUser } from "@/lib/session";
 import { PageIcon } from "@/components/ui/PageIcon";
 import { BRAND_ICON } from "@/lib/icons";
+import type { Metadata } from "next";
+
+/** El inicio lleva solo el nombre de la wiki, sin "<Página> |" delante. */
+export const metadata: Metadata = {
+  title: { absolute: "Wiki Grupo Comidas" },
+  description: "Inicio de la empresa: políticas, guías y anuncios publicados para todo Grupo Comidas.",
+  openGraph: { title: "Wiki Grupo Comidas", description: "Documentación y procesos de Grupo Comidas", siteName: "Wiki Grupo Comidas", locale: "es", type: "website", images: [{ url: "/brand/logo-grupo-comidas.png", width: 512, height: 512, alt: "Grupo Comidas" }] },
+};
 
 export default async function CompanyWall() {
   const user = await requireUser();

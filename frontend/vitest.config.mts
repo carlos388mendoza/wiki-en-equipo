@@ -5,6 +5,8 @@ const here = (p: string) => fileURLToPath(new URL(p, import.meta.url));
 
 // Las pruebas viven en tests/frontend/ (carpeta compartida del repo).
 export default defineConfig({
+  // Para importar pantallas (.tsx) en las pruebas, por ejemplo su metadata.
+  oxc: { jsx: { runtime: "automatic" } },
   resolve: {
     alias: {
       "@shared": here("../shared"),
