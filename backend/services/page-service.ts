@@ -338,6 +338,19 @@ export async function listShareLinks(actor: Actor, id: string) {
 export const shareLinkSelect = { id: true, permission: true, expiresAt: true, createdAt: true, createdBy: { select: { id: true, name: true } } } as const;
 export const activeLink = () => ({ revokedAt: null, OR: [{ expiresAt: null }, { expiresAt: { gt: new Date() } }] });
 export const hashShareToken = (token: string) => createHash("sha256").update(token).digest("hex");
+
+/**
+ * Qué abre un enlace (página o plantilla) y con qué permiso, sin aceptarlo ni revelar el título.
+ * `null` si no existe, venció o fue revocado.
+ */
+export async function describeShareLink(token: string): Promise<{ type: "page" | "template"; permission: string } | null> {
+  const tokenHash = hashShareToken(token);
+  const usable = (link: { revokedAt: Date | null; expiresAt: Date | null }) => !link.revokedAt && !(link.expiresAt && link.expiresAt < new Date());
+  const pageLink = await prisma.pageShareLink.findUnique({ where: { tokenHash }, select: { permission: true, revokedAt: true, expiresAt: true, page: { select: { deletedAt: true } } } });
+  if (pageLink) return usable(pageLink) && !pageLink.page.deletedAt ? { type: "page", permission: pageLink.permission } : null;
+  const templateLink = await prisma.templateShareLink.findUnique({ where: { tokenHash }, select: { permission: true, revokedAt: true, expiresAt: true } });
+  return templateLink && usable(templateLink) ? { type: "template", permission: templateLink.permission } : null;
+}
 /** Aceptar un enlace nunca baja un permiso: si ya podía editar, sigue editando. */
 export const strongestPermission = (current: string | undefined, offered: string) => (current === "EDIT" || offered === "EDIT" ? "EDIT" : "READ");
 

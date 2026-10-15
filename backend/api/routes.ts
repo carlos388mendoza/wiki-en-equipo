@@ -199,6 +199,11 @@ router.delete("/pages/:pageId/share-links/:linkId", async (req, res) => {
   await pages.revokeShareLink(actor(req), param(req, "pageId"), param(req, "linkId")); res.status(204).end();
 });
 router.get("/pages/:pageId/share-links", async (req, res) => res.json({ links: await pages.listShareLinks(actor(req), param(req, "pageId")) }));
+router.get("/share/:token", async (req, res) => {
+  const info = await pages.describeShareLink(z.string().min(20).max(200).parse(req.params.token));
+  if (!info) throw notFound("El enlace no existe, venció o fue revocado.");
+  res.json(info);
+});
 router.post("/share/:token/accept", async (req, res) => {
   const token = z.string().min(20).max(200).parse(req.params.token);
   // El mismo enlace /share/<token> sirve para páginas y plantillas.

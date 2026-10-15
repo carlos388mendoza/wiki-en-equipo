@@ -117,6 +117,29 @@ describe("enlaces de plantillas", () => {
   });
 });
 
+describe("qué abre un enlace antes de aceptarlo (#8)", () => {
+  it("dice si es una plantilla o una página y con qué permiso, sin dar acceso", async () => {
+    const t = await plantillaDeLuis();
+    const enlacePlantilla = await api.as(luis).post(`/templates/${t.id}/share-links`, { permission: "EDIT" });
+    const page = await createPage(api, luis);
+    const enlacePagina = await api.as(luis).post(`/pages/${page.id}/share-links`, { permission: "READ" });
+
+    expect((await api.as(maria).get(`/share/${enlacePlantilla.body.token}`)).body).toEqual({ type: "template", permission: "EDIT" });
+    expect((await api.as(maria).get(`/share/${enlacePagina.body.token}`)).body).toEqual({ type: "page", permission: "READ" });
+    // Consultar no acepta: sigue sin acceso.
+    expect((await api.as(maria).get(`/templates/${t.id}`)).status).toBe(404);
+    expect((await api.as(maria).get(`/pages/${page.id}`)).status).toBe(403);
+  });
+
+  it("un enlace desactivado o inventado responde 404", async () => {
+    const t = await plantillaDeLuis();
+    const link = await api.as(luis).post(`/templates/${t.id}/share-links`, { permission: "READ" });
+    await api.as(luis).delete(`/templates/${t.id}/share-links/${link.body.id}`);
+    expect((await api.as(maria).get(`/share/${link.body.token}`)).status).toBe(404);
+    expect((await api.as(maria).get(`/share/${"x".repeat(43)}`)).status).toBe(404);
+  });
+});
+
 describe("listado de plantillas", () => {
   it("trae fondo, icono, autor y permisos", async () => {
     const t = await plantillaDeLuis({ background: fondo, icon: "3d:proceso" });
