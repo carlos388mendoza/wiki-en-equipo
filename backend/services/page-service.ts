@@ -80,8 +80,13 @@ export async function recordVisit(actor: Actor, id: string) {
   return { counted, visits: await prisma.pageVisit.count({ where: { pageId: id } }) };
 }
 
-export async function listAccessiblePages(actor: Actor, query: { q?: string; tag?: string; departmentId?: string; parentId?: string }) {
+/**
+ * Páginas que la persona puede ver (las 100 más recientes). Con `ids` devuelve exactamente esas páginas
+ * (hasta 100), estén o no entre las recientes: sirve para mostrar subpáginas y menciones del contenido.
+ */
+export async function listAccessiblePages(actor: Actor, query: { q?: string; tag?: string; departmentId?: string; parentId?: string; ids?: string[] }) {
   const where: Prisma.PageWhereInput = { deletedAt: null };
+  if (query.ids) where.id = { in: query.ids };
   // Busca en el título y en el texto del contenido; todas las palabras deben aparecer.
   const terms = query.q ? searchTerms(query.q) : [];
   if (terms.length) where.AND = terms.map((term) => ({ searchText: { contains: term } }));

@@ -53,6 +53,28 @@ describe("listados con fondo, icono, autor y permiso propio", () => {
   });
 });
 
+describe("subpáginas y menciones con más de 100 páginas (#13)", () => {
+  it("?ids= devuelve las páginas pedidas aunque no estén entre las 100 más recientes, solo si se pueden leer", async () => {
+    const vieja = await createPage(api, pedro, { title: "Subpágina vieja", visibility: "DEPARTMENT" });
+    const privadaAjena = await createPage(api, maria, { title: "Privada de María" });
+    await prisma.page.createMany({ data: Array.from({ length: 101 }, (_, i) => ({ title: `Reciente ${i}`, searchText: `reciente ${i}`, ownerId: pedro.id, departmentId: pedro.departmentId, visibility: "DEPARTMENT" })) });
+
+    const recientes = (await api.as(pedro).get("/pages")).body.pages.map((p: { id: string }) => p.id);
+    expect(recientes).toHaveLength(100);
+    expect(recientes).not.toContain(vieja.id);
+
+    const pedidas = await api.as(pedro).get(`/pages?ids=${vieja.id},${privadaAjena.id}`);
+    expect(pedidas.status).toBe(200);
+    expect(pedidas.body.pages.map((p: { id: string }) => p.id)).toEqual([vieja.id]);
+    expect(pedidas.body.pages[0]).toMatchObject({ title: "Subpágina vieja", owner: { id: pedro.id } });
+  });
+
+  it("acepta hasta 100 ids", async () => {
+    const ids = Array.from({ length: 101 }, (_, i) => `id${i}`).join(",");
+    expect((await api.as(pedro).get(`/pages?ids=${ids}`)).status).toBe(400);
+  });
+});
+
 describe("campo de icono", () => {
   it("se guarda, se cambia, se quita y se valida", async () => {
     const page = await createPage(api, luis, { icon: "3d:acta" });

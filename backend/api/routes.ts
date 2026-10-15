@@ -152,7 +152,9 @@ router.get("/pages", async (req, res) => {
   const parentId = typeof req.query.parentId === "string" ? id.parse(req.query.parentId) : undefined;
   const q = typeof req.query.q === "string" ? req.query.q.slice(0, 100) : undefined;
   const tag = typeof req.query.tag === "string" ? req.query.tag.slice(0, 40) : undefined;
-  res.json({ pages: await pages.listAccessiblePages(actor(req), { q, tag, departmentId, parentId }) });
+  // ?ids=a,b,c: páginas concretas (subpáginas y menciones del contenido), hasta 100.
+  const ids = typeof req.query.ids === "string" ? z.array(id).max(100).parse([...new Set(req.query.ids.split(",").filter(Boolean))]) : undefined;
+  res.json({ pages: await pages.listAccessiblePages(actor(req), { q, tag, departmentId, parentId, ids }) });
 });
 router.post("/pages", async (req, res) => {
   const body = objectBody(z.object({ title, icon, content: z.unknown().optional(), background: z.unknown().optional(), visibility: visibility.optional(), parentId: id.nullable().optional(), tags }), req);
