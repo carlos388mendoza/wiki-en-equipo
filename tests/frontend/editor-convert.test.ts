@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { normalizeBlocks, type WikiBlock } from "../../frontend/lib/blocks";
+import { headingLevel, normalizeBlocks, type WikiBlock } from "../../frontend/lib/blocks";
 import { blockNoteToWiki, trimTrailingEmpty, wikiToBlockNote } from "../../frontend/lib/editor/convert";
 
 const sample: WikiBlock[] = normalizeBlocks([
@@ -58,5 +58,22 @@ describe("conversión con BlockNote", () => {
   it("quita los párrafos vacíos del final", () => {
     const blocks = blockNoteToWiki([{ type: "paragraph", content: [{ type: "text", text: "a", styles: {} }] }, { type: "paragraph", content: [] }]);
     expect(trimTrailingEmpty(blocks)).toHaveLength(1);
+  });
+});
+
+describe("niveles de título (#5)", () => {
+  const casos: [unknown, 1 | 2 | 3][] = [[1, 1], [2, 2], [3, 3], [4, 3], [6, 3], ["2", 2], [0, 1], [undefined, 1], ["h1", 1], [2.5, 1]];
+
+  it("una sola regla: 1 a 3, los más profundos quedan en 3 y lo inválido en 1", () => {
+    for (const [value, expected] of casos) expect(headingLevel(value)).toBe(expected);
+  });
+
+  it("lo que llega del backend y lo que sale del editor dan el mismo nivel", () => {
+    for (const [value, expected] of casos) {
+      const desdeBackend = normalizeBlocks([{ id: "h", type: "heading", data: { text: "Título", level: value } }])[0];
+      const desdeEditor = blockNoteToWiki([{ id: "h", type: "heading", props: { level: value }, content: [{ type: "text", text: "Título", styles: {} }], children: [] }] as never)[0];
+      expect(desdeBackend.type === "heading" && desdeBackend.data.level).toBe(expected);
+      expect(desdeEditor.type === "heading" && desdeEditor.data.level).toBe(expected);
+    }
   });
 });
