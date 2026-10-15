@@ -87,17 +87,36 @@ export async function listUsers(includeInactive = false) {
  * Directorio para invitar a páginas y plantillas (cualquier persona con sesión).
  * Solo cuentas activas y solo id, nombre y departamento: nunca correo ni rol.
  * Busca por nombre (sin importar tildes) o por el correo completo exacto.
+ * Soporta paginación con offset/limit para evitar cargar todos los usuarios en memoria.
+ * Para búsqueda sin tildes en SQLite, se trae una ventana de usuarios y se filtra en JS.
  */
-export async function searchDirectory(actor: Actor, query: string, limit: number) {
+export async function searchDirectory(actor: Actor, query: string, limit: number, offset = 0) {
   const q = foldText(query.trim());
-  const users = await prisma.user.findMany({ where: { active: true, id: { not: actor.id } }, orderBy: { name: "asc" }, select: { id: true, name: true, email: true, departmentId: true, department: { select: { name: true } } } });
+  // Traer una ventana de usuarios activos (excluyendo al que busca) ordenados por nombre.
+  // El filtro sin tildes y el scoring se hacen en JS para compatibilidad con SQLite.
+  // fetchTake = límite razonable para no cargar toda la tabla; offset permite paginar.
+  const fetchTake = 100;
+  const users = await prisma.user.findMany({
+    where: { active: true, id: { not: actor.id } },
+    orderBy: { name: "asc" },
+    skip: offset,
+    take: fetchTake,
+    select: { id: true, name: true, email: true, departmentId: true, department: { select: { name: true } } },
+  });
+
   const score = (name: string) => (name.startsWith(q) ? 0 : name.split(/\s+/).some((word) => word.startsWith(q)) ? 1 : name.includes(q) ? 2 : 3);
-  return users
+  const scored = users
     .map((user) => ({ user, score: user.email === q ? 0 : score(foldText(user.name)) }))
     .filter((match) => match.score < 3)
-    .sort((a, b) => a.score - b.score)
-    .slice(0, limit)
-    .map(({ user }) => ({ id: user.id, name: user.name, departmentId: user.departmentId, department: user.department }));
+    .sort((a, b) => a.score - b.score);
+
+  const hasMore = scored.length > limit;
+  const results = hasMore ? scored.slice(0, limit) : scored;
+
+  return {
+    users: results.map(({ user }) => ({ id: user.id, name: user.name, departmentId: user.departmentId, department: user.department })),
+    hasMore,
+  };
 }
 
 export async function updateUser(id: string, patch: { name?: string; role?: string; departmentId?: string; active?: boolean }) {

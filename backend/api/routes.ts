@@ -126,8 +126,8 @@ router.delete("/company/wall", requireRole("ADMIN"), async (req, res) => {
 });
 
 router.get("/users/directory", directoryLimiter, async (req, res) => {
-  const query = z.object({ q: z.string().trim().min(2).max(100), limit: z.coerce.number().int().min(1).max(20).default(10) }).parse(req.query);
-  res.json({ users: await auth.searchDirectory(actor(req), query.q, query.limit) });
+  const query = z.object({ q: z.string().trim().min(2).max(100), limit: z.coerce.number().int().min(1).max(20).default(10), offset: z.coerce.number().int().min(0).default(0) }).parse(req.query);
+  res.json(await auth.searchDirectory(actor(req), query.q, query.limit, query.offset));
 });
 router.get("/users", requireRole("ADMIN"), async (req, res) => res.json({ users: await auth.listUsers(req.query.includeInactive === "1" || req.query.includeInactive === "true") }));
 router.post("/users", requireRole("ADMIN"), async (req, res) => {
