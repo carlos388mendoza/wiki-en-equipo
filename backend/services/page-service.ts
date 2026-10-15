@@ -27,6 +27,18 @@ export async function findAccessiblePage(id: string, actor: Actor) {
   const pageExists = await prisma.page.findFirst({ where: { id, deletedAt: null }, select: { id: true } });
   if (!pageExists) throw notFound("No se encontró la página.");
 
+  // Aplicar filtro de permiso a la página principal
+  const pageWhere: Prisma.PageWhereInput = { id, deletedAt: null };
+  if (actor.role !== "ADMIN") {
+    pageWhere.OR = [
+      { ownerId: actor.id },
+      { shares: { some: { userId: actor.id } } },
+      { visibility: "COMPANY" },
+      { visibility: "DEPARTMENT", departmentId: actor.departmentId },
+      { isWall: true, departmentId: actor.departmentId },
+    ];
+  }
+
   const childWhere: Prisma.PageWhereInput = { deletedAt: null };
   if (actor.role !== "ADMIN") childWhere.OR = [
     { ownerId: actor.id },
@@ -35,7 +47,7 @@ export async function findAccessiblePage(id: string, actor: Actor) {
     { visibility: "DEPARTMENT", departmentId: actor.departmentId },
     { isWall: true, departmentId: actor.departmentId },
   ];
-  const page = await prisma.page.findFirst({ where: { id, deletedAt: null }, include: { ...accessInclude, shares: { select: shareWithUserSelect, orderBy: { createdAt: "asc" } }, children: { where: childWhere, select: { id: true, title: true, icon: true, visibility: true, updatedAt: true } }, owner: { select: { id: true, name: true } }, _count: { select: { visits: true } } } });
+  const page = await prisma.page.findFirst({ where: pageWhere, include: { ...accessInclude, shares: { select: shareWithUserSelect, orderBy: { createdAt: "asc" } }, children: { where: childWhere, select: { id: true, title: true, icon: true, visibility: true, updatedAt: true } }, owner: { select: { id: true, name: true } }, _count: { select: { visits: true } } } });
   if (!page) throw forbidden("No tienes acceso a esta página.");
   // Leer no cuenta visitas (el editor y el historial también leen): ver recordVisit().
   const { _count, ...rest } = page;
@@ -74,7 +86,19 @@ export async function recordVisit(actor: Actor, id: string) {
   const pageExists = await prisma.page.findFirst({ where: { id, deletedAt: null }, select: { id: true } });
   if (!pageExists) throw notFound("No se encontró la página.");
 
-  const page = await prisma.page.findFirst({ where: { id, deletedAt: null }, include: accessInclude });
+  // Aplicar filtro de permiso
+  const pageWhere: Prisma.PageWhereInput = { id, deletedAt: null };
+  if (actor.role !== "ADMIN") {
+    pageWhere.OR = [
+      { ownerId: actor.id },
+      { shares: { some: { userId: actor.id } } },
+      { visibility: "COMPANY" },
+      { visibility: "DEPARTMENT", departmentId: actor.departmentId },
+      { isWall: true, departmentId: actor.departmentId },
+    ];
+  }
+
+  const page = await prisma.page.findFirst({ where: pageWhere, include: accessInclude });
   if (!page) throw forbidden("No tienes acceso a esta página.");
   if (page.visibility === "PRIVATE") return { counted: false, visits: null };
   const since = new Date(Date.now() - VISIT_WINDOW_MINUTES * 60_000);
