@@ -1,5 +1,6 @@
 import { describe, expect, it } from "vitest";
-import { canDelete, canEdit, canEditWall, canPublishTo, canRestoreVersion, canShare, canView } from "../../frontend/lib/permissions";
+import * as permissions from "../../frontend/lib/permissions";
+import { canDelete, canEdit, canEditWall, canPublishTo, canRestoreVersion, canShare } from "../../frontend/lib/permissions";
 
 const luis = { id: "u-luis", role: "USER" as const, departmentId: "d-tec" };
 const maria = { id: "u-maria", role: "USER" as const, departmentId: "d-com" };
@@ -9,25 +10,22 @@ const ana = { id: "u-ana", role: "ADMIN" as const, departmentId: "d-tec" };
 
 const privada = { ownerId: "u-luis", departmentId: "d-tec", visibility: "PRIVATE" as const, shares: [] };
 
+// Quién puede LEER una página lo decide solo el backend (tests/backend/permisos-paginas.test.ts y las
+// pruebas de integración): la interfaz nunca recibe una página que no se puede leer.
 describe("páginas privadas", () => {
-  it("otro usuario NO puede abrir una página privada", () => {
-    expect(canView(maria, privada)).toBe(false);
-    expect(canView(pedro, privada)).toBe(false); // ni siquiera alguien del mismo departamento
-    expect(canView(carlos, privada)).toBe(false);
+  it("otro usuario no ve los botones de editar ni compartir", () => {
+    expect(canEdit(maria, privada)).toBe(false);
+    expect(canEdit(pedro, privada)).toBe(false); // ni siquiera alguien del mismo departamento
+    expect(canShare(carlos, privada)).toBe(false);
   });
 
-  it("el creador sí puede verla y editarla", () => {
-    expect(canView(luis, privada)).toBe(true);
+  it("el creador sí puede editarla", () => {
     expect(canEdit(luis, privada)).toBe(true);
   });
 });
 
 describe("compartir con permiso de lectura", () => {
   const compartida = { ...privada, shares: [{ userId: "u-maria", permission: "READ" as const }] };
-
-  it("quien solo tiene lectura puede verla", () => {
-    expect(canView(maria, compartida)).toBe(true);
-  });
 
   it("quien solo tiene lectura NO puede editarla ni compartirla", () => {
     expect(canEdit(maria, compartida)).toBe(false);
@@ -49,11 +47,10 @@ describe("publicación y muros", () => {
     expect(canPublishTo(ana, privada, "COMPANY")).toBe(true);
   });
 
-  it("las páginas de departamento solo las ven sus miembros", () => {
+  it("publicar en el departamento no da permiso de edición a sus miembros", () => {
     const depto = { ...privada, visibility: "DEPARTMENT" as const };
-    expect(canView(pedro, depto)).toBe(true);
-    expect(canView(maria, depto)).toBe(false);
-    expect(canView(ana, depto)).toBe(true);
+    expect(canEdit(pedro, depto)).toBe(false);
+    expect(canEdit(ana, depto)).toBe(true);
   });
 
   it("solo el admin del departamento (o un administrador) edita su muro", () => {
@@ -63,9 +60,8 @@ describe("publicación y muros", () => {
     expect(canEditWall(ana, { id: "d-com" })).toBe(true);
   });
 
-  it("una página en la papelera no se puede ver ni editar desde la interfaz", () => {
+  it("una página en la papelera no se puede editar desde la interfaz", () => {
     const borrada = { ...privada, deletedAt: "2026-10-01T00:00:00Z" };
-    expect(canView(luis, borrada)).toBe(false);
     expect(canEdit(luis, borrada)).toBe(false);
   });
 });
@@ -86,5 +82,11 @@ describe("restaurar versiones del historial (#3)", () => {
   it("quien no puede editar nunca ve Restaurar", () => {
     expect(canRestoreVersion(pedro, privada, "PRIVATE")).toBe(false);
     expect(canRestoreVersion(maria, publicada, "DEPARTMENT")).toBe(false);
+  });
+});
+
+describe("sin reglas de lectura duplicadas (#10)", () => {
+  it("la interfaz no tiene su propia copia de la regla de lectura (canView): decide el backend", () => {
+    expect("canView" in permissions).toBe(false);
   });
 });
