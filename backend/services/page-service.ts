@@ -234,7 +234,7 @@ export async function trashPage(actor: Actor, id: string) {
 }
 
 export async function listTrash(actor: Actor) {
-  return prisma.page.findMany({ where: { deletedAt: { not: null }, ...(actor.role === "ADMIN" ? {} : { ownerId: actor.id }) }, orderBy: { deletedAt: "desc" }, select: { id: true, title: true, icon: true, deletedAt: true, ownerId: true } });
+  return prisma.page.findMany({ where: { deletedAt: { not: null }, ...(actor.role === "ADMIN" ? {} : { ownerId: actor.id }) }, orderBy: { deletedAt: "desc" }, select: { id: true, title: true, icon: true, deletedAt: true, ownerId: true, visibility: true } });
 }
 
 /**

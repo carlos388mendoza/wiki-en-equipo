@@ -254,9 +254,9 @@ export async function listTags(_viewer: User): Promise<string[]> {
 }
 
 export async function listTrash(_viewer: User): Promise<ApiResult<PageSummary[]>> {
-  const res = await backend<{ pages: { id: string; title: string; icon: string | null; deletedAt: string; ownerId: string }[] }>("/pages/trash");
+  const res = await backend<{ pages: { id: string; title: string; icon: string | null; deletedAt: string; ownerId: string; visibility: PageVisibility }[] }>("/pages/trash");
   if (!res.ok) return res;
-  return { ok: true, data: res.data.pages.map((p) => ({ id: p.id, title: p.title, visibility: "PRIVATE" as PageVisibility, ownerId: p.ownerId, deletedAt: p.deletedAt, tags: [], icon: parseAppearance({ icon: p.icon }).icon, background: null })) };
+  return { ok: true, data: res.data.pages.map((p) => ({ id: p.id, title: p.title, visibility: p.visibility, ownerId: p.ownerId, deletedAt: p.deletedAt, tags: [], icon: parseAppearance({ icon: p.icon }).icon, background: null })) };
 }
 
 export async function getHistory(_viewer: User, pageId: string): Promise<ApiResult<HistoryEntry[]>> {
