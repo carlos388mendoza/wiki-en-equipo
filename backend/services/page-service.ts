@@ -23,6 +23,10 @@ export function withMyPermission<T extends { ownerId: string; shares: { permissi
 }
 
 export async function findAccessiblePage(id: string, actor: Actor) {
+  // Primero verificar si la página existe (sin filtros de permiso) para distinguir 404 vs 403
+  const pageExists = await prisma.page.findFirst({ where: { id, deletedAt: null }, select: { id: true } });
+  if (!pageExists) throw notFound("No se encontró la página.");
+
   const childWhere: Prisma.PageWhereInput = { deletedAt: null };
   if (actor.role !== "ADMIN") childWhere.OR = [
     { ownerId: actor.id },
@@ -32,8 +36,7 @@ export async function findAccessiblePage(id: string, actor: Actor) {
     { isWall: true, departmentId: actor.departmentId },
   ];
   const page = await prisma.page.findFirst({ where: { id, deletedAt: null }, include: { ...accessInclude, shares: { select: shareWithUserSelect, orderBy: { createdAt: "asc" } }, children: { where: childWhere, select: { id: true, title: true, icon: true, visibility: true, updatedAt: true } }, owner: { select: { id: true, name: true } }, _count: { select: { visits: true } } } });
-  if (!page) throw notFound("No se encontró la página.");
-  assertCanReadPage(page as PageAccessRecord, actor);
+  if (!page) throw forbidden("No tienes acceso a esta página.");
   // Leer no cuenta visitas (el editor y el historial también leen): ver recordVisit().
   const { _count, ...rest } = page;
   return { ...rest, visitCount: page.visibility === "PRIVATE" ? null : _count.visits, ancestors: await readableAncestors(page.parentId, actor) };
@@ -67,9 +70,12 @@ export const VISIT_WINDOW_MINUTES = 30;
  * Solo cuenta en páginas publicadas al departamento o a la empresa, y una vez cada 30 minutos por persona.
  */
 export async function recordVisit(actor: Actor, id: string) {
+  // Primero verificar si la página existe (sin filtros de permiso) para distinguir 404 vs 403
+  const pageExists = await prisma.page.findFirst({ where: { id, deletedAt: null }, select: { id: true } });
+  if (!pageExists) throw notFound("No se encontró la página.");
+
   const page = await prisma.page.findFirst({ where: { id, deletedAt: null }, include: accessInclude });
-  if (!page) throw notFound("No se encontró la página.");
-  assertCanReadPage(page as PageAccessRecord, actor);
+  if (!page) throw forbidden("No tienes acceso a esta página.");
   if (page.visibility === "PRIVATE") return { counted: false, visits: null };
   const since = new Date(Date.now() - VISIT_WINDOW_MINUTES * 60_000);
   const counted = await prisma.$transaction(async (tx) => {

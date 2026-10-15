@@ -1,0 +1,9 @@
+fix(#7): add pagination to getDirectoryUsers (searchDirectory)
+
+- Add offset parameter to searchDirectory with default 0
+- Fetch paginated window of users (max 100) instead of all users
+- Filter/score in JS for accent-insensitive search (SQLite compat)
+- Return { users, hasMore } for frontend pagination
+- Update API route to accept offset query param
+
+Closes #7
