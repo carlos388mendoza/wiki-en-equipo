@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { canDelete, canEdit, canEditWall, canPublishTo, canShare, canView } from "../../frontend/lib/permissions";
+import { canDelete, canEdit, canEditWall, canPublishTo, canRestoreVersion, canShare, canView } from "../../frontend/lib/permissions";
 
 const luis = { id: "u-luis", role: "USER" as const, departmentId: "d-tec" };
 const maria = { id: "u-maria", role: "USER" as const, departmentId: "d-com" };
@@ -67,5 +67,24 @@ describe("publicación y muros", () => {
     const borrada = { ...privada, deletedAt: "2026-10-01T00:00:00Z" };
     expect(canView(luis, borrada)).toBe(false);
     expect(canEdit(luis, borrada)).toBe(false);
+  });
+});
+
+describe("restaurar versiones del historial (#3)", () => {
+  const publicada = { ownerId: "u-luis", departmentId: "d-tec", visibility: "COMPANY" as const, shares: [] };
+
+  it("quien edita no ve Restaurar en una versión publicada a la empresa, salvo un administrador", () => {
+    expect(canRestoreVersion(luis, publicada, "COMPANY")).toBe(false);
+    expect(canRestoreVersion(ana, publicada, "COMPANY")).toBe(true);
+  });
+
+  it("quien edita sí puede restaurar versiones privadas o del departamento", () => {
+    expect(canRestoreVersion(luis, publicada, "DEPARTMENT")).toBe(true);
+    expect(canRestoreVersion(luis, privada, "PRIVATE")).toBe(true);
+  });
+
+  it("quien no puede editar nunca ve Restaurar", () => {
+    expect(canRestoreVersion(pedro, privada, "PRIVATE")).toBe(false);
+    expect(canRestoreVersion(maria, publicada, "DEPARTMENT")).toBe(false);
   });
 });

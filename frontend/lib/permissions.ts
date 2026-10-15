@@ -30,6 +30,14 @@ export function canEdit(user: Viewer, page: PageLike): boolean {
   return Boolean(page.isWall && user.role === "DEPARTMENT_ADMIN" && user.departmentId === page.departmentId);
 }
 
+/**
+ * Restaurar una versión del historial: hay que poder editar la página y, si esa versión estaba publicada
+ * para toda la empresa, ser administrador (el backend responde 403 en ese caso).
+ */
+export function canRestoreVersion(user: Viewer, page: PageLike, versionVisibility: PageVisibility): boolean {
+  return canEdit(user, page) && (versionVisibility !== "COMPANY" || user.role === "ADMIN");
+}
+
 /** En el backend, quien puede editar también puede compartir. */
 export function canShare(user: Viewer, page: PageLike): boolean {
   return canEdit(user, page);
