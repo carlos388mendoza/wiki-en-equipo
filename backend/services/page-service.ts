@@ -110,7 +110,7 @@ export async function recordVisit(actor: Actor, id: string) {
   return { counted, visits: await prisma.pageVisit.count({ where: { pageId: id } }) };
 }
 
-export async function listAccessiblePages(actor: Actor, query: { q?: string; tag?: string; departmentId?: string; parentId?: string }) {
+export async function listAccessiblePages(actor: Actor, query: { q?: string; tag?: string; departmentId?: string; parentId?: string; cursor?: string; limit?: number }) {
   const where: Prisma.PageWhereInput = { deletedAt: null };
   // Busca en el título y en el texto del contenido; todas las palabras deben aparecer.
   const terms = query.q ? searchTerms(query.q) : [];
@@ -129,17 +129,25 @@ export async function listAccessiblePages(actor: Actor, query: { q?: string; tag
     where.OR = [{ ownerId: actor.id }, { shares: { some: { userId: actor.id } } }, { visibility: "COMPANY" }];
   }
   if (query.tag) where.tags = { some: { name: query.tag } };
+
+  const take = Math.min(query.limit ?? 50, 100); // default 50, max 100
+  const cursor = query.cursor ? { id: query.cursor } : undefined;
+
   if (!terms.length) {
-    const pages = await prisma.page.findMany({ where, orderBy: { updatedAt: "desc" }, take: 100, select: { ...pageCardSelect, ...myShareSelect(actor) } });
-    return pages.map((page) => withMyPermission(actor, page));
+    const pages = await prisma.page.findMany({ where, orderBy: { updatedAt: "desc" }, take: take + 1, cursor, select: { ...pageCardSelect, ...myShareSelect(actor) } });
+    const hasMore = pages.length > take;
+    const items = hasMore ? pages.slice(0, take) : pages;
+    return { pages: items.map((page) => withMyPermission(actor, page)), hasMore, nextCursor: hasMore ? items[items.length - 1].id : undefined };
   }
   // Con búsqueda: primero las que coinciden en el título; las demás traen un fragmento del contenido.
-  const found = await prisma.page.findMany({ where, orderBy: { updatedAt: "desc" }, take: 100, select: { ...pageCardSelect, ...myShareSelect(actor), contentJson: true } });
-  const results = found.map(({ contentJson, ...page }) => {
+  const found = await prisma.page.findMany({ where, orderBy: { updatedAt: "desc" }, take: take + 1, cursor, select: { ...pageCardSelect, ...myShareSelect(actor), contentJson: true } });
+  const hasMore = found.length > take;
+  const items = hasMore ? found.slice(0, take) : found;
+  const results = items.map(({ contentJson, ...page }) => {
     const inTitle = terms.every((term) => foldText(page.title).includes(term));
     return { ...withMyPermission(actor, page), match: inTitle ? "title" as const : "content" as const, excerpt: searchExcerpt(contentJson, terms) };
   });
-  return [...results.filter((page) => page.match === "title"), ...results.filter((page) => page.match === "content")];
+  return { pages: [...results.filter((page) => page.match === "title"), ...results.filter((page) => page.match === "content")], hasMore, nextCursor: hasMore ? items[items.length - 1].id : undefined };
 }
 
 async function tagsConnect(names: string[] | undefined) {

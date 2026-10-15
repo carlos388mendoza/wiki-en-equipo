@@ -152,7 +152,9 @@ router.get("/pages", async (req, res) => {
   const parentId = typeof req.query.parentId === "string" ? id.parse(req.query.parentId) : undefined;
   const q = typeof req.query.q === "string" ? req.query.q.slice(0, 100) : undefined;
   const tag = typeof req.query.tag === "string" ? req.query.tag.slice(0, 40) : undefined;
-  res.json({ pages: await pages.listAccessiblePages(actor(req), { q, tag, departmentId, parentId }) });
+  const cursor = typeof req.query.cursor === "string" ? req.query.cursor : undefined;
+  const limit = typeof req.query.limit === "string" ? parseInt(req.query.limit, 10) : undefined;
+  res.json(await pages.listAccessiblePages(actor(req), { q, tag, departmentId, parentId, cursor, limit }));
 });
 router.post("/pages", async (req, res) => {
   const body = objectBody(z.object({ title, icon, content: z.unknown().optional(), background: z.unknown().optional(), visibility: visibility.optional(), parentId: id.nullable().optional(), tags }), req);
