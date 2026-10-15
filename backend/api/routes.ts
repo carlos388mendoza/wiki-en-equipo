@@ -206,7 +206,7 @@ router.post("/share/:token/accept", async (req, res) => {
 });
 
 router.post("/sync/pages/:pageId", async (req, res) => {
-  const body = objectBody(z.object({ operationId: z.string().uuid(), baseVersion: z.number().int().positive(), title: title.optional(), icon, content: z.unknown(), background: z.unknown().optional() }), req);
+  const body = objectBody(z.object({ operationId: z.string().uuid(), baseVersion: z.number().int().positive(), title: title.optional(), icon, content: z.unknown(), background: z.unknown().optional(), tags }), req);
   const result = await syncPage(actor(req), { ...body, pageId: param(req, "pageId") });
   if (result.status === "synced") await collab.resetPage(param(req, "pageId"));
   if (result.status === "synced") hub.broadcast(param(req, "pageId"), { type: "page.refresh", pageId: param(req, "pageId"), version: result.page.version });

@@ -5,7 +5,7 @@ import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
 import { CloudOff, CloudUpload, FilePlus2, LoaderCircle, Trash2, Wifi } from "lucide-react";
 import type { CollaborationOptions } from "@blocknote/core/yjs";
-import { createPage, savePage } from "@/app/actions/pages";
+import { createPage } from "@/app/actions/pages";
 import type { WikiBlock } from "@/lib/blocks";
 import { blockNoteToWiki, trimTrailingEmpty, type BNBlock } from "@/lib/editor/convert";
 import type { WikiEditor } from "../editor/schema";
@@ -91,11 +91,11 @@ export function OfflineDrafts() {
     setBusy(true);
     setMessage(null);
     try {
-      const created = await createPage({ title: title || "Borrador sin título" });
-      if (!created.ok) { setMessage({ ok: false, text: created.message }); return; }
       const content = editorRef.current ? trimTrailingEmpty(blockNoteToWiki(editorRef.current.document as BNBlock[])) : blocks.current;
-      const saved = await savePage(created.data.id, { title: title || "Borrador sin título", blocks: content, background: null, icon: "📝", tags: [] }, 1);
-      if (!saved.ok) { setMessage({ ok: false, text: saved.message }); return; }
+      // La página se crea ya con el contenido (una sola petición): si falla, no queda una página vacía
+      // y el borrador sigue en este dispositivo para reintentar. Solo se borra cuando la página existe.
+      const created = await createPage({ title: title || "Borrador sin título", blocks: content, icon: "📝" });
+      if (!created.ok) { setMessage({ ok: false, text: created.message }); return; }
       await deleteDraft(user.id, current);
       index.current?.map.delete(current);
       setCurrent(null);
