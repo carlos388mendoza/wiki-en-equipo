@@ -2,7 +2,7 @@
 
 Wiki en equipo es un proyecto para crear un espacio interno de documentación para Grupo Comidas. La idea es reunir páginas, procesos y recursos, organizados por departamentos y protegidos según el usuario y sus permisos.
 
-> **Estado actual:** se está preparando la API del proyecto en `backend/` con Node.js, TypeScript, Express, Prisma y SQLite para desarrollo. La interfaz de `frontend/` sigue pendiente.
+> **Estado actual:** la API (`backend/`: Node.js, TypeScript, Express, Prisma, SQLite y edición en vivo con Yjs) y la interfaz (`frontend/`: Next.js, React y BlockNote) cumplen todos los requisitos. Solo falta preparar la infraestructura para varias instancias (ver `frontend/PENDIENTES_BACKEND.md`).
 
 ## Objetivo
 
@@ -20,7 +20,7 @@ Construir una plataforma de documentación colaborativa inspirada en herramienta
 - Subpáginas, historial de ediciones, visitas a páginas públicas y papelera restaurable.
 - Límites para archivos subidos y visualización optimizada de imágenes.
 
-Estas funciones describen el alcance del proyecto. Consulta [backend/README.md](backend/README.md) para ver las rutas y capacidades que ya se están implementando en el servidor. La interfaz y la integración con el editor siguen pendientes.
+Estas funciones describen el alcance del proyecto. Consulta [backend/README.md](backend/README.md) para ver las rutas del servidor y [frontend/README.md](frontend/README.md) para las pantallas, el editor y la demostración paso a paso.
 
 ## Roles previstos
 
@@ -83,7 +83,7 @@ Los archivos `.gitkeep` conservan las carpetas mientras estén vacías; pueden q
 
 ## Desarrollo
 
-Para preparar el servidor, consulta [backend/README.md](backend/README.md). La interfaz todavía no tiene tecnologías ni instrucciones de ejecución definidas.
+Para preparar el servidor, consulta [backend/README.md](backend/README.md); para la interfaz, [frontend/README.md](frontend/README.md). Pruebas: `cd backend && corepack pnpm test` y `cd frontend && npm test`.
 
 ## Seguridad
 

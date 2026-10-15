@@ -1,0 +1,35 @@
+# Dependencias
+node_modules/
+
+# Compilación
+.next/
+out/
+dist/
+build/
+*.tsbuildinfo
+next-env.d.ts
+
+# Variables de entorno y secretos
+.env*
+!.env.example
+
+# Datos locales
+*.db
+*.db-journal
+uploads/
+
+# Sistema y editores
+.DS_Store
+Thumbs.db
+*.log
+.vscode/
+.idea/
+
+# Usuarios de prueba generados por `npm run seed`
+*.local.json
+
+# Generado al compilar el frontend (service worker)
+frontend/public/sw-build.js
+
+# Copia generada de assets/templates/3dicons
+frontend/public/iconos/3d/

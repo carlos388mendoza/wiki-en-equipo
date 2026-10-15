@@ -50,7 +50,8 @@ export async function setDepartmentWall(actor: Actor, departmentId: string, page
     if (!page) throw notFound("No se encontró la página.");
     if (actor.role !== "ADMIN" && page.departmentId !== departmentId) throw forbidden("La página debe pertenecer a tu departamento.");
     if (department.wallPageId && department.wallPageId !== pageId) await tx.page.update({ where: { id: department.wallPageId }, data: { isWall: false } });
-    const updated = await tx.page.update({ where: { id: pageId }, data: { departmentId, isWall: true, visibility: "DEPARTMENT", version: { increment: 1 } } });
+    // Si la página era muro de empresa, quitar esa marca para evitar 403 en /company/wall.
+    const updated = await tx.page.update({ where: { id: pageId }, data: { departmentId, isWall: true, isCompanyWall: false, visibility: "DEPARTMENT", version: { increment: 1 } } });
     await tx.department.update({ where: { id: departmentId }, data: { wallPageId: pageId } });
     return updated;
   });
@@ -111,7 +112,8 @@ export async function setCompanyWall(actor: Actor, pageId: string) {
     if (!page) throw notFound("No se encontró la página.");
     const old = await tx.companySettings.findUnique({ where: { id: "main" } });
     if (old?.wallPageId && old.wallPageId !== pageId) await tx.page.update({ where: { id: old.wallPageId }, data: { isCompanyWall: false } });
-    const updated = await tx.page.update({ where: { id: pageId }, data: { visibility: "COMPANY", isCompanyWall: true, version: { increment: 1 } } });
+    // Si la página era muro de departamento, quitar esa marca.
+    const updated = await tx.page.update({ where: { id: pageId }, data: { visibility: "COMPANY", isCompanyWall: true, isWall: false, version: { increment: 1 } } });
     await tx.companySettings.upsert({ where: { id: "main" }, create: { id: "main", wallPageId: pageId }, update: { wallPageId: pageId } });
     return updated;
   });
