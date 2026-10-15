@@ -144,7 +144,7 @@ export function useCollaboration({ pageId, user, onRemoteSave, enabled = true }:
   );
 
   return {
-    doc, meta: doc.getMap<unknown>("meta"), ready: !enabled || (localReady && remoteSynced), collaboration, status, peers,
+    doc, ready: !enabled || (localReady && remoteSynced), collaboration, status, peers,
     live: Boolean(url), replaced, accessLost,
   };
 }

@@ -34,7 +34,12 @@ export function WallPagePicker({ target, wall, candidates }: { target: Target; w
   const options = candidates.filter((p) => p.id !== wall?.id);
   const chosen = options.find((p) => p.id === choice);
   // El backend publica la página del muro (departamento o empresa) al asignarla.
-  const willPublish = (p: PageSummary) => (target.kind === "company" ? p.visibility !== "COMPANY" : p.visibility === "PRIVATE");
+  // Advertir si la página va a cambiar de visibilidad (PRIVATE→DEPARTMENT/COMPANY, DEPARTMENT→COMPANY, COMPANY→DEPARTMENT).
+  const willPublish = (p: PageSummary) => {
+    if (target.kind === "company") return p.visibility !== "COMPANY";
+    // target.kind === "department"
+    return p.visibility === "PRIVATE" || p.visibility === "COMPANY";
+  };
 
   return (
     <section aria-labelledby="pagina-muro" className="rounded-xl border border-line bg-surface p-5">
@@ -82,7 +87,11 @@ export function WallPagePicker({ target, wall, candidates }: { target: Target; w
         </div>
         {chosen && willPublish(chosen) && (
           <p role="note" className="rounded-lg bg-saffron-soft px-3 py-2 text-sm">
-            “{chosen.title}” es {chosen.visibility === "PRIVATE" ? "privada" : "del departamento"}. Al usarla como muro quedará visible para {target.kind === "company" ? "toda la empresa" : "todo el departamento"}.
+            {(() => {
+              const from = chosen.visibility === "PRIVATE" ? "privada" : chosen.visibility === "DEPARTMENT" ? "del departamento" : "de la empresa";
+              const to = target.kind === "company" ? "toda la empresa" : "todo el departamento";
+              return `“${chosen.title}” es ${from}. Al usarla como muro quedará visible para ${to}.`;
+            })()}
           </p>
         )}
         <Feedback message={message} />

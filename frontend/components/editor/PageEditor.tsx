@@ -9,6 +9,7 @@ import { createPage, savePage, updateTemplate, type PageDraft } from "@/app/acti
 import { loadPageState, syncOffline } from "@/app/actions/sync";
 import type { WikiBlock } from "@/lib/blocks";
 import { useCollaboration } from "@/lib/collab/useCollaboration";
+import { usePageDraft, type PageDraftState } from "@/lib/collab/usePageDraft";
 import { applyBlocks } from "@/lib/editor/apply";
 import { blockNoteToWiki, trimTrailingEmpty, wikiToBlockNote, type BNBlock } from "@/lib/editor/convert";
 import { mergePages, type MergeResult, type PageState } from "@/lib/editor/merge";
@@ -98,6 +99,7 @@ export function PageEditor({ mode, id, initial, pages, tagSuggestions, viewer, b
 
   const handleRemoteRef = useRef<(version: number) => void>(() => {});
   const collab = useCollaboration({ pageId: id, user: viewer, enabled: isPage, onRemoteSave: (v) => handleRemoteRef.current(v) });
+  const draftStore = usePageDraft(id, viewer.id, isPage);
 
   const draft = useCallback((): PageDraft => ({ title, blocks: blocksRef.current, background, icon, tags, ...(parentChanged.current && { parentId }) }), [title, background, icon, tags, parentId]);
   const draftRef = useRef(draft);
@@ -107,24 +109,21 @@ export function PageEditor({ mode, id, initial, pages, tagSuggestions, viewer, b
     return { title: d.title, blocks: d.blocks, background: d.background, icon: d.icon, tags: d.tags };
   };
 
-  /* ---------- Copia local (Yjs + IndexedDB) ---------- */
+  /* ---------- Copia local (IndexedDB por usuario, NO compartida) ---------- */
 
   const persistLocal = useCallback((dirty: boolean) => {
-    if (!isPage) return;
+    if (!isPage || !draftStore.ready) return;
     const s = draftRef.current();
-    collab.meta.set("fields", { title: s.title, background: s.background, icon: s.icon, tags: s.tags });
-    collab.meta.set("dirty", dirty);
-  }, [isPage, collab.meta]);
+    draftStore.setFields({ title: s.title, background: s.background, icon: s.icon, tags: s.tags });
+    draftStore.setDirty(dirty);
+  }, [isPage, draftStore]);
 
   const markSynced = useCallback((version: number, state: PageState) => {
     versionRef.current = version;
     baseRef.current = state;
-    if (!isPage) return;
-    collab.meta.set("baseVersion", version);
-    collab.meta.set("base", JSON.stringify(state));
-    collab.meta.set("dirty", false);
-    collab.meta.delete("operationId");
-  }, [isPage, collab.meta]);
+    if (!isPage || !draftStore.ready) return;
+    draftStore.setBase(version, state);
+  }, [isPage, draftStore]);
 
   // Las claves sirven para no volver a guardar lo que acaba de llegar del servidor.
   const fieldsKeyOf = (f: { title: string; background: Background | null; icon: string | null; tags: string[]; parentId: string | null; description: string; scope: TemplateScope }) => JSON.stringify(f);
@@ -172,7 +171,7 @@ export function PageEditor({ mode, id, initial, pages, tagSuggestions, viewer, b
 
   const goOffline = () => {
     persistLocal(true);
-    if (isPage && !collab.meta.get("operationId")) collab.meta.set("operationId", uuid());
+    if (isPage && draftStore.ready && !draftStore.state.operationId) draftStore.setOperationId(uuid());
     setStatus("offline");
     // Si el navegador cree tener red pero el servidor no respondió, el evento "online" no llegará:
     // se reintenta cada 15 s hasta que el guardado funcione.
@@ -212,7 +211,7 @@ export function PageEditor({ mode, id, initial, pages, tagSuggestions, viewer, b
     }
 
     // Cambios pendientes de una sesión sin conexión: se suben con el endpoint de sincronización.
-    const operationId = collab.meta.get("operationId") as string | undefined;
+    const operationId = draftStore.ready ? draftStore.state.operationId : undefined;
     if (operationId && force === undefined) {
       const res = await syncOffline(id, state, versionRef.current, operationId);
       saving.current = false;
@@ -222,7 +221,7 @@ export function PageEditor({ mode, id, initial, pages, tagSuggestions, viewer, b
         setNotice("Se subieron los cambios que hiciste sin conexión.");
         setStatus("saved");
       } else if (res.conflict) {
-        collab.meta.delete("operationId");
+        if (draftStore.ready) draftStore.setOperationId(null);
         resolveAgainst(res.version, res.state, "reconnect");
       } else {
         setError(res.message);
@@ -291,17 +290,16 @@ export function PageEditor({ mode, id, initial, pages, tagSuggestions, viewer, b
     }
   };
 
-  /* ---------- Al abrir: recuperar la copia local ---------- */
+  /* ---------- Al abrir: recuperar la copia local (IndexedDB por usuario) ---------- */
 
   const onEditorReady = (editor: WikiEditor) => {
-    if (!isPage || initDone.current) return;
+    if (!isPage || initDone.current || !draftStore.ready) return;
     initDone.current = true;
-    const meta = collab.meta;
     const server: PageState = { title: initial.title, blocks: initial.blocks, background: initial.background, icon: initial.icon, tags: initial.tags };
-    const localVersion = meta.get("baseVersion") as number | undefined;
+    const localVersion = draftStore.state.baseVersion;
     const editorBlocks = trimTrailingEmpty(blockNoteToWiki(editor.document as BNBlock[]));
 
-    if (localVersion === undefined) {
+    if (localVersion === 0) {
       // Primera vez en este dispositivo. Si nadie más llenó el documento compartido, se carga el del servidor.
       if (editorBlocks.length === 0) {
         editor.replaceBlocks(editor.document, wikiToBlockNote(initial.blocks) as never);
@@ -315,12 +313,12 @@ export function PageEditor({ mode, id, initial, pages, tagSuggestions, viewer, b
     }
 
     let base = server;
-    try { base = JSON.parse(String(meta.get("base"))) as PageState; } catch { /* sin base guardada */ }
-    const fields = (meta.get("fields") as Partial<PageState> | undefined) ?? {};
+    try { base = draftStore.state.base ?? server; } catch { /* sin base guardada */ }
+    const fields = draftStore.state.fields;
     blocksRef.current = editorBlocks;
     lastBlocks.current = JSON.stringify(editorBlocks);
 
-    if (meta.get("dirty") !== true) {
+    if (!draftStore.state.dirty) {
       if (localVersion !== initial.version) {
         // La copia local quedó vieja: manda el servidor.
         applyState(server);
