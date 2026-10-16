@@ -22,6 +22,15 @@ async function guardar(user: TestUser, pageId: string, version: number, body: Re
 const versiones = async (user: TestUser, pageId: string) => (await api.as(user).get(`/pages/${pageId}/history`)).body.history.map((h: { version: number }) => h.version);
 
 describe("historial con autoguardado", () => {
+  it("una página privada ajena responde igual que la página (403); si no existe, ambas rutas dan 404", async () => {
+    const page = await createPage(api, luis, { visibility: "PRIVATE" });
+    expect((await api.as(maria).get(`/pages/${page.id}`)).status).toBe(403);
+    expect((await api.as(maria).get(`/pages/${page.id}/history`)).status).toBe(403);
+
+    expect((await api.as(maria).get("/pages/no-existe")).status).toBe(404);
+    expect((await api.as(maria).get("/pages/no-existe/history")).status).toBe(404);
+  });
+
   it("los autoguardados seguidos de la misma persona forman una sola versión", async () => {
     const page = await createPage(api, luis, { content: texto("v1") });
     let v = await guardar(luis, page.id, page.version, { content: texto("v2"), autosave: true });

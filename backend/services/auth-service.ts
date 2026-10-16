@@ -19,7 +19,8 @@ export async function bootstrapAdmin(input: { name: string; email: string; passw
   if (!slug) throw badRequest("El nombre del departamento no es válido.");
   const result = await prisma.$transaction(async (tx) => {
     const department = await tx.department.create({ data: { name: input.departmentName.trim(), slug } });
-    const user = await tx.user.create({ data: { name: input.name.trim(), email, passwordHash: await hashPassword(input.password), role: "ADMIN", departmentId: department.id }, include: { department: true } });
+    const name = input.name.trim();
+    const user = await tx.user.create({ data: { name, searchName: foldText(name), email, passwordHash: await hashPassword(input.password), role: "ADMIN", departmentId: department.id }, include: { department: true } });
     const defaults = [
       {
         title: "Documentación de proceso", description: "Estructura clara para documentar un proceso de trabajo.", icon: "3d:documentacion", scope: "COMPANY", isDefault: true,
@@ -75,7 +76,8 @@ export async function login(emailInput: string, password: string) {
 
 export async function createUser(input: { name: string; email: string; password: string; role: string; departmentId: string }) {
   if (!await prisma.department.findUnique({ where: { id: input.departmentId } })) throw badRequest("El departamento indicado no existe.");
-  const user = await prisma.user.create({ data: { name: input.name.trim(), email: input.email.trim().toLowerCase(), passwordHash: await hashPassword(input.password), role: input.role, departmentId: input.departmentId }, include: { department: true } });
+  const name = input.name.trim();
+  const user = await prisma.user.create({ data: { name, searchName: foldText(name), email: input.email.trim().toLowerCase(), passwordHash: await hashPassword(input.password), role: input.role, departmentId: input.departmentId }, include: { department: true } });
   return publicUser(user);
 }
 
@@ -87,17 +89,29 @@ export async function listUsers(includeInactive = false) {
  * Directorio para invitar a páginas y plantillas (cualquier persona con sesión).
  * Solo cuentas activas y solo id, nombre y departamento: nunca correo ni rol.
  * Busca por nombre (sin importar tildes) o por el correo completo exacto.
+ * Filtra en la base por nombre normalizado o correo exacto antes de paginar, para que
+ * una coincidencia no quede oculta detrás de los primeros 100 usuarios.
  */
-export async function searchDirectory(actor: Actor, query: string, limit: number) {
+export async function searchDirectory(actor: Actor, query: string, limit: number, offset = 0) {
   const q = foldText(query.trim());
-  const users = await prisma.user.findMany({ where: { active: true, id: { not: actor.id } }, orderBy: { name: "asc" }, select: { id: true, name: true, email: true, departmentId: true, department: { select: { name: true } } } });
+  const users = await prisma.user.findMany({
+    where: { active: true, id: { not: actor.id }, OR: [{ searchName: { contains: q } }, { email: q }] },
+    orderBy: { name: "asc" },
+    select: { id: true, name: true, searchName: true, email: true, departmentId: true, department: { select: { name: true } } },
+  });
+
   const score = (name: string) => (name.startsWith(q) ? 0 : name.split(/\s+/).some((word) => word.startsWith(q)) ? 1 : name.includes(q) ? 2 : 3);
-  return users
-    .map((user) => ({ user, score: user.email === q ? 0 : score(foldText(user.name)) }))
-    .filter((match) => match.score < 3)
-    .sort((a, b) => a.score - b.score)
-    .slice(0, limit)
-    .map(({ user }) => ({ id: user.id, name: user.name, departmentId: user.departmentId, department: user.department }));
+  const scored = users
+    .map((user) => ({ user, score: user.email === q ? 0 : score(user.searchName) }))
+    .sort((a, b) => a.score - b.score || a.user.name.localeCompare(b.user.name, "es"));
+
+  const hasMore = scored.length > offset + limit;
+  const results = scored.slice(offset, offset + limit);
+
+  return {
+    users: results.map(({ user }) => ({ id: user.id, name: user.name, departmentId: user.departmentId, department: user.department })),
+    hasMore,
+  };
 }
 
 export async function updateUser(id: string, patch: { name?: string; role?: string; departmentId?: string; active?: boolean }) {
@@ -108,7 +122,8 @@ export async function updateUser(id: string, patch: { name?: string; role?: stri
     const activeAdmins = await prisma.user.count({ where: { role: "ADMIN", active: true } });
     if (activeAdmins <= 1) throw conflict("Debe quedar al menos un administrador activo.");
   }
-  return prisma.user.update({ where: { id }, data: patch, select: { id: true, name: true, email: true, role: true, departmentId: true, active: true } });
+  const name = patch.name?.trim();
+  return prisma.user.update({ where: { id }, data: { ...patch, ...(name === undefined ? {} : { name, searchName: foldText(name) }) }, select: { id: true, name: true, email: true, role: true, departmentId: true, active: true } });
 }
 
 export async function changePassword(userId: string, currentPassword: string, newPassword: string) {

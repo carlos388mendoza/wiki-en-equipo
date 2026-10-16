@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { createDepartment, createUser, resetDatabase, startApi, type TestApi, type TestUser } from "./helpers";
 
 let api: TestApi;
-let ana: TestUser, luis: TestUser, carlos: TestUser, inactivo: TestUser;
+let ana: TestUser, luis: TestUser, carlos: TestUser, inactivo: TestUser, zelaya: TestUser;
 
 beforeAll(async () => {
   await resetDatabase();
@@ -12,7 +12,8 @@ beforeAll(async () => {
   luis = await createUser("Luis Paz", tecnologia.id);
   carlos = await createUser("Carlos Mejía", contabilidad.id, "DEPARTMENT_ADMIN", { email: "carlos.mejia@wiki.test" });
   inactivo = await createUser("Carlos Inactivo", contabilidad.id, "USER", { active: false });
-  for (let i = 1; i <= 25; i++) await createUser(`Persona ${String(i).padStart(2, "0")}`, contabilidad.id);
+  zelaya = await createUser("María Zelaya", contabilidad.id);
+  for (let i = 1; i <= 125; i++) await createUser(`A Persona ${String(i).padStart(3, "0")}`, contabilidad.id);
   api = await startApi();
 });
 afterAll(() => api.close());
@@ -30,6 +31,21 @@ describe("directorio de usuarios para invitar", () => {
   it("no distingue tildes ni mayúsculas", async () => {
     const res = await api.as(luis).get("/users/directory?q=MEJIA");
     expect(res.body.users.map((u: { id: string }) => u.id)).toEqual([carlos.id]);
+  });
+
+  it("encuentra coincidencias después de los primeros 100 usuarios y pagina los resultados coincidentes", async () => {
+    const encontrada = await api.as(luis).get("/users/directory?q=zelaya");
+    expect(encontrada.body.users.map((u: { id: string }) => u.id)).toContain(zelaya.id);
+
+    const pagina = await api.as(luis).get("/users/directory?q=persona&limit=5&offset=15");
+    expect(pagina.body.users).toHaveLength(5);
+    expect(pagina.body.hasMore).toBe(true);
+  });
+
+  it("actualiza el nombre normalizado cuando se cambia el nombre de una persona", async () => {
+    expect((await api.as(ana).patch(`/users/${zelaya.id}`, { name: "María Elena" })).status).toBe(200);
+    expect((await api.as(luis).get("/users/directory?q=zelaya")).body.users).toHaveLength(0);
+    expect((await api.as(luis).get("/users/directory?q=elena")).body.users.map((u: { id: string }) => u.id)).toContain(zelaya.id);
   });
 
   it("encuentra por correo exacto sin devolver el correo", async () => {

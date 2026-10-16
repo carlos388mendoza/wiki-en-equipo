@@ -25,6 +25,16 @@ async function enPapelera(owner: TestUser, data: Record<string, unknown> = {}) {
 }
 
 describe("eliminar definitivamente", () => {
+  it("conserva la visibilidad original en la papelera y al restaurar", async () => {
+    const page = await createPage(api, luis, { visibility: "DEPARTMENT" });
+    expect((await api.as(luis).delete(`/pages/${page.id}`)).status).toBe(200);
+
+    const inTrash = (await api.as(luis).get("/pages/trash")).body.pages.find((p: { id: string }) => p.id === page.id);
+    expect(inTrash.visibility).toBe("DEPARTMENT");
+    const restored = await api.as(luis).post(`/pages/${page.id}/restore`);
+    expect(restored.body.page.visibility).toBe("DEPARTMENT");
+  });
+
   it("el dueño la elimina con su historial y sus archivos (también del disco)", async () => {
     const page = await createPage(api, luis);
     await api.as(luis).patch(`/pages/${page.id}`, { title: "Con historial", expectedVersion: page.version });
