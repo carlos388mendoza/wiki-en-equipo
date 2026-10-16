@@ -92,13 +92,18 @@ export async function listUsers(includeInactive = false) {
  * Filtra en la base por nombre normalizado o correo exacto antes de paginar, para que
  * una coincidencia no quede oculta detrás de los primeros 100 usuarios.
  */
+/** Coincidencias que se ordenan como máximo: una búsqueda corta ("ma") no debe traer miles de cuentas. */
+export const DIRECTORY_MAX_MATCHES = 500;
+
 export async function searchDirectory(actor: Actor, query: string, limit: number, offset = 0) {
   const q = foldText(query.trim());
-  const users = await prisma.user.findMany({
-    where: { active: true, id: { not: actor.id }, OR: [{ searchName: { contains: q } }, { email: q }] },
-    orderBy: { name: "asc" },
-    select: { id: true, name: true, searchName: true, email: true, departmentId: true, department: { select: { name: true } } },
-  });
+  const base = { active: true, id: { not: actor.id } };
+  const select = { id: true, name: true, searchName: true, email: true, departmentId: true, department: { select: { name: true } } } as const;
+  // Primero las mejores (correo exacto, nombre o palabra que empieza con la búsqueda) y después el resto,
+  // las dos con tope: así el tope nunca deja fuera a quien empieza con lo buscado.
+  const best = await prisma.user.findMany({ where: { ...base, OR: [{ email: q }, { searchName: { startsWith: q } }, { searchName: { contains: ` ${q}` } }] }, orderBy: { name: "asc" }, take: DIRECTORY_MAX_MATCHES, select });
+  const rest = best.length >= DIRECTORY_MAX_MATCHES ? [] : await prisma.user.findMany({ where: { ...base, searchName: { contains: q }, id: { notIn: [actor.id, ...best.map((user) => user.id)] } }, orderBy: { name: "asc" }, take: DIRECTORY_MAX_MATCHES - best.length, select });
+  const users = [...best, ...rest];
 
   const score = (name: string) => (name.startsWith(q) ? 0 : name.split(/\s+/).some((word) => word.startsWith(q)) ? 1 : name.includes(q) ? 2 : 3);
   const scored = users

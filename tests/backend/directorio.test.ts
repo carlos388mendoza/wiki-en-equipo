@@ -1,5 +1,6 @@
 import { readdirSync, readFileSync } from "node:fs";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { DIRECTORY_MAX_MATCHES } from "../../backend/services/auth-service.js";
 import { syncUserSearchNames } from "../../backend/services/search-text.js";
 import { createDepartment, createUser, resetDatabase, startApi, type TestApi, type TestUser, prisma } from "./helpers";
 
@@ -113,5 +114,22 @@ describe("nombres que la migración en SQL no normalizó bien", () => {
     expect((await api.as(luis).get("/users/directory?q=alvarez")).body.users.map((u: { id: string }) => u.id)).toEqual([francoise.id]);
     expect((await prisma.user.findUnique({ where: { id: francoise.id } }))!.updatedAt).toEqual(before);
     expect(await syncUserSearchNames()).toBe(0);
+  });
+});
+
+describe("tope de coincidencias del directorio", () => {
+  it("con muchas coincidencias trae como máximo 500, y primero las que empiezan con lo buscado", async () => {
+    await prisma.user.createMany({ data: Array.from({ length: 600 }, (_, i) => ({ name: `Ana Ramírez ${i}`, searchName: `ana ramirez ${i}`, email: `ana.ramirez.${i}@tope.test`, passwordHash: "x", departmentId: carlos.departmentId })) });
+    const mireya = await createUser("Mireya Zúñiga", carlos.departmentId);
+
+    // "mir" está dentro de "ramirez" (600 cuentas) y al principio de "mireya": ella va primero.
+    const first = await api.as(luis).get("/users/directory?q=mir&limit=5");
+    expect(first.body.users[0].id).toBe(mireya.id);
+    expect(first.body.hasMore).toBe(true);
+
+    const last = await api.as(luis).get(`/users/directory?q=mir&limit=10&offset=${DIRECTORY_MAX_MATCHES - 5}`);
+    expect(last.body.users).toHaveLength(5);
+    expect(last.body.hasMore).toBe(false);
+    expect((await api.as(luis).get(`/users/directory?q=mir&offset=${DIRECTORY_MAX_MATCHES}`)).status).toBe(400);
   });
 });
