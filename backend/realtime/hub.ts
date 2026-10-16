@@ -10,9 +10,32 @@ type RoomClient = { socket: WebSocket; userId: string; role: "USER" | "DEPARTMEN
 export class RealtimeHub {
   private readonly wss = new WebSocketServer({ noServer: true, maxPayload: 16 * 1024 });
   private readonly rooms = new Map<string, Set<RoomClient>>();
+  private readonly alive = new WeakSet<WebSocket>();
+  private readonly heartbeat: NodeJS.Timeout;
 
-  constructor() {
-    this.wss.on("connection", (socket) => this.onConnection(socket));
+  /**
+   * `heartbeatMs`: cada cuánto se envía un ping. Detrás de un proxy (Render, Nginx...) las conexiones sin
+   * tráfico se cortan; el ping las mantiene abiertas y cierra las que ya no responden.
+   */
+  constructor(heartbeatMs = 30_000) {
+    this.wss.on("connection", (socket) => {
+      this.alive.add(socket);
+      socket.on("pong", () => this.alive.add(socket));
+      this.onConnection(socket);
+    });
+    this.heartbeat = setInterval(() => {
+      for (const socket of this.wss.clients) {
+        if (!this.alive.has(socket)) { socket.terminate(); continue; }
+        this.alive.delete(socket);
+        socket.ping();
+      }
+    }, heartbeatMs);
+    this.heartbeat.unref();
+  }
+
+  close() {
+    clearInterval(this.heartbeat);
+    for (const socket of this.wss.clients) socket.close(1001, "server shutdown");
   }
 
   handleUpgrade(request: IncomingMessage, socket: Duplex, head: Buffer) {
