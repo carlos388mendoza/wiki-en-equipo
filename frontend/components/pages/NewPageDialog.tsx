@@ -27,13 +27,14 @@ export function NewPageButton({ parentId, parentTitle, variant = "primary", init
       <Modal open={open} onClose={() => setOpen(false)} size="xl"
         title={parentId ? "Nueva subpágina" : "Nueva página"}
         description={parentId ? `Dentro de “${parentTitle ?? "esta página"}”. Queda privada hasta que la compartas.` : "Las páginas nuevas son privadas hasta que las compartas o publiques."}>
-        <NewPageForm parentId={parentId} initialTemplateId={initialTemplateId} />
+        {/* La barra lateral no se vuelve a montar al navegar: el diálogo se cierra al crear la página. */}
+        <NewPageForm parentId={parentId} initialTemplateId={initialTemplateId} onCreated={() => setOpen(false)} />
       </Modal>
     </>
   );
 }
 
-function NewPageForm({ parentId, initialTemplateId }: { parentId?: string; initialTemplateId?: string }) {
+function NewPageForm({ parentId, initialTemplateId, onCreated }: { parentId?: string; initialTemplateId?: string; onCreated?: () => void }) {
   const router = useRouter();
   const { templates, error: loadError } = useTemplates(true);
   const [templateId, setTemplateId] = useState<string | undefined>(initialTemplateId);
@@ -59,6 +60,7 @@ function NewPageForm({ parentId, initialTemplateId }: { parentId?: string; initi
         start(async () => {
           const res = await createPage({ title: title || chosen?.title || "Página sin título", parentId, templateId });
           if (!res.ok) { setError(res.message); return; }
+          onCreated?.();
           router.push(`/paginas/${res.data.id}/editar`);
           router.refresh();
         });
