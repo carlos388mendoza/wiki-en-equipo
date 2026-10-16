@@ -25,6 +25,8 @@ model Department {
 model User {
   id            String   @id @default(cuid())
   name          String
+  /// Nombre normalizado sin tildes para buscar todo el directorio en la base de datos.
+  searchName    String   @default("")
   email         String   @unique
   passwordHash  String
   role          String   @default("USER")

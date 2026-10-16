@@ -126,8 +126,8 @@ router.delete("/company/wall", requireRole("ADMIN"), async (req, res) => {
 });
 
 router.get("/users/directory", directoryLimiter, async (req, res) => {
-  const query = z.object({ q: z.string().trim().min(2).max(100), limit: z.coerce.number().int().min(1).max(20).default(10) }).parse(req.query);
-  res.json({ users: await auth.searchDirectory(actor(req), query.q, query.limit) });
+  const query = z.object({ q: z.string().trim().min(2).max(100), limit: z.coerce.number().int().min(1).max(20).default(10), offset: z.coerce.number().int().min(0).default(0) }).parse(req.query);
+  res.json(await auth.searchDirectory(actor(req), query.q, query.limit, query.offset));
 });
 router.get("/users", requireRole("ADMIN"), async (req, res) => res.json({ users: await auth.listUsers(req.query.includeInactive === "1" || req.query.includeInactive === "true") }));
 router.post("/users", requireRole("ADMIN"), async (req, res) => {
@@ -152,7 +152,17 @@ router.get("/pages", async (req, res) => {
   const parentId = typeof req.query.parentId === "string" ? id.parse(req.query.parentId) : undefined;
   const q = typeof req.query.q === "string" ? req.query.q.slice(0, 100) : undefined;
   const tag = typeof req.query.tag === "string" ? req.query.tag.slice(0, 40) : undefined;
-  res.json({ pages: await pages.listAccessiblePages(actor(req), { q, tag, departmentId, parentId }) });
+  // ?ids=a,b,c: páginas concretas (subpáginas y menciones del contenido), hasta 100.
+  if (req.query.ids !== undefined) {
+    const rawIds = z.string().parse(req.query.ids).split(",").filter(Boolean);
+    const ids = z.array(id).max(100).parse([...new Set(rawIds)]);
+    const result = await pages.listAccessiblePages(actor(req), { q, tag, departmentId, parentId, ids });
+    res.json({ pages: result.pages });
+    return;
+  }
+  const cursor = typeof req.query.cursor === "string" ? id.parse(req.query.cursor) : undefined;
+  const limit = z.coerce.number().int().min(1).max(100).catch(100).parse(req.query.limit ?? 100);
+  res.json(await pages.listAccessiblePages(actor(req), { q, tag, departmentId, parentId, cursor, limit }));
 });
 router.post("/pages", async (req, res) => {
   const body = objectBody(z.object({ title, icon, content: z.unknown().optional(), background: z.unknown().optional(), visibility: visibility.optional(), parentId: id.nullable().optional(), tags }), req);

@@ -146,12 +146,21 @@ export async function listAccessible(_viewer: User): Promise<PageSummary[]> {
   return res.ok ? res.data : [];
 }
 
-/** Resúmenes de páginas por id, a partir del listado (para enlaces y subpáginas del contenido). */
+/** Una petición por conjunto de ids y render (el backend devuelve solo las que la persona puede ver). */
+const pagesByIds = cache(async (key: string): Promise<PageSummary[]> => {
+  const res = await backend<{ pages: RawListPage[] }>(`/pages?ids=${encodeURIComponent(key)}`);
+  return res.ok ? res.data.pages.map(toSummary) : [];
+});
+
+/**
+ * Resúmenes de páginas por id, en el mismo orden (subpáginas y menciones del contenido). Se piden por id
+ * y no se buscan en el listado, que solo trae las 100 más recientes.
+ */
 export async function getPageSummaries(_viewer: User, ids: string[]): Promise<PageSummary[]> {
-  const all = await accessiblePages();
-  if (!all.ok) return [];
-  const map = new Map(all.data.map((p) => [p.id, p]));
-  return ids.flatMap((id) => (map.has(id) ? [map.get(id)!] : []));
+  const unique = [...new Set(ids)].slice(0, 100);
+  if (!unique.length) return [];
+  const map = new Map((await pagesByIds(unique.join(","))).map((p) => [p.id, p]));
+  return unique.flatMap((id) => (map.has(id) ? [map.get(id)!] : []));
 }
 
 export async function getChildren(_viewer: User, parentId: string): Promise<PageSummary[]> {
@@ -254,9 +263,9 @@ export async function listTags(_viewer: User): Promise<string[]> {
 }
 
 export async function listTrash(_viewer: User): Promise<ApiResult<PageSummary[]>> {
-  const res = await backend<{ pages: { id: string; title: string; icon: string | null; deletedAt: string; ownerId: string }[] }>("/pages/trash");
+  const res = await backend<{ pages: { id: string; title: string; icon: string | null; deletedAt: string; ownerId: string; visibility: PageVisibility }[] }>("/pages/trash");
   if (!res.ok) return res;
-  return { ok: true, data: res.data.pages.map((p) => ({ id: p.id, title: p.title, visibility: "PRIVATE" as PageVisibility, ownerId: p.ownerId, deletedAt: p.deletedAt, tags: [], icon: parseAppearance({ icon: p.icon }).icon, background: null })) };
+  return { ok: true, data: res.data.pages.map((p) => ({ id: p.id, title: p.title, visibility: p.visibility, ownerId: p.ownerId, deletedAt: p.deletedAt, tags: [], icon: parseAppearance({ icon: p.icon }).icon, background: null })) };
 }
 
 export async function getHistory(_viewer: User, pageId: string): Promise<ApiResult<HistoryEntry[]>> {

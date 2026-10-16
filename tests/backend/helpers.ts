@@ -39,7 +39,8 @@ export function createDepartment(name: string) {
 
 export async function createUser(name: string, departmentId: string, role: Role = "USER", options: { passwordHash?: string; active?: boolean; email?: string } = {}): Promise<TestUser> {
   const email = options.email ?? `${slug(name)}-${++counter}@wiki.test`;
-  const user = await prisma.user.create({ data: { name, email, passwordHash: options.passwordHash ?? "sin-contraseña", role, departmentId, active: options.active ?? true } });
+  const searchName = name.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+  const user = await prisma.user.create({ data: { name, searchName, email, passwordHash: options.passwordHash ?? "sin-contraseña", role, departmentId, active: options.active ?? true } });
   return { id: user.id, name: user.name, email: user.email, role, departmentId, token: signAccessToken({ sub: user.id, role, departmentId, sessionVersion: user.sessionVersion }) };
 }
 
