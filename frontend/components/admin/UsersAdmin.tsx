@@ -149,10 +149,10 @@ function NewUserForm({ departments, onDone }: { departments: Department[]; onDon
       <label className="flex flex-col gap-1 font-medium">Correo<input required type="email" value={form.email} onChange={(e) => set("email", e.target.value)} placeholder="nombre@grupocomidas.com" className={input} /></label>
       <label className="flex flex-col gap-1 font-medium">Contraseña temporal
         <span className="flex gap-2">
-          <input required minLength={12} value={form.password} onChange={(e) => set("password", e.target.value)} className={`${input} min-w-0 flex-1 font-mono`} />
+          <input required minLength={8} value={form.password} onChange={(e) => set("password", e.target.value)} className={`${input} min-w-0 flex-1 font-mono`} />
           <button type="button" onClick={() => set("password", tempPassword())} className="inline-flex items-center gap-1 rounded-lg border border-line px-2 hover:border-basil"><KeyRound size={14} aria-hidden /> Generar</button>
         </span>
-        <span className="text-xs font-normal text-muted">Mínimo 12 caracteres.</span>
+        <span className="text-xs font-normal text-muted">Mínimo 8 caracteres.</span>
       </label>
       <div className="grid gap-3 sm:grid-cols-2">
         <label className="flex flex-col gap-1 font-medium">Rol

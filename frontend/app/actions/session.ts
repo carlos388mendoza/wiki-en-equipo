@@ -65,7 +65,7 @@ export type PasswordState = { error?: string };
 export async function changePassword(_prev: PasswordState, form: FormData): Promise<PasswordState> {
   const currentPassword = String(form.get("currentPassword") ?? "");
   const newPassword = String(form.get("newPassword") ?? "");
-  if (newPassword.length < 12) return { error: "La nueva contraseña debe tener al menos 12 caracteres." };
+  if (newPassword.length < 8) return { error: "La nueva contraseña debe tener al menos 8 caracteres." };
   const res = await backend("/auth/password", { method: "POST", body: { currentPassword, newPassword } });
   if (!res.ok) return { error: res.error === "no_autenticado" ? "La contraseña actual no es correcta." : res.message };
   // El backend invalida todas las sesiones al cambiar la contraseña.

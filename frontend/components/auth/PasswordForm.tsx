@@ -27,12 +27,12 @@ export function PasswordForm() {
       </label>
       <label className="flex flex-col gap-1 font-medium">
         Contraseña nueva
-        <input type="password" name="newPassword" required minLength={12} autoComplete="new-password" className={input} />
-        <span className="text-xs font-normal text-muted">Mínimo 12 caracteres. Usa una frase que puedas recordar.</span>
+        <input type="password" name="newPassword" required minLength={8} autoComplete="new-password" className={input} />
+        <span className="text-xs font-normal text-muted">Mínimo 8 caracteres. Usa una frase que puedas recordar.</span>
       </label>
       <label className="flex flex-col gap-1 font-medium">
         Repite la contraseña nueva
-        <input type="password" name="confirmPassword" required minLength={12} autoComplete="new-password" className={input} />
+        <input type="password" name="confirmPassword" required minLength={8} autoComplete="new-password" className={input} />
       </label>
       {(mismatch || state.error) && (
         <p role="alert" className="rounded-lg bg-danger-soft px-3 py-2 text-danger">
