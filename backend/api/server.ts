@@ -1,6 +1,6 @@
 import "dotenv/config";
 import { createServer } from "node:http";
-import { app, attachWebSockets, collabServer } from "./app.js";
+import { app, attachWebSockets, collabServer, realtimeHub } from "./app.js";
 import { prisma } from "../models/client.js";
 import { purgeExpiredTrash } from "../services/page-service.js";
 import { backfillSearchText, syncUserSearchNames } from "../services/search-text.js";
@@ -26,6 +26,7 @@ backfillSearchText().then((count) => { if (count) console.log(`Búsqueda: ${coun
 async function shutdown() {
   // Primero se guardan los documentos de la edición en vivo y se cierran sus conexiones.
   await collabServer.close();
+  realtimeHub.close();
   server.close();
   await prisma.$disconnect();
 }

@@ -1,0 +1,43 @@
+# Backend de la wiki en Render (Blueprint). El frontend sigue en Vercel.
+# Pasos y variables de Vercel: README, sección "Despliegue".
+services:
+  - type: web
+    name: wiki-en-equipo-backend
+    runtime: node
+    # El plan gratuito no admite disco permanente; starter es el más barato que sí.
+    plan: starter
+    # La región más cercana a Centroamérica.
+    region: virginia
+    rootDir: backend
+    buildCommand: corepack enable && pnpm install --frozen-lockfile && pnpm run db:generate && pnpm run build
+    # Las migraciones corren al arrancar porque el disco solo está montado mientras el servicio corre.
+    # `db:deploy` aplica las migraciones nuevas y no borra datos.
+    startCommand: pnpm run db:deploy && pnpm start
+    healthCheckPath: /health
+    autoDeploy: true
+    disk:
+      name: datos
+      mountPath: /data
+      sizeGB: 1
+    envVars:
+      # pnpm 11 necesita Node 22 o más reciente.
+      - key: NODE_VERSION
+        value: "22"
+      - key: DATABASE_URL
+        value: file:/data/wiki.db
+      - key: UPLOAD_DIR
+        value: /data/uploads
+      - key: FRONTEND_ORIGIN
+        value: https://wiki-en-equipo.vercel.app
+      # 4 MB: las subidas pasan por el servidor de Next en Vercel, que no acepta cuerpos de más de 4,5 MB.
+      # Debe coincidir con NEXT_PUBLIC_MAX_UPLOAD_MB=4 en Vercel.
+      - key: MAX_UPLOAD_BYTES
+        value: "4194304"
+      # Proxies delante del backend: el de Render y el servidor de Next en Vercel (IP real para el límite de inicios de sesión).
+      - key: TRUST_PROXY
+        value: "2"
+      # Secretos: Render los pide al crear el Blueprint. Nunca se escriben aquí.
+      - key: JWT_SECRET
+        sync: false
+      - key: BOOTSTRAP_SECRET
+        sync: false
