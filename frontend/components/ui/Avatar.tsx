@@ -1,6 +1,6 @@
 import { initials } from "@/lib/format";
 
-const tones = ["bg-basil text-white", "bg-saffron text-white", "bg-ink text-white", "bg-basil-soft text-basil"];
+const tones = ["bg-brand text-white", "bg-sun text-ink", "bg-ink text-white", "bg-sky text-white", "bg-brand-soft text-brand-strong"];
 
 export function Avatar({ name, size = 28 }: { name: string; size?: number }) {
   const tone = tones[name.length % tones.length];

@@ -56,7 +56,7 @@ export default async function PageView({ params }: { params: Promise<{ id: strin
             {editable ? (
               <>
                 <NewPageButton parentId={page.id} parentTitle={page.title} variant="secondary" />
-                <Link href={`/paginas/${page.id}/editar`} className="inline-flex items-center gap-2 rounded-lg bg-ink px-3 py-2 text-sm font-medium text-white hover:bg-basil">
+                <Link href={`/paginas/${page.id}/editar`} className="inline-flex items-center gap-2 rounded-lg bg-ink px-3 py-2 text-sm font-medium text-white hover:bg-brand">
                   <Pencil size={14} aria-hidden /> Editar
                 </Link>
               </>
@@ -125,7 +125,7 @@ export default async function PageView({ params }: { params: Promise<{ id: strin
             <ul className="flex flex-col gap-2">
               {unlinkedChildren.map((c) => (
                 <li key={c.id}>
-                  <Link href={`/paginas/${c.id}`} className="flex items-center gap-3 rounded-lg border border-line px-3 py-2 hover:border-basil">
+                  <Link href={`/paginas/${c.id}`} className="flex items-center gap-3 rounded-lg border border-line px-3 py-2 hover:border-brand">
                     <PageIcon icon={c.icon} size={18} /> {c.title}
                   </Link>
                 </li>

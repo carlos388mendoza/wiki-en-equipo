@@ -26,10 +26,10 @@ export default async function SearchPage({ searchParams }: { searchParams: Promi
       <form className="mt-6" role="search">
         {etiqueta && <input type="hidden" name="etiqueta" value={etiqueta} />}
         <label htmlFor="q" className="sr-only">Buscar páginas</label>
-        <div className="flex items-center gap-2 rounded-xl border border-line bg-surface px-4 focus-within:border-basil">
+        <div className="flex items-center gap-2 rounded-xl border border-line bg-surface px-4 focus-within:border-brand">
           <Search size={18} className="text-muted" aria-hidden />
           <input id="q" name="q" defaultValue={q} placeholder="Buscar en títulos y contenido…" className="h-12 min-w-0 flex-1 bg-transparent outline-none" />
-          <button type="submit" className="shrink-0 rounded-lg bg-ink px-3 py-1.5 text-sm font-medium text-white hover:bg-basil">Buscar</button>
+          <button type="submit" className="shrink-0 rounded-lg bg-ink px-3 py-1.5 text-sm font-medium text-white hover:bg-brand">Buscar</button>
         </div>
       </form>
 

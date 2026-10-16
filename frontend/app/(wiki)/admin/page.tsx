@@ -21,8 +21,8 @@ export default async function AdminHome() {
       <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {cards.map(({ href, Icon, title, value, help }) => (
           <li key={title}>
-            <Link href={href} className="flex h-full flex-col gap-2 rounded-xl border border-line bg-surface p-4 hover:border-basil">
-              <Icon size={20} className="text-basil" aria-hidden />
+            <Link href={href} className="flex h-full flex-col gap-2 rounded-xl border border-line bg-surface p-4 hover:border-brand">
+              <Icon size={20} className="text-brand-strong" aria-hidden />
               <span className="font-display text-lg font-semibold">{title}</span>
               <span className="text-2xl font-bold">{value}</span>
               <span className="text-sm text-muted">{help}</span>

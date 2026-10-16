@@ -4,7 +4,7 @@ import { useActionState, useState } from "react";
 import { LoaderCircle } from "lucide-react";
 import { changePassword, type PasswordState } from "@/app/actions/session";
 
-const input = "h-11 rounded-lg border border-line px-3 font-normal outline-none focus:border-basil";
+const input = "h-11 rounded-lg border border-line px-3 font-normal outline-none focus:border-brand";
 
 export function PasswordForm() {
   const [state, action, pending] = useActionState<PasswordState, FormData>(changePassword, {});
@@ -39,7 +39,7 @@ export function PasswordForm() {
           {mismatch ? "Las contraseñas nuevas no coinciden." : state.error}
         </p>
       )}
-      <button type="submit" disabled={pending} className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-ink font-medium text-white hover:bg-basil disabled:opacity-60">
+      <button type="submit" disabled={pending} className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-ink font-medium text-white hover:bg-brand disabled:opacity-60">
         {pending && <LoaderCircle size={16} className="animate-spin" aria-hidden />} Cambiar contraseña
       </button>
       <p className="text-xs text-muted">Al cambiarla se cerrará tu sesión en todos los dispositivos y tendrás que entrar de nuevo.</p>

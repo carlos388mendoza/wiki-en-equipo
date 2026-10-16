@@ -25,10 +25,10 @@ export function shapeStyle(shape: ShapePattern, ink: string): React.CSSPropertie
 
 /** Degradados de respaldo cuando una página no tiene fondo (o el listado no lo incluye). */
 const fallbacks = [
-  "linear-gradient(135deg, #e3efe8 0%, #f4f6f4 100%)",
-  "linear-gradient(135deg, #fbf0da 0%, #f4f6f4 100%)",
-  "linear-gradient(135deg, #e3efe8 0%, #fbf0da 100%)",
-  "linear-gradient(135deg, #dce2de 0%, #e3efe8 100%)",
+  "linear-gradient(135deg, #fde9eb 0%, #f8f6f4 100%)",
+  "linear-gradient(135deg, #fff6c7 0%, #f8f6f4 100%)",
+  "linear-gradient(135deg, #fde9eb 0%, #fff6c7 100%)",
+  "linear-gradient(135deg, #fde9eb 0%, #e8f0fa 100%)",
 ];
 
 function fallbackFor(seed = "") {

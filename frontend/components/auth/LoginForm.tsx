@@ -19,7 +19,7 @@ export function LoginForm({ next }: { next?: string }) {
           autoComplete="username"
           defaultValue={state.email}
           placeholder="nombre@grupocomidas.com"
-          className="h-11 rounded-lg border border-line px-3 font-normal outline-none focus:border-basil"
+          className="h-11 rounded-lg border border-line px-3 font-normal outline-none focus:border-brand"
         />
       </label>
       <label className="flex flex-col gap-1 text-sm font-medium">
@@ -29,7 +29,7 @@ export function LoginForm({ next }: { next?: string }) {
           name="password"
           required
           autoComplete="current-password"
-          className="h-11 rounded-lg border border-line px-3 font-normal outline-none focus:border-basil"
+          className="h-11 rounded-lg border border-line px-3 font-normal outline-none focus:border-brand"
         />
       </label>
       {state.error && (
@@ -38,7 +38,7 @@ export function LoginForm({ next }: { next?: string }) {
       <button
         type="submit"
         disabled={pending}
-        className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-ink font-medium text-white hover:bg-basil disabled:opacity-60"
+        className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-ink font-medium text-white hover:bg-brand disabled:opacity-60"
       >
         {pending && <LoaderCircle size={16} className="animate-spin" aria-hidden />}
         {pending ? "Entrando…" : "Iniciar sesión"}

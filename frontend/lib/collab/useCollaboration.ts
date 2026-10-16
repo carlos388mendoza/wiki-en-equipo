@@ -9,7 +9,7 @@ import { connectPageChannel, type ChannelStatus } from "./realtime";
 
 export type Peer = { clientId: number; name: string; color: string };
 
-const COLORS = ["#2e6a4f", "#c9861f", "#b4432f", "#3b6ea5", "#7a4fa3", "#2f8f8a"];
+const COLORS = ["#e2001a", "#1f5fae", "#b07d00", "#1b1717", "#7a4fa3", "#2f8f8a"];
 export const colorFor = (seed: string) => {
   let h = 0;
   for (const c of seed) h = (h * 31 + c.charCodeAt(0)) | 0;

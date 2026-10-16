@@ -84,31 +84,31 @@ export function SaveTemplateDialog({ open, onClose, viewer, hasSelection, defaul
       >
         <fieldset className="flex flex-col gap-1.5">
           <legend className="mb-1 font-medium">¿Qué quieres guardar?</legend>
-          <label className="flex items-center gap-2"><input type="radio" name="part" checked={part === "page"} onChange={() => setPart("page")} className="accent-basil" /> Toda la página (con fondo e icono)</label>
+          <label className="flex items-center gap-2"><input type="radio" name="part" checked={part === "page"} onChange={() => setPart("page")} className="accent-brand" /> Toda la página (con fondo e icono)</label>
           <label className={`flex items-center gap-2 ${hasSelection ? "" : "text-muted"}`}>
-            <input type="radio" name="part" checked={part === "selection"} disabled={!hasSelection} onChange={() => setPart("selection")} className="accent-basil" />
+            <input type="radio" name="part" checked={part === "selection"} disabled={!hasSelection} onChange={() => setPart("selection")} className="accent-brand" />
             Solo los bloques seleccionados (plantilla de sección){!hasSelection && " — selecciona bloques en el editor"}
           </label>
         </fieldset>
         <label className="flex flex-col gap-1 font-medium">Nombre
-          <input required value={title} onChange={(e) => setTitle(e.target.value)} maxLength={200} className="h-10 rounded-lg border border-line px-3 font-normal outline-none focus:border-basil" />
+          <input required value={title} onChange={(e) => setTitle(e.target.value)} maxLength={200} className="h-10 rounded-lg border border-line px-3 font-normal outline-none focus:border-brand" />
         </label>
         <label className="flex flex-col gap-1 font-medium">Descripción
-          <input value={description} onChange={(e) => setDescription(e.target.value)} maxLength={1000} placeholder="¿Cuándo conviene usarla?" className="h-10 rounded-lg border border-line px-3 font-normal outline-none focus:border-basil" />
+          <input value={description} onChange={(e) => setDescription(e.target.value)} maxLength={1000} placeholder="¿Cuándo conviene usarla?" className="h-10 rounded-lg border border-line px-3 font-normal outline-none focus:border-brand" />
         </label>
         <label className="flex flex-col gap-1 font-medium">Disponible para
-          <select value={scope} onChange={(e) => setScope(e.target.value as TemplateScope)} className="h-10 rounded-lg border border-line bg-surface px-2 font-normal outline-none focus:border-basil">
+          <select value={scope} onChange={(e) => setScope(e.target.value as TemplateScope)} className="h-10 rounded-lg border border-line bg-surface px-2 font-normal outline-none focus:border-brand">
             <option value="PRIVATE">Privada (solo con invitación)</option>
             <option value="DEPARTMENT">Mi departamento</option>
             {viewer.role === "ADMIN" && <option value="COMPANY">Toda la empresa</option>}
           </select>
         </label>
         {result && (
-          <p role={result.ok ? "status" : "alert"} className={`rounded-lg px-3 py-2 ${result.ok ? "bg-basil-soft text-basil" : "bg-danger-soft text-danger"}`}>
+          <p role={result.ok ? "status" : "alert"} className={`rounded-lg px-3 py-2 ${result.ok ? "bg-sky-soft text-sky" : "bg-danger-soft text-danger"}`}>
             {result.text} {result.id && <Link href="/plantillas" className="font-medium underline">Ver plantillas</Link>}
           </p>
         )}
-        <button type="submit" disabled={pending} className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-ink font-medium text-white hover:bg-basil disabled:opacity-60">
+        <button type="submit" disabled={pending} className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-ink font-medium text-white hover:bg-brand disabled:opacity-60">
           {pending && <LoaderCircle size={14} className="animate-spin" aria-hidden />} Guardar plantilla
         </button>
       </form>

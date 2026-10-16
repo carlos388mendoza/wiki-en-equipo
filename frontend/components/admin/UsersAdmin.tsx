@@ -10,7 +10,7 @@ import { Avatar } from "../ui/Avatar";
 import { Modal } from "../ui/Modal";
 
 const roles: UserRole[] = ["USER", "DEPARTMENT_ADMIN", "ADMIN"];
-const input = "h-10 rounded-lg border border-line bg-surface px-3 text-sm outline-none focus:border-basil";
+const input = "h-10 rounded-lg border border-line bg-surface px-3 text-sm outline-none focus:border-brand";
 
 const plural = (n: number, one: string, many: string) => `${n} ${n === 1 ? one : many}`;
 
@@ -47,12 +47,12 @@ export function UsersAdmin({ users, departments, viewerId }: { users: ManagedUse
       <section aria-labelledby="usuarios">
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <h2 id="usuarios" className="flex-1 font-display text-xl font-semibold">Usuarios</h2>
-          <label className="flex items-center gap-2 rounded-lg border border-line bg-surface px-3 focus-within:border-basil">
+          <label className="flex items-center gap-2 rounded-lg border border-line bg-surface px-3 focus-within:border-brand">
             <Search size={16} className="text-muted" aria-hidden />
             <span className="sr-only">Buscar usuarios</span>
             <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Buscar por nombre, correo o depto." className="h-10 w-full bg-transparent text-sm outline-none sm:w-64" />
           </label>
-          <button type="button" onClick={() => setCreating(true)} className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-ink px-3 text-sm font-medium text-white hover:bg-basil">
+          <button type="button" onClick={() => setCreating(true)} className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-ink px-3 text-sm font-medium text-white hover:bg-brand">
             <Plus size={16} aria-hidden /> Nuevo usuario
           </button>
         </div>
@@ -60,11 +60,11 @@ export function UsersAdmin({ users, departments, viewerId }: { users: ManagedUse
         <div role="tablist" aria-label="Estado de las cuentas" className="mt-3 inline-flex rounded-lg border border-line bg-surface p-0.5 text-sm">
           {([["activos", "Activos"], ["inactivos", `Inactivos (${inactiveCount})`]] as const).map(([value, label]) => (
             <button key={value} type="button" role="tab" aria-selected={show === value} onClick={() => setShow(value)}
-              className={`rounded-md px-3 py-1.5 font-medium ${show === value ? "bg-basil-soft text-basil" : "text-muted hover:text-ink"}`}>{label}</button>
+              className={`rounded-md px-3 py-1.5 font-medium ${show === value ? "bg-sky-soft text-sky" : "text-muted hover:text-ink"}`}>{label}</button>
           ))}
         </div>
 
-        {message && <p role={message.ok ? "status" : "alert"} className={`mt-3 rounded-lg px-3 py-2 text-sm ${message.ok ? "bg-basil-soft text-basil" : "bg-danger-soft text-danger"}`}>{message.text}</p>}
+        {message && <p role={message.ok ? "status" : "alert"} className={`mt-3 rounded-lg px-3 py-2 text-sm ${message.ok ? "bg-sky-soft text-sky" : "bg-danger-soft text-danger"}`}>{message.text}</p>}
 
         {filtered.length === 0 ? (
           <p className="mt-4 rounded-xl border border-dashed border-line px-4 py-6 text-muted">{show === "inactivos" && !q ? "No hay cuentas desactivadas." : "No hay usuarios que coincidan."}</p>
@@ -95,7 +95,7 @@ export function UsersAdmin({ users, departments, viewerId }: { users: ManagedUse
                     </select>
                     {inactive ? (
                       <button type="button" disabled={pending} onClick={() => run(() => updateUser(u.id, { active: true }), `Se reactivó la cuenta de ${u.name}.`)}
-                        className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-line px-3 text-sm font-medium hover:border-basil disabled:opacity-60">
+                        className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-line px-3 text-sm font-medium hover:border-brand disabled:opacity-60">
                         <UserCheck size={16} aria-hidden /> Reactivar
                       </button>
                     ) : !self && (
@@ -150,7 +150,7 @@ function NewUserForm({ departments, onDone }: { departments: Department[]; onDon
       <label className="flex flex-col gap-1 font-medium">Contraseña temporal
         <span className="flex gap-2">
           <input required minLength={8} value={form.password} onChange={(e) => set("password", e.target.value)} className={`${input} min-w-0 flex-1 font-mono`} />
-          <button type="button" onClick={() => set("password", tempPassword())} className="inline-flex items-center gap-1 rounded-lg border border-line px-2 hover:border-basil"><KeyRound size={14} aria-hidden /> Generar</button>
+          <button type="button" onClick={() => set("password", tempPassword())} className="inline-flex items-center gap-1 rounded-lg border border-line px-2 hover:border-brand"><KeyRound size={14} aria-hidden /> Generar</button>
         </span>
         <span className="text-xs font-normal text-muted">Mínimo 8 caracteres.</span>
       </label>
@@ -163,7 +163,7 @@ function NewUserForm({ departments, onDone }: { departments: Department[]; onDon
         </label>
       </div>
       {error && <p role="alert" className="rounded-lg bg-danger-soft px-3 py-2 text-danger">{error}</p>}
-      <button type="submit" disabled={pending} className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-ink font-medium text-white hover:bg-basil disabled:opacity-60">
+      <button type="submit" disabled={pending} className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-ink font-medium text-white hover:bg-brand disabled:opacity-60">
         {pending && <LoaderCircle size={14} className="animate-spin" aria-hidden />} Crear usuario
       </button>
     </form>
@@ -189,7 +189,7 @@ function DepartmentsSection({ departments, pending, run }: {
       <form className="mt-4 flex flex-col gap-2 sm:flex-row" onSubmit={(e) => { e.preventDefault(); if (name.trim().length >= 2) run(() => createDepartment(name), `Se creó el departamento ${name.trim()}.`, () => setName("")); }}>
         <label className="sr-only" htmlFor="nuevo-depto">Nombre del nuevo departamento</label>
         <input id="nuevo-depto" value={name} onChange={(e) => setName(e.target.value)} minLength={2} maxLength={100} placeholder="Nombre del nuevo departamento" className={`${input} flex-1`} />
-        <button type="submit" disabled={pending || name.trim().length < 2} className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-line px-3 text-sm font-medium hover:border-basil disabled:opacity-50">
+        <button type="submit" disabled={pending || name.trim().length < 2} className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-line px-3 text-sm font-medium hover:border-brand disabled:opacity-50">
           <Plus size={16} aria-hidden /> Crear departamento
         </button>
       </form>

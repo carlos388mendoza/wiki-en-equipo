@@ -48,7 +48,7 @@ export function TemplateActions({ template, viewer, autoOpen = false }: { templa
             setError("");
             router.refresh();
           })}
-          className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-muted hover:bg-saffron-soft hover:text-ink disabled:opacity-60">
+          className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-muted hover:bg-sun-soft hover:text-ink disabled:opacity-60">
           {template.isDefault ? <><StarOff size={13} aria-hidden /> Retirar</> : <><Sparkles size={13} aria-hidden /> Por defecto</>}
         </button>
       )}
@@ -106,7 +106,7 @@ export function NewTemplateButton() {
         const res = await createTemplate({ title: "Plantilla sin título", description: "", scope: "PRIVATE", blocks: [], background: null, icon: "📄" });
         if (!res.ok) { setError(res.message); return; }
         router.push(`/plantillas/${res.data.id}/editar`);
-      })} className="inline-flex items-center gap-2 rounded-lg bg-ink px-3 py-2 text-sm font-medium text-white hover:bg-basil disabled:opacity-60">
+      })} className="inline-flex items-center gap-2 rounded-lg bg-ink px-3 py-2 text-sm font-medium text-white hover:bg-brand disabled:opacity-60">
         {pending ? <LoaderCircle size={14} className="animate-spin" aria-hidden /> : <Plus size={14} aria-hidden />} Nueva plantilla
       </button>
       {error && <p role="alert" className="text-sm text-danger">{error}</p>}
@@ -124,10 +124,10 @@ export function InstallDefaultsButton() {
         const res = await installDefaultTemplates();
         setMessage(res.ok ? { ok: true, text: res.data.created ? `Se instalaron ${res.data.created} plantillas.` : "Ya estaban todas instaladas." } : { ok: false, text: res.message });
         router.refresh();
-      })} className="inline-flex items-center gap-2 self-start rounded-lg border border-saffron bg-saffron-soft px-3 py-2 text-sm font-medium text-ink hover:bg-saffron hover:text-white disabled:opacity-60">
+      })} className="inline-flex items-center gap-2 self-start rounded-lg border border-sun bg-sun-soft px-3 py-2 text-sm font-medium text-ink hover:bg-sun hover:text-ink disabled:opacity-60">
         {pending ? <LoaderCircle size={14} className="animate-spin" aria-hidden /> : <Sparkles size={14} aria-hidden />} Instalar plantillas de Grupo Comidas
       </button>
-      {message && <p role={message.ok ? "status" : "alert"} className={`text-sm ${message.ok ? "text-basil" : "text-danger"}`}>{message.text}</p>}
+      {message && <p role={message.ok ? "status" : "alert"} className={`text-sm ${message.ok ? "text-sky" : "text-danger"}`}>{message.text}</p>}
     </div>
   );
 }

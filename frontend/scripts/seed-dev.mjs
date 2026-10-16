@@ -62,7 +62,7 @@ async function main() {
   const deps = { Tecnología: boot.user.departmentId };
   const departments = {
     Tecnología: { description: "Sistemas, equipos y soporte para oficinas y restaurantes.", icon: "lucide:laptop:cielo" },
-    Contabilidad: { description: "Pagos a proveedores, facturación y cierres contables del grupo.", icon: "lucide:chart-column:albahaca" },
+    Contabilidad: { description: "Pagos a proveedores, facturación y cierres contables del grupo.", icon: "lucide:chart-column:rojo" },
     Compras: { description: "Proveedores, insumos y abastecimiento de las marcas.", icon: "lucide:shopping-cart:azafran" },
   };
   for (const name of ["Contabilidad", "Compras"]) deps[name] = (await call("/departments", { method: "POST", token: admin, body: { name, ...departments[name] } })).department.id;
@@ -99,7 +99,7 @@ async function main() {
   console.log("Creando páginas…");
   const viaticos = await page("admin", {
     title: "Política de viáticos", visibility: "COMPANY", tags: ["políticas", "finanzas"],
-    background: { type: "pattern", emoji: "🧾", color: "#fbf0da", icon: "🧾" },
+    background: { type: "pattern", emoji: "🧾", color: "#fff6c7", icon: "🧾" },
     content: [
       p("Aplica a todo viaje de trabajo fuera de la ciudad base."),
       { id: id(), type: "table", data: { columns: ["Concepto", "Tope diario", "Requiere factura"], rows: [["Alimentación", "L 900", "Sí"], ["Hospedaje", "L 2,500", "Sí"], ["Transporte local", "L 600", "No"]] } },
@@ -108,7 +108,7 @@ async function main() {
   });
   const bienvenida = await page("admin", {
     title: "Bienvenido a Grupo Comidas", visibility: "COMPANY", tags: ["inducción", "general"],
-    background: { type: "gradient", value: "linear-gradient(120deg, #2e6a4f 0%, #e3a33a 100%)", icon: "marca:grupo-comidas" },
+    background: { type: "gradient", value: "linear-gradient(120deg, #e2001a 0%, #ff5a1f 60%, #fddb00 100%)", icon: "marca:grupo-comidas" },
     content: [
       p("Esta es la wiki interna del grupo. Aquí vive la documentación, los procesos y las guías de cada departamento."),
       { id: id(), type: "callout", data: { emoji: "💡", tone: "warning", text: "Tus páginas nuevas son privadas hasta que decidas compartirlas o publicarlas.", spans: [{ text: "Tus páginas nuevas son " }, { text: "privadas", bold: true }, { text: " hasta que decidas compartirlas o publicarlas." }] } },
@@ -121,7 +121,7 @@ async function main() {
   });
   const muroEmpresa = await page("admin", {
     title: "Lo que todo el grupo necesita saber", visibility: "COMPANY", tags: ["muro"],
-    background: { type: "gradient", value: "linear-gradient(135deg, #e3efe8 0%, #fbf0da 100%)", icon: "marca:grupo-comidas" },
+    background: { type: "gradient", value: "linear-gradient(135deg, #fde9eb 0%, #fff6c7 100%)", icon: "marca:grupo-comidas" },
     content: [
       h(2, "Anuncios"),
       { id: id(), type: "callout", data: { emoji: "📣", tone: "info", title: "Nueva wiki", text: "Desde este mes, toda la documentación del grupo vive aquí. Pide acceso a tu administrador si te falta algo." } },
@@ -135,7 +135,7 @@ async function main() {
 
   const equipo = await page("tecnologia", {
     title: "Cómo pedir equipo de cómputo", visibility: "DEPARTMENT", tags: ["procesos", "equipo"],
-    background: { type: "color", value: "#e3efe8", icon: "🖥️" },
+    background: { type: "color", value: "#e8f0fa", icon: "🖥️" },
     content: [h(2, "Antes de pedir"), li("bullet", "Confirma el presupuesto con tu jefe."), li("bullet", "Ten a mano el código del restaurante o área.")],
   });
   const faq = await page("tecnologia", {
@@ -173,7 +173,7 @@ async function main() {
   });
   const muroConta = await page("contabilidad", {
     title: "Inicio de Contabilidad", visibility: "DEPARTMENT",
-    background: { type: "gradient", value: "linear-gradient(135deg, #fff4df 0%, #fff0ed 100%)", icon: "📊" },
+    background: { type: "gradient", value: "linear-gradient(135deg, #fde9eb 0%, #fff6c7 100%)", icon: "📊" },
     content: [
       { id: id(), type: "callout", data: { emoji: "🎯", tone: "success", title: "Nuestra misión", text: "Cierres puntuales y reportes claros para que todo el grupo tome buenas decisiones." } },
       h(2, "Esta semana"), li("bullet", "Cierre de septiembre: viernes 17"), li("bullet", "Conciliaciones bancarias pendientes: 3"),
@@ -185,14 +185,14 @@ async function main() {
 
   await page("compras", {
     title: "Proveedores aprobados", visibility: "DEPARTMENT", tags: ["proveedores"],
-    background: { type: "gradient", value: "linear-gradient(180deg, #e3efe8 0%, #ffffff 100%)", icon: "🥬" },
+    background: { type: "gradient", value: "linear-gradient(180deg, #fff6c7 0%, #ffffff 100%)", icon: "🥬" },
     content: [{ id: id(), type: "table", data: { columns: ["Proveedor", "Categoría", "Contacto"], rows: [["Verduras del Valle", "Vegetales", "ventas@vdv.test"], ["Lácteos Sula", "Lácteos", "pedidos@lsula.test"]] } }],
   });
 
   console.log("Compartiendo una plantilla…");
   const visita = (await call("/templates", { method: "POST", token: tokens.tecnologia, body: {
     title: "Visita técnica a sucursal", description: "Lo que hay que revisar al visitar un restaurante.", scope: "PRIVATE", icon: "lucide:wrench:cielo",
-    background: { type: "color", value: "#eef6ff" },
+    background: { type: "color", value: "#e8f0fa" },
     content: [h(2, "Antes de salir"), li("check", "Confirmar la visita con el gerente"), h(2, "En la sucursal"), li("check", "Punto de venta"), li("check", "Impresoras de cocina"), li("check", "Red y wifi")],
   } })).template;
   await call(`/templates/${visita.id}/shares/${ids.compras}`, { method: "PUT", token: tokens.tecnologia, body: { permission: "READ" } });

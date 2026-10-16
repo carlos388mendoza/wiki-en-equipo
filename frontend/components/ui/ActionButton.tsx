@@ -37,7 +37,7 @@ export function ActionButton({ action, children, className, confirm, successHref
   return (
     <>
       <button type="button" disabled={pending} aria-label={ariaLabel} onClick={() => (confirm ? setOpen(true) : run())}
-        className={className ?? "inline-flex items-center gap-1.5 rounded-lg border border-line px-3 py-1.5 text-sm font-medium hover:border-basil disabled:opacity-60"}>
+        className={className ?? "inline-flex items-center gap-1.5 rounded-lg border border-line px-3 py-1.5 text-sm font-medium hover:border-brand disabled:opacity-60"}>
         {pending && !confirm ? <LoaderCircle size={14} className="animate-spin" aria-hidden /> : null}
         {children}
       </button>
@@ -49,7 +49,7 @@ export function ActionButton({ action, children, className, confirm, successHref
           <div className="mt-5 flex justify-end gap-2">
             <button type="button" onClick={() => setOpen(false)} className="rounded-lg px-3 py-2 text-sm font-medium hover:bg-paper">Cancelar</button>
             <button type="button" disabled={pending} onClick={run}
-              className={`inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-white disabled:opacity-60 ${danger ? "bg-danger" : "bg-ink hover:bg-basil"}`}>
+              className={`inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-white disabled:opacity-60 ${danger ? "bg-danger" : "bg-ink hover:bg-brand"}`}>
               {pending && <LoaderCircle size={14} className="animate-spin" aria-hidden />} {confirm.cta}
             </button>
           </div>

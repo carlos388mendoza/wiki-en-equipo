@@ -76,7 +76,7 @@ export const DEFAULT_TEMPLATES: DefaultTemplate[] = [
   {
     title: "Página de inicio de departamento",
     description: "Muro del departamento: misión, prioridades, accesos rápidos, anuncios y calendario.",
-    background: { type: "gradient", value: "linear-gradient(120deg, #2e6a4f 0%, #e3a33a 100%)", icon: "3d:inicio-departamento" },
+    background: { type: "gradient", value: "linear-gradient(120deg, #e2001a 0%, #ff5a1f 60%, #fddb00 100%)", icon: "3d:inicio-departamento" },
     content: [
       callout("🎯", "success", "Nuestra misión", "En una frase: para qué existe este departamento y cómo ayuda a Grupo Comidas."),
       h(2, "Prioridades del trimestre"),
@@ -94,7 +94,7 @@ export const DEFAULT_TEMPLATES: DefaultTemplate[] = [
   {
     title: "Proceso paso a paso",
     description: "Procedimiento operativo claro: objetivo, requisitos, pasos numerados, errores comunes e indicadores.",
-    background: { type: "pattern", emoji: "🧾", color: "#fbf0da", icon: "3d:proceso" },
+    background: { type: "pattern", emoji: "🧾", color: "#fff6c7", icon: "3d:proceso" },
     content: [
       table(["Objetivo", "Alcance", "Frecuencia", "Responsable"], [["Qué se logra", "A quién aplica", "Diario · Semanal · Mensual", "Puesto"]]),
       h(2, "Antes de empezar"),
@@ -111,7 +111,7 @@ export const DEFAULT_TEMPLATES: DefaultTemplate[] = [
   {
     title: "Acta de reunión",
     description: "Agenda, acuerdos y tareas con responsable y fecha. Ideal para reuniones semanales.",
-    background: { type: "color", value: "#eef6ff", icon: "3d:acta" },
+    background: { type: "color", value: "#e8f0fa", icon: "3d:acta" },
     content: [
       table(["Fecha", "Hora", "Lugar", "Facilitador"], [["dd/mm/aaaa", "00:00", "Sala o enlace", "Nombre"]]),
       bold("Asistentes: ", "Nombre, Nombre, Nombre"),
@@ -161,7 +161,7 @@ export const DEFAULT_TEMPLATES: DefaultTemplate[] = [
   {
     title: "Preguntas frecuentes",
     description: "Respuestas cortas a las dudas más comunes de un tema, agrupadas por categoría.",
-    background: { type: "gradient", value: "linear-gradient(135deg, #e7f7f0 0%, #eef6ff 100%)", icon: "3d:preguntas" },
+    background: { type: "gradient", value: "linear-gradient(135deg, #e8f0fa 0%, #fff6c7 100%)", icon: "3d:preguntas" },
     content: [
       p("Si tu pregunta no está aquí, escríbele al responsable del tema."),
       h(2, "General"),

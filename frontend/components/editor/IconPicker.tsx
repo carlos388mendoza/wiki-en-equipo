@@ -5,14 +5,14 @@ import { ICONS } from "@/lib/backgrounds";
 import { BRAND_ICON, ICON_TONES, LUCIDE_ICONS, lucideIcon, parseIcon, type IconTone } from "@/lib/icons";
 import { PageIcon } from "../ui/PageIcon";
 
-const toneLabel: Record<IconTone, string> = { albahaca: "Albahaca", azafran: "Azafrán", tomate: "Tomate", cielo: "Cielo", uva: "Uva", carbon: "Carbón" };
+const toneLabel: Record<IconTone, string> = { rojo: "Rojo", albahaca: "Albahaca", azafran: "Azafrán", tomate: "Tomate", cielo: "Cielo", uva: "Uva", carbon: "Carbón" };
 
 /** Selector del icono de la página: iconos de Lucide (con tono) o emojis. */
 export function IconPicker({ value, onChange }: { value: string | null; onChange: (icon: string | null) => void }) {
   const [open, setOpen] = useState(false);
   const [tab, setTab] = useState<"iconos" | "emojis">(value?.startsWith("lucide:") ? "iconos" : "emojis");
   const current = parseIcon(value);
-  const [tone, setTone] = useState<IconTone>(current?.kind === "lucide" ? current.tone : "albahaca");
+  const [tone, setTone] = useState<IconTone>(current?.kind === "lucide" ? current.tone : "rojo");
   const [custom, setCustom] = useState("");
   const ref = useRef<HTMLDivElement>(null);
 
@@ -50,7 +50,7 @@ export function IconPicker({ value, onChange }: { value: string | null; onChange
                 {(Object.keys(ICON_TONES) as IconTone[]).map((t) => (
                   <button key={t} type="button" role="radio" aria-checked={tone === t} aria-label={toneLabel[t]} title={toneLabel[t]}
                     onClick={() => { setTone(t); if (current?.kind === "lucide") onChange(lucideIcon(current.name, t)); }}
-                    className={`h-6 w-6 rounded-full ${tone === t ? "ring-2 ring-basil ring-offset-2" : ""}`}
+                    className={`h-6 w-6 rounded-full ${tone === t ? "ring-2 ring-brand ring-offset-2" : ""}`}
                     style={{ backgroundImage: `linear-gradient(145deg, ${ICON_TONES[t][0]}, ${ICON_TONES[t][1]})` }} />
                 ))}
               </div>
@@ -59,7 +59,7 @@ export function IconPicker({ value, onChange }: { value: string | null; onChange
                   const icon = lucideIcon(name, tone);
                   return (
                     <button key={name} type="button" onClick={() => pick(icon)} aria-label={`Usar icono ${name}`} title={name}
-                      className={`grid place-items-center rounded-lg p-1 hover:bg-paper ${value === icon ? "bg-basil-soft" : ""}`}>
+                      className={`grid place-items-center rounded-lg p-1 hover:bg-paper ${value === icon ? "bg-brand-soft" : ""}`}>
                       <PageIcon icon={icon} size={30} />
                     </button>
                   );
@@ -67,7 +67,7 @@ export function IconPicker({ value, onChange }: { value: string | null; onChange
               </div>
               <p className="mt-2 text-[11px] text-muted">Iconos de Lucide.</p>
               <button type="button" onClick={() => pick(BRAND_ICON)} aria-label="Usar el logo de Grupo Comidas"
-                className={`mt-2 flex w-full items-center gap-2 rounded-lg border border-line px-2 py-1.5 text-left text-sm hover:border-basil ${value === BRAND_ICON ? "bg-basil-soft" : ""}`}>
+                className={`mt-2 flex w-full items-center gap-2 rounded-lg border border-line px-2 py-1.5 text-left text-sm hover:border-brand ${value === BRAND_ICON ? "bg-brand-soft" : ""}`}>
                 <PageIcon icon={BRAND_ICON} size={28} /> Logo de Grupo Comidas
               </button>
             </>
@@ -76,12 +76,12 @@ export function IconPicker({ value, onChange }: { value: string | null; onChange
               <div className="grid grid-cols-8 gap-1">
                 {ICONS.map((icon) => (
                   <button key={icon} type="button" onClick={() => pick(icon)} aria-label={`Usar ${icon}`}
-                    className={`grid h-9 w-9 place-items-center rounded-md text-xl hover:bg-paper ${value === icon ? "bg-basil-soft" : ""}`}>{icon}</button>
+                    className={`grid h-9 w-9 place-items-center rounded-md text-xl hover:bg-paper ${value === icon ? "bg-brand-soft" : ""}`}>{icon}</button>
                 ))}
               </div>
               <form className="mt-3 flex gap-2" onSubmit={(e) => { e.preventDefault(); const v = custom.trim(); if (v) { pick([...v].slice(0, 2).join("")); setCustom(""); } }}>
-                <input value={custom} onChange={(e) => setCustom(e.target.value)} placeholder="Otro emoji" aria-label="Otro emoji" className="h-9 min-w-0 flex-1 rounded-lg border border-line px-2 text-sm outline-none focus:border-basil" />
-                <button type="submit" className="rounded-lg bg-ink px-3 text-sm font-medium text-white hover:bg-basil">Usar</button>
+                <input value={custom} onChange={(e) => setCustom(e.target.value)} placeholder="Otro emoji" aria-label="Otro emoji" className="h-9 min-w-0 flex-1 rounded-lg border border-line px-2 text-sm outline-none focus:border-brand" />
+                <button type="submit" className="rounded-lg bg-ink px-3 text-sm font-medium text-white hover:bg-brand">Usar</button>
               </form>
             </>
           )}

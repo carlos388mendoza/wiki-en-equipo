@@ -56,7 +56,7 @@ export default async function HistoryPage({ params, searchParams }: { params: Pr
                 return (
                   <li key={h.id}>
                     <Link href={`?version=${h.version}`} scroll={false} aria-current={active ? "true" : undefined}
-                      className={`flex items-center gap-3 px-3 py-2.5 text-sm ${active ? "bg-basil-soft" : "hover:bg-paper"}`}>
+                      className={`flex items-center gap-3 px-3 py-2.5 text-sm ${active ? "bg-brand-soft" : "hover:bg-paper"}`}>
                       <Avatar name={h.changedBy?.name ?? "?"} size={26} />
                       <span className="min-w-0 flex-1">
                         <span className="block truncate font-medium">Versión {h.version}</span>

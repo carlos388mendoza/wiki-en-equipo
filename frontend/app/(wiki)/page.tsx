@@ -26,7 +26,7 @@ export default async function CompanyWall() {
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-8">
-      <header className={`relative mb-10 overflow-hidden rounded-2xl px-6 py-10 sm:px-10 ${hasCustomHero ? "text-ink" : "bg-basil text-white"}`}>
+      <header className={`relative mb-10 overflow-hidden rounded-2xl px-6 py-10 sm:px-10 ${hasCustomHero ? "text-ink" : "bg-brand text-white"}`}>
         {hasCustomHero && <PageBackground background={wall.wall!.background} className="absolute inset-0" priority />}
         {hasCustomHero && <div aria-hidden className="absolute inset-0 bg-gradient-to-r from-surface/90 to-surface/40" />}
         <div aria-hidden className="pointer-events-none absolute -right-4 -top-6 select-none text-[9rem] leading-none opacity-20 sm:text-[12rem]">
@@ -39,12 +39,12 @@ export default async function CompanyWall() {
           </h1>
           <p className={`mt-3 max-w-lg ${hasCustomHero ? "text-muted" : "text-white/85"}`}>Políticas, guías y anuncios publicados para toda la empresa.</p>
           {user.role === "ADMIN" && (
-            <Link href="/admin/muro" className={`mr-4 mt-5 inline-flex items-center gap-1.5 text-sm font-medium underline-offset-4 hover:underline ${hasCustomHero ? "text-basil" : "text-white"}`}>
+            <Link href="/admin/muro" className={`mr-4 mt-5 inline-flex items-center gap-1.5 text-sm font-medium underline-offset-4 hover:underline ${hasCustomHero ? "text-sky" : "text-white"}`}>
               <Pencil size={14} aria-hidden /> Editar muro
             </Link>
           )}
           {wall.wall && (
-            <Link href={`/paginas/${wall.wall.id}`} className={`mt-5 inline-flex items-center gap-1.5 text-sm font-medium underline-offset-4 hover:underline ${hasCustomHero ? "text-basil" : "text-white"}`}>
+            <Link href={`/paginas/${wall.wall.id}`} className={`mt-5 inline-flex items-center gap-1.5 text-sm font-medium underline-offset-4 hover:underline ${hasCustomHero ? "text-sky" : "text-white"}`}>
               Abrir la página del muro <ArrowRight size={14} aria-hidden />
             </Link>
           )}

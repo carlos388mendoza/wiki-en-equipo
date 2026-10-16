@@ -20,7 +20,7 @@ Desde el 14/10/2026, con permiso de B, A también resolvió los pendientes del b
 - Cada pantalla nueva: estado de carga, error, vacío y acceso denegado, y un título claro (`metadata` o `generateMetadata`; formato "<Página> | Wiki Grupo Comidas").
 - Los permisos del frontend (`frontend/lib/permissions.ts`) solo muestran u ocultan botones; **decide el backend**.
 - Cambios en el backend: actualizar `shared/types`, agregar pruebas en `tests/backend/` (sobre todo de permisos), migración de Prisma si cambia la base y actualizar el seed (`frontend/scripts/seed-dev.mjs` y las plantillas de `POST /api/auth/bootstrap`).
-- Mantener el estilo visual de `frontend/styles/globals.css` (paper, surface, ink, muted, line, basil `#2e6a4f`, saffron, danger; Bricolage Grotesque para títulos y Figtree para texto).
+- Mantener el estilo visual de `frontend/styles/globals.css`, con los colores del logo: `brand` `#e2001a` (rojo; para texto, `brand-strong` `#b30015`), `sun` `#fddb00` (amarillo: **solo fondo o detalle, nunca texto**; texto sobre amarillo en `ink` y, si hace falta un amarillo legible, `sun-ink`), `ink` (negro), `sky` `#1f5fae` (enlaces, mensajes de éxito y detalles), además de paper, surface, muted, line y danger. Bricolage Grotesque para títulos y Figtree para texto. `tests/frontend/colores.test.ts` comprueba los tonos, que no vuelva el verde y el contraste AA.
 - Nunca subir contraseñas, claves ni `.env`.
 - Nunca commit/push/merge a `main` ni force push. Se trabaja en ramas y se abre un PR.
 - Commits: `feat(frontend|backend): ...`, `fix(...): ...`, `docs: ...`, `test(...): ...`.

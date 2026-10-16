@@ -44,13 +44,13 @@ export default async function TemplatesPage({ searchParams }: { searchParams: Pr
       </header>
 
       {plantilla && !templates.some((t) => t.id === plantilla) && (
-        <p role="alert" className="mt-6 rounded-lg bg-saffron-soft px-4 py-3 text-sm">
+        <p role="alert" className="mt-6 rounded-lg bg-sun-soft px-4 py-3 text-sm">
           No tienes acceso a esa plantilla o ya no existe. Pide a quien te la envió que te invite o te comparta un enlace.
         </p>
       )}
 
       {user.role === "ADMIN" && missingDefaults > 0 && (
-        <div className="mt-6 rounded-xl border border-saffron/40 bg-saffron-soft/60 p-4">
+        <div className="mt-6 rounded-xl border border-sun/40 bg-sun-soft/60 p-4">
           <p className="mb-3 text-sm">
             Hay {missingDefaults} plantillas de Grupo Comidas sin instalar (documentación, bienvenida, inicio de departamento, recetas, actas y más).
           </p>

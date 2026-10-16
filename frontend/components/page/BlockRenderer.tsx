@@ -25,16 +25,16 @@ function SpanView({ span }: { span: Span }) {
 
   if (span.pageId) {
     return (
-      <Link href={`/paginas/${span.pageId}`} className="inline-flex items-baseline gap-0.5 font-medium text-ink underline decoration-line decoration-2 underline-offset-2 hover:decoration-basil">
+      <Link href={`/paginas/${span.pageId}`} className="inline-flex items-baseline gap-0.5 font-medium text-ink underline decoration-line decoration-2 underline-offset-2 hover:decoration-brand">
         <FileText size={13} className="self-center text-muted" aria-hidden />
         {node}
       </Link>
     );
   }
   if (span.href) {
-    if (!isExternal(span.href)) return <Link href={span.href} className="text-basil underline underline-offset-2">{node}</Link>;
+    if (!isExternal(span.href)) return <Link href={span.href} className="text-sky underline underline-offset-2">{node}</Link>;
     return (
-      <a href={span.href} target="_blank" rel="noopener noreferrer" className="text-basil underline decoration-basil/40 underline-offset-2 hover:decoration-basil">
+      <a href={span.href} target="_blank" rel="noopener noreferrer" className="text-sky underline decoration-sky/40 underline-offset-2 hover:decoration-sky">
         {node}
         <ExternalLink size={12} className="ml-0.5 inline align-[-1px]" aria-label="(abre un sitio externo)" />
       </a>
@@ -49,9 +49,9 @@ function Rich({ data }: { data: { text: string; spans?: Span[] } }) {
 }
 
 const toneClass: Record<CalloutTone, string> = {
-  info: "bg-basil-soft",
-  success: "bg-basil-soft",
-  warning: "bg-saffron-soft",
+  info: "bg-sky-soft",
+  success: "bg-brand-soft",
+  warning: "bg-sun-soft",
   danger: "bg-danger-soft",
 };
 
@@ -85,7 +85,7 @@ function Blocks({ blocks, subpages }: { blocks: WikiBlock[]; subpages: Record<st
                   {b.items.map((item) => (
                     <li key={item.id} className="flex flex-col">
                       <span className="flex items-start gap-2">
-                        <input type="checkbox" checked={item.data.checked ?? false} readOnly disabled className="mt-1.5 accent-basil" aria-label={item.data.checked ? "Completado" : "Pendiente"} />
+                        <input type="checkbox" checked={item.data.checked ?? false} readOnly disabled className="mt-1.5 accent-brand" aria-label={item.data.checked ? "Completado" : "Pendiente"} />
                         <span className={item.data.checked ? "text-muted line-through" : ""}><Rich data={item.data} /></span>
                       </span>
                       <Children blocks={item.data.children} subpages={subpages} />
@@ -119,7 +119,7 @@ function Blocks({ blocks, subpages }: { blocks: WikiBlock[]; subpages: Record<st
             return <Tag key={b.id} className={`font-display font-semibold leading-tight ${cls}`}><Rich data={b.data} /></Tag>;
           }
           case "quote":
-            return <blockquote key={b.id} className="whitespace-pre-line border-l-4 border-basil pl-4 italic text-muted"><Rich data={b.data} /></blockquote>;
+            return <blockquote key={b.id} className="whitespace-pre-line border-l-4 border-brand pl-4 italic text-muted"><Rich data={b.data} /></blockquote>;
           case "callout":
             return (
               <div key={b.id} className={`flex gap-3 rounded-lg px-4 py-3 ${toneClass[b.data.tone ?? "warning"]}`}>
@@ -167,7 +167,7 @@ function Blocks({ blocks, subpages }: { blocks: WikiBlock[]; subpages: Record<st
                 ) : isDirectVideo(b.data.url) ? (
                   <video src={b.data.url} controls preload="metadata" className="w-full rounded-lg bg-ink" />
                 ) : (
-                  <a href={b.data.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-basil underline">
+                  <a href={b.data.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-sky underline">
                     Ver video <ExternalLink size={14} aria-label="(abre un sitio externo)" />
                   </a>
                 )}
@@ -180,7 +180,7 @@ function Blocks({ blocks, subpages }: { blocks: WikiBlock[]; subpages: Record<st
             let host = b.data.url;
             try { host = new URL(b.data.url).hostname.replace(/^www\./, ""); } catch { /* ruta interna */ }
             return (
-              <a key={b.id} href={b.data.url} {...(external && { target: "_blank", rel: "noopener noreferrer" })} className="flex items-center gap-3 rounded-lg border border-line px-3 py-2 hover:border-basil hover:bg-basil-soft">
+              <a key={b.id} href={b.data.url} {...(external && { target: "_blank", rel: "noopener noreferrer" })} className="flex items-center gap-3 rounded-lg border border-line px-3 py-2 hover:border-brand hover:bg-brand-soft">
                 <Link2 size={16} className="shrink-0 text-muted" aria-hidden />
                 <span className="min-w-0 flex-1">
                   <span className="block truncate font-medium">{b.data.title ?? host}</span>
@@ -192,7 +192,7 @@ function Blocks({ blocks, subpages }: { blocks: WikiBlock[]; subpages: Record<st
           }
           case "file":
             return (
-              <a key={b.id} href={b.data.url} className="flex items-center gap-3 rounded-lg border border-line px-3 py-2 hover:border-basil hover:bg-basil-soft">
+              <a key={b.id} href={b.data.url} className="flex items-center gap-3 rounded-lg border border-line px-3 py-2 hover:border-brand hover:bg-brand-soft">
                 <Paperclip size={16} className="shrink-0 text-muted" aria-hidden />
                 <span className="min-w-0 flex-1 truncate font-medium">{b.data.name}</span>
                 {b.data.sizeBytes !== undefined && <span className="text-xs text-muted">{formatBytes(b.data.sizeBytes)}</span>}
@@ -221,7 +221,7 @@ function Blocks({ blocks, subpages }: { blocks: WikiBlock[]; subpages: Record<st
             const sub = subpages[b.data.pageId];
             if (!sub) return null; // sin acceso o en la papelera
             return (
-              <Link key={b.id} href={`/paginas/${sub.id}`} className="flex items-center gap-3 rounded-lg border border-line px-3 py-2 hover:border-basil hover:bg-basil-soft">
+              <Link key={b.id} href={`/paginas/${sub.id}`} className="flex items-center gap-3 rounded-lg border border-line px-3 py-2 hover:border-brand hover:bg-brand-soft">
                 <PageIcon icon={sub.icon} size={18} />
                 <span className="font-medium">{sub.title}</span>
                 <span className="ml-auto text-xs text-muted">Subpágina</span>

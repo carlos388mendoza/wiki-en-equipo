@@ -49,7 +49,7 @@ export default async function DepartmentWall({ params }: { params: Promise<{ slu
             </p>
           </div>
           {editable && (
-            <Link href={`/departamentos/${department.slug}/editar`} className="inline-flex items-center gap-2 self-start rounded-lg border border-line px-3 py-2 text-sm font-medium hover:border-basil sm:self-auto">
+            <Link href={`/departamentos/${department.slug}/editar`} className="inline-flex items-center gap-2 self-start rounded-lg border border-line px-3 py-2 text-sm font-medium hover:border-brand sm:self-auto">
               <Pencil size={14} aria-hidden /> Editar muro
             </Link>
           )}

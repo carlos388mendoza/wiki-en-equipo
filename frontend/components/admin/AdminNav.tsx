@@ -18,7 +18,7 @@ export function AdminNav() {
         const active = pathname === i.href;
         return (
           <Link key={i.href} href={i.href} aria-current={active ? "page" : undefined}
-            className={`shrink-0 border-b-2 px-3 py-2 text-sm font-medium ${active ? "border-basil text-basil" : "border-transparent text-muted hover:text-ink"}`}>
+            className={`shrink-0 border-b-2 px-3 py-2 text-sm font-medium ${active ? "border-brand text-brand-strong" : "border-transparent text-muted hover:text-ink"}`}>
             {i.label}
           </Link>
         );
