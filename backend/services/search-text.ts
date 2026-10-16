@@ -71,3 +71,19 @@ export async function backfillSearchText(batchSize = 200) {
     updated += pages.length;
   }
 }
+
+/**
+ * Recalcula `User.searchName` donde no coincide con `foldText(name)`. La migración que creó la columna lo
+ * llenó en SQL, que solo quita algunas tildes (á, é, í, ó, ú, ü, ñ): "Françoise" o "Àngel" quedaban sin
+ * encontrarse al buscar sin tilde. Se corre al arrancar y no cambia `updatedAt`.
+ */
+export async function syncUserSearchNames() {
+  let updated = 0;
+  for (const user of await prisma.user.findMany({ select: { id: true, name: true, searchName: true } })) {
+    const searchName = foldText(user.name.trim());
+    if (searchName === user.searchName) continue;
+    await prisma.$executeRaw`UPDATE "User" SET "searchName" = ${searchName} WHERE "id" = ${user.id}`;
+    updated++;
+  }
+  return updated;
+}
