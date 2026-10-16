@@ -2,6 +2,7 @@ import { RotateCcw, Trash2 } from "lucide-react";
 import { deletePermanently, emptyTrash, restorePage } from "@/app/actions/admin";
 import { ActionButton } from "@/components/ui/ActionButton";
 import { PageIcon } from "@/components/ui/PageIcon";
+import { TrashVisibility } from "@/components/page/TrashVisibility";
 import { listTrash } from "@/lib/api";
 import { canDelete } from "@/lib/permissions";
 import { timeAgo } from "@/lib/format";
@@ -51,7 +52,7 @@ export default async function TrashPage() {
               <PageIcon icon={p.icon} size={20} />
               <div className="min-w-0 flex-1">
                 <p className="truncate font-medium">{p.title}</p>
-                <p className="text-sm text-muted">Eliminada {timeAgo(p.deletedAt!)}</p>
+                <p className="flex flex-wrap items-center gap-x-2 text-sm text-muted">Eliminada {timeAgo(p.deletedAt!)} <TrashVisibility visibility={p.visibility} /></p>
               </div>
               {canDelete(user, p) && (
                 <div className="flex items-center gap-2">
