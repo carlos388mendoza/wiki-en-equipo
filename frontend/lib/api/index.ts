@@ -146,21 +146,12 @@ export async function listAccessible(_viewer: User): Promise<PageSummary[]> {
   return res.ok ? res.data : [];
 }
 
-/** Una petición por conjunto de ids y render (el backend devuelve solo las que la persona puede ver). */
-const pagesByIds = cache(async (key: string): Promise<PageSummary[]> => {
-  const res = await backend<{ pages: RawListPage[] }>(`/pages?ids=${encodeURIComponent(key)}`);
-  return res.ok ? res.data.pages.map(toSummary) : [];
-});
-
-/**
- * Resúmenes de páginas por id, en el mismo orden (subpáginas y menciones del contenido). Se piden por id
- * y no se buscan en el listado, que solo trae las 100 más recientes.
- */
+/** Resúmenes de páginas por id, a partir del listado (para enlaces y subpáginas del contenido). */
 export async function getPageSummaries(_viewer: User, ids: string[]): Promise<PageSummary[]> {
-  const unique = [...new Set(ids)].slice(0, 100);
-  if (!unique.length) return [];
-  const map = new Map((await pagesByIds(unique.join(","))).map((p) => [p.id, p]));
-  return unique.flatMap((id) => (map.has(id) ? [map.get(id)!] : []));
+  const all = await accessiblePages();
+  if (!all.ok) return [];
+  const map = new Map(all.data.map((p) => [p.id, p]));
+  return ids.flatMap((id) => (map.has(id) ? [map.get(id)!] : []));
 }
 
 export async function getChildren(_viewer: User, parentId: string): Promise<PageSummary[]> {
