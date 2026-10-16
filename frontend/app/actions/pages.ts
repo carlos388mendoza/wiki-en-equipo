@@ -23,11 +23,12 @@ function refreshAll(pageId?: string) {
 
 /* ---------- Páginas ---------- */
 
-export async function createPage(input: { title: string; parentId?: string | null; templateId?: string }): Promise<ActionResult<{ id: string; title: string }>> {
+/** Crea una página (vacía, desde una plantilla o ya con contenido, como los borradores sin conexión) en una sola petición. */
+export async function createPage(input: { title: string; parentId?: string | null; templateId?: string; blocks?: WikiBlock[]; icon?: string }): Promise<ActionResult<{ id: string; title: string }>> {
   const title = input.title.trim().slice(0, 200) || "Página sin título";
   const res = input.templateId
     ? await backend<{ page: { id: string; title: string } }>(`/pages/from-template/${encodeURIComponent(input.templateId)}`, { method: "POST", body: { title, parentId: input.parentId ?? null } })
-    : await backend<{ page: { id: string; title: string } }>("/pages", { method: "POST", body: { title, parentId: input.parentId ?? null, content: [], icon: "📄", background: toStoredAppearance(null) } });
+    : await backend<{ page: { id: string; title: string } }>("/pages", { method: "POST", body: { title, parentId: input.parentId ?? null, content: input.blocks ?? [], icon: input.icon ?? "📄", background: toStoredAppearance(null) } });
   if (!res.ok) {
     return { ok: false, message: failMessage(res, input.parentId ? "Solo puedes crear subpáginas en páginas que puedes editar y que sean de tu departamento." : undefined) };
   }

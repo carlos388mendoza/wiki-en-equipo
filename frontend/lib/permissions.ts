@@ -4,6 +4,7 @@ import type { Department, Page, PageSummary, PageVisibility, User, UserRole } fr
  * Reglas de permisos del lado de la interfaz.
  * Sirven SOLO para mostrar u ocultar botones. La verificación real la hace
  * el backend (`backend/permissions/access.ts`); si difieren, manda el backend.
+ * Quién puede leer una página no se calcula aquí: el backend no entrega las que no se pueden leer.
  */
 
 type Viewer = Pick<User, "id" | "role" | "departmentId">;
@@ -14,20 +15,19 @@ export function shareFor(user: Viewer, page: PageLike) {
   return page.shares?.find((s) => s.userId === user.id);
 }
 
-export function canView(user: Viewer, page: PageLike): boolean {
-  if (page.deletedAt) return false;
-  if (user.role === "ADMIN") return true;
-  if (page.ownerId === user.id || shareFor(user, page)) return true;
-  if (page.isWall && user.departmentId === page.departmentId) return true;
-  if (page.visibility === "COMPANY") return true;
-  return page.visibility === "DEPARTMENT" && user.departmentId === page.departmentId;
-}
-
 export function canEdit(user: Viewer, page: PageLike): boolean {
   if (page.deletedAt) return false;
   if (user.role === "ADMIN" || page.ownerId === user.id) return true;
   if (shareFor(user, page)?.permission === "EDIT") return true;
   return Boolean(page.isWall && user.role === "DEPARTMENT_ADMIN" && user.departmentId === page.departmentId);
+}
+
+/**
+ * Restaurar una versión del historial: hay que poder editar la página y, si esa versión estaba publicada
+ * para toda la empresa, ser administrador (el backend responde 403 en ese caso).
+ */
+export function canRestoreVersion(user: Viewer, page: PageLike, versionVisibility: PageVisibility): boolean {
+  return canEdit(user, page) && (versionVisibility !== "COMPANY" || user.role === "ADMIN");
 }
 
 /** En el backend, quien puede editar también puede compartir. */

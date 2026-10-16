@@ -32,21 +32,19 @@ export async function syncOffline(pageId: string, state: PageState, baseVersion:
 > {
   const res = await backend<{ status: string; page: { version: number } }>(`/sync/pages/${encodeURIComponent(pageId)}`, {
     method: "POST",
-    body: { operationId, baseVersion, title: state.title.trim() || "Página sin título", content: state.blocks, background: toStoredAppearance(state.background), icon: state.icon },
+    body: { operationId, baseVersion, title: state.title.trim() || "Página sin título", content: state.blocks, background: toStoredAppearance(state.background), icon: state.icon, tags: state.tags.slice(0, 30).map((t) => t.slice(0, 40)) },
   });
   if (!res.ok) {
     if (res.error === "conflicto") {
-      const details = res.details as { currentVersion: number; current: { title: string; icon?: string | null; content: unknown; background: unknown } } | undefined;
+      const details = res.details as { currentVersion: number; current: { title: string; icon?: string | null; content: unknown; background: unknown; tags?: string[] } } | undefined;
       if (details?.current) {
         const { background, icon } = parseAppearance(details.current.background);
-        // El endpoint de sincronización no devuelve etiquetas: se conservan las tuyas.
-        return { ok: false, conflict: true, version: details.currentVersion, state: { title: details.current.title, blocks: parseContent(details.current.content), background, icon: parseAppearance({ icon: details.current.icon }).icon ?? icon, tags: state.tags } };
+        return { ok: false, conflict: true, version: details.currentVersion, state: { title: details.current.title, blocks: parseContent(details.current.content), background, icon: parseAppearance({ icon: details.current.icon }).icon ?? icon, tags: details.current.tags ?? state.tags } };
       }
     }
     return { ok: false, message: res.message };
   }
-  // El endpoint de sincronización no guarda etiquetas: se actualizan aparte.
-  const tagged = await backend<{ page: { version: number } }>(`/pages/${encodeURIComponent(pageId)}`, { method: "PATCH", body: { tags: state.tags, expectedVersion: res.data.page.version } });
+  // Contenido y etiquetas se guardan en la misma operación: si falla, no se guarda nada a medias.
   revalidatePath(`/paginas/${pageId}`);
-  return { ok: true, version: tagged.ok ? tagged.data.page.version : res.data.page.version };
+  return { ok: true, version: res.data.page.version };
 }

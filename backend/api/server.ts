@@ -3,7 +3,7 @@ import { createServer } from "node:http";
 import { app, attachWebSockets, collabServer } from "./app.js";
 import { prisma } from "../models/client.js";
 import { purgeExpiredTrash } from "../services/page-service.js";
-import { backfillSearchText } from "../services/search-text.js";
+import { backfillSearchText, syncUserSearchNames } from "../services/search-text.js";
 
 const port = Number(process.env.PORT ?? 4000);
 const server = createServer(app);
@@ -16,6 +16,9 @@ const trashRetentionDays = Number(process.env.TRASH_RETENTION_DAYS ?? 30);
 const purgeTrash = () => purgeExpiredTrash(trashRetentionDays).then((count) => { if (count) console.log(`Papelera: ${count} páginas eliminadas por antigüedad.`); }).catch((error) => console.error("No se pudo limpiar la papelera:", error));
 void purgeTrash();
 setInterval(purgeTrash, 12 * 3_600_000).unref();
+
+// Directorio: nombres normalizados que la migración en SQL no dejó bien (tildes que no cubría).
+syncUserSearchNames().then((count) => { if (count) console.log(`Directorio: ${count} nombres normalizados.`); }).catch((error) => console.error("No se pudo normalizar el directorio:", error));
 
 // Páginas creadas antes de la búsqueda en el contenido: se indexan una sola vez al arrancar.
 backfillSearchText().then((count) => { if (count) console.log(`Búsqueda: ${count} páginas indexadas.`); }).catch((error) => console.error("No se pudo indexar la búsqueda:", error));

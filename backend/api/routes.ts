@@ -126,7 +126,7 @@ router.delete("/company/wall", requireRole("ADMIN"), async (req, res) => {
 });
 
 router.get("/users/directory", directoryLimiter, async (req, res) => {
-  const query = z.object({ q: z.string().trim().min(2).max(100), limit: z.coerce.number().int().min(1).max(20).default(10), offset: z.coerce.number().int().min(0).default(0) }).parse(req.query);
+  const query = z.object({ q: z.string().trim().min(2).max(100), limit: z.coerce.number().int().min(1).max(20).default(10), offset: z.coerce.number().int().min(0).max(auth.DIRECTORY_MAX_MATCHES - 1).default(0) }).parse(req.query);
   res.json(await auth.searchDirectory(actor(req), query.q, query.limit, query.offset));
 });
 router.get("/users", requireRole("ADMIN"), async (req, res) => res.json({ users: await auth.listUsers(req.query.includeInactive === "1" || req.query.includeInactive === "true") }));
@@ -207,6 +207,11 @@ router.delete("/pages/:pageId/share-links/:linkId", async (req, res) => {
   await pages.revokeShareLink(actor(req), param(req, "pageId"), param(req, "linkId")); res.status(204).end();
 });
 router.get("/pages/:pageId/share-links", async (req, res) => res.json({ links: await pages.listShareLinks(actor(req), param(req, "pageId")) }));
+router.get("/share/:token", async (req, res) => {
+  const info = await pages.describeShareLink(z.string().min(20).max(200).parse(req.params.token));
+  if (!info) throw notFound("El enlace no existe, venció o fue revocado.");
+  res.json(info);
+});
 router.post("/share/:token/accept", async (req, res) => {
   const token = z.string().min(20).max(200).parse(req.params.token);
   // El mismo enlace /share/<token> sirve para páginas y plantillas.
@@ -216,7 +221,7 @@ router.post("/share/:token/accept", async (req, res) => {
 });
 
 router.post("/sync/pages/:pageId", async (req, res) => {
-  const body = objectBody(z.object({ operationId: z.string().uuid(), baseVersion: z.number().int().positive(), title: title.optional(), icon, content: z.unknown(), background: z.unknown().optional() }), req);
+  const body = objectBody(z.object({ operationId: z.string().uuid(), baseVersion: z.number().int().positive(), title: title.optional(), icon, content: z.unknown(), background: z.unknown().optional(), tags }), req);
   const result = await syncPage(actor(req), { ...body, pageId: param(req, "pageId") });
   if (result.status === "synced") await collab.resetPage(param(req, "pageId"));
   if (result.status === "synced") hub.broadcast(param(req, "pageId"), { type: "page.refresh", pageId: param(req, "pageId"), version: result.page.version });

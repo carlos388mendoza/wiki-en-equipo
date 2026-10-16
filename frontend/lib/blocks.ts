@@ -99,6 +99,17 @@ function rich(data: Record<string, unknown>): Rich {
   };
 }
 
+/**
+ * Nivel de un título: 1, 2 o 3 (los que ofrece el editor). Una sola regla para lo que llega del backend y
+ * del editor: los niveles más profundos (4 a 6, por ejemplo al pegar) quedan en 3 y lo que no es un número
+ * válido queda en 1.
+ */
+export function headingLevel(value: unknown): 1 | 2 | 3 {
+  const level = typeof value === "string" ? Number(value) : value;
+  if (typeof level !== "number" || !Number.isInteger(level) || level < 1) return 1;
+  return level >= 3 ? 3 : (level as 1 | 2);
+}
+
 let counter = 0;
 export const newBlockId = () =>
   typeof crypto !== "undefined" && "randomUUID" in crypto ? crypto.randomUUID() : `b-${Date.now()}-${counter++}`;
@@ -117,8 +128,7 @@ export function normalizeBlocks(value: unknown): WikiBlock[] {
         out.push({ id, type: raw.type, data: rich(data) });
         break;
       case "heading": {
-        const level = data.level === 2 || data.level === 3 ? data.level : 1;
-        out.push({ id, type: "heading", data: { ...rich(data), level } });
+        out.push({ id, type: "heading", data: { ...rich(data), level: headingLevel(data.level) } });
         break;
       }
       case "callout": {

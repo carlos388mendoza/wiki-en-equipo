@@ -10,7 +10,7 @@ import { StatusScreen } from "@/components/ui/StatusScreen";
 import { VisibilityBadge } from "@/components/ui/VisibilityBadge";
 import { getHistory, getPage, pageTitle } from "@/lib/api";
 import { timeAgo } from "@/lib/format";
-import { canEdit } from "@/lib/permissions";
+import { canEdit, canRestoreVersion } from "@/lib/permissions";
 import { requireUser } from "@/lib/session";
 import { PageIcon } from "@/components/ui/PageIcon";
 import type { Metadata } from "next";
@@ -35,6 +35,7 @@ export default async function HistoryPage({ params, searchParams }: { params: Pr
   const history = historyRes.data;
   const selected = history.find((h) => String(h.version) === version) ?? history[0];
   const editable = canEdit(user, page);
+  const restorable = canRestoreVersion(user, page, selected?.snapshot.visibility ?? "PRIVATE");
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-8">
@@ -74,7 +75,7 @@ export default async function HistoryPage({ params, searchParams }: { params: Pr
                 <p className="font-semibold">Versión {selected.version}</p>
                 <p className="text-xs text-muted">Reemplazada el {fullDate(selected.createdAt)} por {selected.changedBy?.name ?? "alguien"}</p>
               </div>
-              {editable && (
+              {restorable ? (
                 <ActionButton
                   action={restoreVersion.bind(null, page.id, selected.version)}
                   successHref={`/paginas/${page.id}`}
@@ -82,6 +83,8 @@ export default async function HistoryPage({ params, searchParams }: { params: Pr
                 >
                   <RotateCcw size={14} aria-hidden /> Restaurar
                 </ActionButton>
+              ) : editable && (
+                <p className="max-w-xs text-xs text-muted">Esta versión estaba publicada para toda la empresa: solo un administrador puede restaurarla.</p>
               )}
             </div>
             <PageBackground background={selected.snapshot.background} seed={page.id} className="h-24" sizes="800px" />

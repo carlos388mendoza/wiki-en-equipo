@@ -105,6 +105,12 @@ export interface CreatedShareLink {
   url: string;
 }
 
+/** `GET /api/share/:token`: qué abre el enlace, sin aceptarlo (para el texto de la invitación). */
+export interface ShareLinkInfo {
+  type: "page" | "template";
+  permission: PagePermission;
+}
+
 /** `POST /api/share/:token/accept`. Aceptar nunca baja un permiso que ya se tenía. */
 export type ShareAcceptResult =
   | { type: "page"; pageId: string; permission: PagePermission }

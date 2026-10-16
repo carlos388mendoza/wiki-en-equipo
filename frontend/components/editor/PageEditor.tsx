@@ -13,6 +13,7 @@ import { usePageDraft, type PageDraftState } from "@/lib/collab/usePageDraft";
 import { applyBlocks } from "@/lib/editor/apply";
 import { blockNoteToWiki, trimTrailingEmpty, wikiToBlockNote, type BNBlock } from "@/lib/editor/convert";
 import { mergePages, type MergeResult, type PageState } from "@/lib/editor/merge";
+import { conflictRetryDelay } from "@/lib/editor/retry";
 import type { Background, PageSummary, TemplateScope, User } from "@/lib/types";
 import { allowedList, MAX_UPLOAD_MB, uploadToWiki } from "@/lib/uploads";
 import { PageBackground } from "../page/PageBackground";
@@ -94,6 +95,8 @@ export function PageEditor({ mode, id, initial, pages, tagSuggestions, viewer, b
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const saving = useRef(false);
   const pendingAgain = useRef(false);
+  /** Reintentos seguidos por conflicto en la edición en vivo (se reinicia al guardar bien). */
+  const conflictRetries = useRef(0);
   const parentChanged = useRef(false);
   const initDone = useRef(false);
 
@@ -233,6 +236,7 @@ export function PageEditor({ mode, id, initial, pages, tagSuggestions, viewer, b
     const res = await savePage(id, d, force ?? versionRef.current, auto);
     saving.current = false;
     if (res.ok) {
+      conflictRetries.current = 0;
       parentChanged.current = false;
       markSynced(res.data.version, state);
       setError("");
@@ -243,8 +247,20 @@ export function PageEditor({ mode, id, initial, pages, tagSuggestions, viewer, b
     if ("conflict" in res && res.conflict) {
       const latest = await loadPageState(id);
       if (!latest.ok) { setError(latest.message); setStatus("error"); return; }
-      // Con edición en vivo el documento ya incluye los cambios de los demás: basta con reintentar.
-      if (collab.live && collab.peers.length) { void saveRef.current(latest.data.version); return; }
+      // Con edición en vivo el documento ya incluye los cambios de los demás: basta con reintentar,
+      // pero con un límite y una espera creciente para no entrar en un bucle si hay mucha actividad.
+      if (collab.live && collab.peers.length) {
+        const delay = conflictRetryDelay(conflictRetries.current);
+        if (delay !== null) {
+          conflictRetries.current += 1;
+          setStatus("saving");
+          if (timer.current) clearTimeout(timer.current);
+          timer.current = setTimeout(() => void saveRef.current(latest.data.version, auto), delay);
+          return;
+        }
+        setNotice("Hay mucha actividad en esta página: revisa cómo combinar tus cambios con los de los demás.");
+      }
+      conflictRetries.current = 0;
       resolveAgainst(latest.data.version, latest.data.state, "concurrent");
       return;
     }

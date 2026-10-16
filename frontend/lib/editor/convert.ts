@@ -12,7 +12,7 @@
  *   link ↔ bookmark (propio)         subpage ↔ subpage (propio)
  *   callout ↔ callout (propio)       span.pageId ↔ inline "pageMention" (propio)
  */
-import { newBlockId, normalizeBlocks, safeHref, type CalloutTone, type Span, type WikiBlock } from "../blocks";
+import { headingLevel, newBlockId, normalizeBlocks, safeHref, type CalloutTone, type Span, type WikiBlock } from "../blocks";
 
 /** Forma JSON de un bloque de BlockNote (lo mínimo que usamos). */
 export interface BNBlock {
@@ -163,8 +163,7 @@ export function blockNoteToWiki(blocks: BNBlock[]): WikiBlock[] {
         out.push({ id, type: "paragraph", data: withKids(rich(b.content)) });
         break;
       case "heading": {
-        const level = p.level === 2 || p.level === 3 ? p.level : p.level === 1 ? 1 : 3;
-        out.push({ id, type: "heading", data: { ...rich(b.content), level } });
+        out.push({ id, type: "heading", data: { ...rich(b.content), level: headingLevel(p.level) } });
         if (kids) out.push(...kids);
         break;
       }

@@ -29,7 +29,16 @@ export async function createDepartment(input: { name: string; description?: stri
 }
 
 /** Descripción e icono: ADMIN o el administrador del departamento. El nombre solo un ADMIN (el slug no cambia para no romper enlaces). */
+/**
+ * Regla de toda la API: si no existe, 404 (antes de mirar permisos); si existe y no hay permiso, 403.
+ * Los departamentos no son secretos (GET /departments/:slug ya distingue los dos casos).
+ */
+async function assertDepartmentExists(departmentId: string) {
+  if (!await prisma.department.findUnique({ where: { id: departmentId }, select: { id: true } })) throw notFound("No se encontró el departamento.");
+}
+
 export async function updateDepartment(actor: Actor, departmentId: string, input: { name?: string; description?: string; icon?: string | null }) {
+  await assertDepartmentExists(departmentId);
   if (!canManageDepartment(actor, departmentId)) throw forbidden("No puedes administrar este departamento.");
   if (input.name !== undefined && actor.role !== "ADMIN") throw forbidden("Solo un administrador puede cambiar el nombre del departamento.");
   if (!await prisma.department.findUnique({ where: { id: departmentId } })) throw notFound("No se encontró el departamento.");
@@ -42,6 +51,7 @@ export async function updateDepartment(actor: Actor, departmentId: string, input
 }
 
 export async function setDepartmentWall(actor: Actor, departmentId: string, pageId: string) {
+  await assertDepartmentExists(departmentId);
   if (!canManageDepartment(actor, departmentId)) throw forbidden("No puedes administrar este departamento.");
   return prisma.$transaction(async (tx) => {
     const department = await tx.department.findUnique({ where: { id: departmentId } });
@@ -58,6 +68,7 @@ export async function setDepartmentWall(actor: Actor, departmentId: string, page
 }
 
 export async function clearDepartmentWall(actor: Actor, departmentId: string) {
+  await assertDepartmentExists(departmentId);
   if (!canManageDepartment(actor, departmentId)) throw forbidden("No puedes administrar este departamento.");
   return prisma.$transaction(async (tx) => {
     const department = await tx.department.findUnique({ where: { id: departmentId } });
@@ -68,6 +79,7 @@ export async function clearDepartmentWall(actor: Actor, departmentId: string) {
 }
 
 export async function setFeaturedPages(actor: Actor, departmentId: string, pageIds: string[]) {
+  await assertDepartmentExists(departmentId);
   if (!canManageDepartment(actor, departmentId)) throw forbidden("No puedes administrar este departamento.");
   if (pageIds.length > 12 || new Set(pageIds).size !== pageIds.length) throw badRequest("Puedes destacar hasta 12 páginas distintas.");
   const pages = await prisma.page.findMany({ where: { id: { in: pageIds }, departmentId, deletedAt: null } });
@@ -81,6 +93,7 @@ export async function setFeaturedPages(actor: Actor, departmentId: string, pageI
 }
 
 export async function listFeaturedPages(actor: Actor, departmentId: string) {
+  await assertDepartmentExists(departmentId);
   if (actor.role !== "ADMIN" && actor.departmentId !== departmentId) throw forbidden("Solo puedes ver las páginas destacadas de tu departamento.");
   const records = await prisma.departmentFeaturedPage.findMany({ where: { departmentId, page: { deletedAt: null, visibility: { in: ["DEPARTMENT", "COMPANY"] } } }, orderBy: { sortOrder: "asc" }, include: { page: { select: { ...pageCardSelect, ...myShareSelect(actor) } } } });
   return records.map(({ page }) => withMyPermission(actor, page));

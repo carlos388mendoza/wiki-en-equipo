@@ -117,6 +117,29 @@ describe("enlaces de plantillas", () => {
   });
 });
 
+describe("qué abre un enlace antes de aceptarlo (#8)", () => {
+  it("dice si es una plantilla o una página y con qué permiso, sin dar acceso", async () => {
+    const t = await plantillaDeLuis();
+    const enlacePlantilla = await api.as(luis).post(`/templates/${t.id}/share-links`, { permission: "EDIT" });
+    const page = await createPage(api, luis);
+    const enlacePagina = await api.as(luis).post(`/pages/${page.id}/share-links`, { permission: "READ" });
+
+    expect((await api.as(maria).get(`/share/${enlacePlantilla.body.token}`)).body).toEqual({ type: "template", permission: "EDIT" });
+    expect((await api.as(maria).get(`/share/${enlacePagina.body.token}`)).body).toEqual({ type: "page", permission: "READ" });
+    // Consultar no acepta: sigue sin acceso.
+    expect((await api.as(maria).get(`/templates/${t.id}`)).status).toBe(404);
+    expect((await api.as(maria).get(`/pages/${page.id}`)).status).toBe(403);
+  });
+
+  it("un enlace desactivado o inventado responde 404", async () => {
+    const t = await plantillaDeLuis();
+    const link = await api.as(luis).post(`/templates/${t.id}/share-links`, { permission: "READ" });
+    await api.as(luis).delete(`/templates/${t.id}/share-links/${link.body.id}`);
+    expect((await api.as(maria).get(`/share/${link.body.token}`)).status).toBe(404);
+    expect((await api.as(maria).get(`/share/${"x".repeat(43)}`)).status).toBe(404);
+  });
+});
+
 describe("listado de plantillas", () => {
   it("trae fondo, icono, autor y permisos", async () => {
     const t = await plantillaDeLuis({ background: fondo, icon: "3d:proceso" });
@@ -136,7 +159,7 @@ describe("archivos de plantillas", () => {
     expect(subida.status).toBe(201);
     expect(subida.body.file.templateId).toBe(t.id);
     expect(await readFileStatus(api, maria, subida.body.file.id)).toBe(200);
-    expect(await readFileStatus(api, pedro, subida.body.file.id)).toBe(403);
+    expect(await readFileStatus(api, pedro, subida.body.file.id)).toBe(404); // como la plantilla: sin acceso no se revela que existe
   });
 
   it("al crear una página desde la plantilla, sus archivos se copian a la página", async () => {
@@ -155,7 +178,7 @@ describe("archivos de plantillas", () => {
     // María puede leer la página pero no la plantilla privada: aun así ve la imagen.
     await api.as(luis).put(`/pages/${page.id}/shares/${maria.id}`, { permission: "READ" });
     expect(await readFileStatus(api, maria, block.data.fileId)).toBe(200);
-    expect(await readFileStatus(api, maria, fileId)).toBe(403);
+    expect(await readFileStatus(api, maria, fileId)).toBe(404);
   });
 
   it("guardar una página como plantilla copia sus archivos a la plantilla", async () => {

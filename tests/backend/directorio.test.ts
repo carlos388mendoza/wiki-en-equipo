@@ -1,5 +1,8 @@
+import { readdirSync, readFileSync } from "node:fs";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
-import { createDepartment, createUser, resetDatabase, startApi, type TestApi, type TestUser } from "./helpers";
+import { DIRECTORY_MAX_MATCHES } from "../../backend/services/auth-service.js";
+import { syncUserSearchNames } from "../../backend/services/search-text.js";
+import { createDepartment, createUser, resetDatabase, startApi, type TestApi, type TestUser, prisma } from "./helpers";
 
 let api: TestApi;
 let ana: TestUser, luis: TestUser, carlos: TestUser, inactivo: TestUser, zelaya: TestUser;
@@ -91,5 +94,42 @@ describe("usuarios inactivos (administración)", () => {
 
   it("un usuario normal no puede listarlos", async () => {
     expect((await api.as(luis).get("/users?includeInactive=1")).status).toBe(403);
+  });
+});
+
+describe("nombres que la migración en SQL no normalizó bien", () => {
+  it("al arrancar se recalculan con la misma regla del backend, sin cambiar la fecha", async () => {
+    const francoise = await createUser("Françoise Àlvarez", carlos.departmentId);
+    // Lo que deja la migración 20261016160000_busqueda_directorio (lower() y algunas tildes).
+    const dir = new URL("../../backend/models/migrations/", import.meta.url);
+    const folder = readdirSync(dir).find((name) => name.endsWith("_busqueda_directorio"))!;
+    const statements = readFileSync(new URL(`${folder}/migration.sql`, dir), "utf8").split(";").map((part) => part.trim()).filter((part) => part.startsWith("UPDATE"));
+    for (const statement of statements) await prisma.$executeRawUnsafe(`${statement} WHERE "id" = '${francoise.id}'`);
+    expect((await prisma.user.findUnique({ where: { id: francoise.id } }))!.searchName).not.toBe("francoise alvarez");
+    expect((await api.as(luis).get("/users/directory?q=francoise")).body.users).toHaveLength(0);
+
+    const before = (await prisma.user.findUnique({ where: { id: francoise.id } }))!.updatedAt;
+    expect(await syncUserSearchNames()).toBeGreaterThanOrEqual(1);
+    expect((await api.as(luis).get("/users/directory?q=francoise")).body.users.map((u: { id: string }) => u.id)).toEqual([francoise.id]);
+    expect((await api.as(luis).get("/users/directory?q=alvarez")).body.users.map((u: { id: string }) => u.id)).toEqual([francoise.id]);
+    expect((await prisma.user.findUnique({ where: { id: francoise.id } }))!.updatedAt).toEqual(before);
+    expect(await syncUserSearchNames()).toBe(0);
+  });
+});
+
+describe("tope de coincidencias del directorio", () => {
+  it("con muchas coincidencias trae como máximo 500, y primero las que empiezan con lo buscado", async () => {
+    await prisma.user.createMany({ data: Array.from({ length: 600 }, (_, i) => ({ name: `Ana Ramírez ${i}`, searchName: `ana ramirez ${i}`, email: `ana.ramirez.${i}@tope.test`, passwordHash: "x", departmentId: carlos.departmentId })) });
+    const mireya = await createUser("Mireya Zúñiga", carlos.departmentId);
+
+    // "mir" está dentro de "ramirez" (600 cuentas) y al principio de "mireya": ella va primero.
+    const first = await api.as(luis).get("/users/directory?q=mir&limit=5");
+    expect(first.body.users[0].id).toBe(mireya.id);
+    expect(first.body.hasMore).toBe(true);
+
+    const last = await api.as(luis).get(`/users/directory?q=mir&limit=10&offset=${DIRECTORY_MAX_MATCHES - 5}`);
+    expect(last.body.users).toHaveLength(5);
+    expect(last.body.hasMore).toBe(false);
+    expect((await api.as(luis).get(`/users/directory?q=mir&offset=${DIRECTORY_MAX_MATCHES}`)).status).toBe(400);
   });
 });
