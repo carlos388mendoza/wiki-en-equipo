@@ -85,6 +85,19 @@ Los archivos `.gitkeep` conservan las carpetas mientras estén vacías; pueden q
 
 Para preparar el servidor, consulta [backend/README.md](backend/README.md); para la interfaz, [frontend/README.md](frontend/README.md). Pruebas: `cd backend && corepack pnpm test` y `cd frontend && npm test`.
 
+### Usuarios de prueba
+
+`npm run seed` (en `frontend/`, con el backend en marcha y la base vacía) crea estos usuarios. Todos usan la contraseña **12345abc** (decisión del equipo; la regla del backend pide al menos 8 caracteres).
+
+| Nombre | Correo | Rol | Departamento |
+|---|---|---|---|
+| Administrador | adminwiki@grupocomidas.com | Administrador | Tecnología |
+| Admin Contabilidad | contabilidadwiki@grupocomidas.com | Admin. de departamento | Contabilidad |
+| Usuario Tecnología | tecnologiawiki@grupocomidas.com | Usuario | Tecnología |
+| Usuario Compras | compraswiki@grupocomidas.com | Usuario | Compras |
+
+En producción, cada persona debe cambiar su contraseña al entrar por primera vez (su nombre en la barra lateral → **Mi cuenta** → Cambiar contraseña).
+
 ## Seguridad
 
 No guardes contraseñas, tokens, claves privadas ni datos reales de usuarios en este repositorio. Antes de publicar cambios, revisa que no incluyan secretos ni información interna que no deba ser pública.

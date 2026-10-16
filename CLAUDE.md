@@ -79,7 +79,7 @@ corepack pnpm run dev       # http://localhost:4000 y ws://localhost:4000/collab
 corepack pnpm test          # 105 pruebas en ../tests/backend (base aparte: models/test.db)
 ```
 
-Datos de prueba: `cd frontend && npm run seed` (con la base vacía). **Contraseñas y tokens de prueba: `frontend/.dev-users.local.json`** (ignorado por git; cambian cada vez que se corre el seed; nunca copiarlos al chat ni a archivos versionados). Usuarios: Ana Rivera (ADMIN, Tecnología), Carlos Mejía (DEPARTMENT_ADMIN, Contabilidad), Luis Paz (USER, Tecnología), María Zelaya (USER, Compras); correos `@wiki.test`. El seed también crea la plantilla "Visita técnica a sucursal" de Luis, compartida con María (lectura) y Carlos (edición), y las destacadas de la empresa.
+Datos de prueba: `cd frontend && npm run seed` (con la base vacía). Usuarios fijos en `frontend/scripts/seed-users.mjs` (tabla en el README), todos con la contraseña `12345abc` (decisión del equipo; el backend pide mínimo 8 caracteres): Administrador `adminwiki@grupocomidas.com` (ADMIN, Tecnología), Admin Contabilidad `contabilidadwiki@grupocomidas.com` (DEPARTMENT_ADMIN, Contabilidad), Usuario Tecnología `tecnologiawiki@grupocomidas.com` (USER, Tecnología), Usuario Compras `compraswiki@grupocomidas.com` (USER, Compras). Ya no existe `.dev-users.local.json`: las pruebas de integración usan esos usuarios y buscan las páginas por título. El seed también crea la plantilla "Visita técnica a sucursal" de Usuario Tecnología, compartida con Usuario Compras (lectura) y Admin Contabilidad (edición), y las destacadas de la empresa. Las pruebas del backend crean sus propias personas ficticias (Ana, Luis, María… con `@wiki.test`), independientes del seed.
 
 Para empezar de cero: detener el backend, borrar `backend/models/dev.db` y `backend/uploads/`, `corepack pnpm run db:deploy`, arrancar y correr `npm run seed`.
 
@@ -99,7 +99,7 @@ Para probar la edición en vivo con dos personas en el mismo navegador: una sesi
 
 - **OneDrive y `.next`:** el repo está dentro de OneDrive; a veces Next falla con `EINVAL: readlink …\.next\…`. Solución: borrar `frontend/.next` y volver a arrancar.
 - **No correr `npm run build` con `npm run dev` abierto:** comparten `.next`.
-- **Cambiar de rama con los servidores de desarrollo abiertos** rompe Next: detenerlos antes. En la rama `backend-pendientes` no hay `.gitignore` en la raíz: no agregar `frontend/node_modules`, `.next` ni `.dev-users.local.json` por error.
+- **Cambiar de rama con los servidores de desarrollo abiertos** rompe Next: detenerlos antes. En la rama `backend-pendientes` no hay `.gitignore` en la raíz: no agregar `frontend/node_modules` ni `.next` por error.
 - **Límite de inicios de sesión:** cuenta solo intentos fallidos (10 por cuenta e IP, 50 por IP, 30 por cuenta). Las pruebas reutilizan los tokens del seed; si se agota, reiniciar el backend (el contador vive en memoria).
 - **Service worker:** solo se registra en producción (o con `NEXT_PUBLIC_ENABLE_SW=1`).
 - **Lanzar servidores desde Claude Code:** `.claude/launch.json` (local, no se sube) usa `cmd /c "cd backend && corepack pnpm run dev"` por el punto anterior de corepack.
