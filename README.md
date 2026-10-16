@@ -98,6 +98,59 @@ Para preparar el servidor, consulta [backend/README.md](backend/README.md); para
 
 En producción, cada persona debe cambiar su contraseña al entrar por primera vez (su nombre en la barra lateral → **Mi cuenta** → Cambiar contraseña).
 
+## Despliegue
+
+### Cómo está hoy
+
+- **Frontend:** en Vercel, con la carpeta raíz `frontend`. La dirección es https://wiki-en-equipo.vercel.app y cada PR genera su propia vista previa.
+- **Backend:** el repositorio no trae ninguna configuración para publicarlo. El frontend lo busca en la variable `BACKEND_URL` de Vercel (*Settings → Environment Variables*). Si esa variable no apunta a un backend público, nadie puede iniciar sesión.
+- **Base de datos:** SQLite, un archivo en el disco del backend (`DATABASE_URL`). Los archivos subidos también quedan en el disco (`UPLOAD_DIR`).
+
+### Por qué el backend no funciona en Vercel
+
+- Vercel enciende el servidor solo cuando llega una petición y después lo apaga. Su disco es temporal, así que **la base SQLite y los archivos subidos se borrarían** en cada despliegue y, a veces, entre una petición y otra.
+- La **edición en vivo** necesita una conexión (WebSocket) que quede abierta mientras alguien edita. Las funciones de Vercel no mantienen esas conexiones.
+- El límite de intentos de inicio de sesión y la limpieza automática de la papelera viven en un proceso que tiene que seguir encendido.
+
+### La opción más simple
+
+Dejar el frontend en Vercel y poner el backend en un servicio que lo mantenga encendido y le dé un **disco permanente**, por ejemplo Render (*Web Service* con *Persistent Disk*) o Railway (servicio con *Volume*). No hay que cambiar el código y se sigue usando SQLite (una sola instancia, como hasta ahora).
+
+1. Crea el servicio desde este repositorio, con la carpeta raíz `backend` y Node 20 o más reciente.
+   - Instalación y compilación: `corepack enable && pnpm install --frozen-lockfile && pnpm run db:generate && pnpm run build`
+   - Arranque: `pnpm run db:deploy && pnpm start` (`db:deploy` solo aplica las migraciones nuevas y **no borra datos**).
+2. Monta el disco, por ejemplo en `/data`, y define estas variables:
+   - `DATABASE_URL="file:/data/wiki.db"` y `UPLOAD_DIR="/data/uploads"`
+   - `JWT_SECRET` (32 caracteres o más) y `BOOTSTRAP_SECRET`, ambos aleatorios y privados
+   - `FRONTEND_ORIGIN="https://wiki-en-equipo.vercel.app"`
+   - `TRUST_PROXY`: el número de proxies delante del backend (el del servicio y el servidor de Vercel; normalmente `2`). Así el límite de inicios de sesión ve la IP real de cada persona.
+3. En Vercel, define estas variables y vuelve a desplegar:
+   - `BACKEND_URL=https://<tu-backend>`
+   - `NEXT_PUBLIC_REALTIME_URL=wss://<tu-backend>/realtime`
+   - `NEXT_PUBLIC_COLLAB_URL=wss://<tu-backend>/collab`
+4. Activa copias de seguridad del disco: ahí vive toda la información de la wiki.
+
+Cuando haga falta más de una instancia, el siguiente paso es PostgreSQL, almacenamiento de objetos y Redis (ver [frontend/PENDIENTES_BACKEND.md](frontend/PENDIENTES_BACKEND.md)).
+
+### Crear o actualizar los 4 usuarios en producción
+
+> **Advertencia:** este repositorio es público y la contraseña `12345abc` está escrita en él. El equipo decidió usarla también en producción, pero así cualquier persona que lea el repositorio puede entrar con esas cuentas, incluida la de administrador. Conviene cambiar las contraseñas en cuanto el equipo empiece a usar la wiki (cada persona: su nombre en la barra lateral → **Mi cuenta** → Cambiar contraseña).
+
+**Nunca** borres ni reinicies la base de producción y **nunca** corras `npm run seed` contra ella (crea páginas de ejemplo y solo sirve con una base vacía). Primero despliega en el backend la versión que acepta contraseñas de 8 caracteres.
+
+1. **Si la base de producción todavía no tiene usuarios**, crea el administrador una sola vez (pide `BOOTSTRAP_SECRET` a quien configuró el backend):
+
+   ```bash
+   curl -X POST https://<tu-backend>/api/auth/bootstrap -H "Content-Type: application/json" -d '{"name":"Administrador","email":"adminwiki@grupocomidas.com","password":"12345abc","departmentName":"Tecnología","secret":"<BOOTSTRAP_SECRET>"}'
+   ```
+
+   Si responde 409, la base ya tiene usuarios: no pasa nada, sigue con el paso 2.
+2. Entra a la wiki con un administrador y abre **Administración → Usuarios**.
+3. Si faltan los departamentos **Contabilidad** o **Compras**, créalos en esa misma pantalla.
+4. Crea cada usuario que falte con **Nuevo usuario**, con su nombre, correo, rol y departamento de la tabla de [Usuarios de prueba](#usuarios-de-prueba) y la contraseña `12345abc`.
+5. **Si alguno de esos correos ya existe**, no lo crees otra vez: en **Administración → Usuarios** puedes corregir su nombre, rol y departamento. La wiki no deja que un administrador cambie la contraseña de otra persona; esa persona tiene que entrar con su contraseña actual y cambiarla en **Mi cuenta**.
+6. Comprueba que cada uno puede iniciar sesión.
+
 ## Seguridad
 
 No guardes contraseñas, tokens, claves privadas ni datos reales de usuarios en este repositorio. Antes de publicar cambios, revisa que no incluyan secretos ni información interna que no deba ser pública.
