@@ -100,35 +100,56 @@ En producción, cada persona debe cambiar su contraseña al entrar por primera v
 
 ## Despliegue
 
-### Cómo está hoy
+### Dónde corre cada parte
 
-- **Frontend:** en Vercel, con la carpeta raíz `frontend`. La dirección es https://wiki-en-equipo.vercel.app y cada PR genera su propia vista previa.
-- **Backend:** el repositorio no trae ninguna configuración para publicarlo. El frontend lo busca en la variable `BACKEND_URL` de Vercel (*Settings → Environment Variables*). Si esa variable no apunta a un backend público, nadie puede iniciar sesión.
-- **Base de datos:** SQLite, un archivo en el disco del backend (`DATABASE_URL`). Los archivos subidos también quedan en el disco (`UPLOAD_DIR`).
+- **Frontend:** Vercel, con la carpeta raíz `frontend`. Dirección: https://wiki-en-equipo.vercel.app. Cada PR genera su propia vista previa.
+- **Backend:** Render, como *Blueprint* definido en [`render.yaml`](render.yaml): un servicio web siempre encendido, con un disco permanente de 1 GB montado en `/data`.
+- **Base de datos:** SQLite en el disco de Render (`/data/wiki.db`). Los archivos subidos también quedan en el disco (`/data/uploads`).
 
-### Por qué el backend no funciona en Vercel
+### Por qué el backend no va en Vercel
 
-- Vercel enciende el servidor solo cuando llega una petición y después lo apaga. Su disco es temporal, así que **la base SQLite y los archivos subidos se borrarían** en cada despliegue y, a veces, entre una petición y otra.
+- Vercel enciende el servidor solo cuando llega una petición y después lo apaga. Su disco es temporal, así que **la base SQLite y los archivos subidos se borrarían**.
 - La **edición en vivo** necesita una conexión (WebSocket) que quede abierta mientras alguien edita. Las funciones de Vercel no mantienen esas conexiones.
 - El límite de intentos de inicio de sesión y la limpieza automática de la papelera viven en un proceso que tiene que seguir encendido.
 
-### La opción más simple
+### Backend en Render (Blueprint)
 
-Dejar el frontend en Vercel y poner el backend en un servicio que lo mantenga encendido y le dé un **disco permanente**, por ejemplo Render (*Web Service* con *Persistent Disk*) o Railway (servicio con *Volume*). No hay que cambiar el código y se sigue usando SQLite (una sola instancia, como hasta ahora).
+`render.yaml` ya trae todo:
 
-1. Crea el servicio desde este repositorio, con la carpeta raíz `backend` y Node 20 o más reciente.
-   - Instalación y compilación: `corepack enable && pnpm install --frozen-lockfile && pnpm run db:generate && pnpm run build`
-   - Arranque: `pnpm run db:deploy && pnpm start` (`db:deploy` solo aplica las migraciones nuevas y **no borra datos**).
-2. Monta el disco, por ejemplo en `/data`, y define estas variables:
-   - `DATABASE_URL="file:/data/wiki.db"` y `UPLOAD_DIR="/data/uploads"`
-   - `JWT_SECRET` (32 caracteres o más) y `BOOTSTRAP_SECRET`, ambos aleatorios y privados
-   - `FRONTEND_ORIGIN="https://wiki-en-equipo.vercel.app"`
-   - `TRUST_PROXY`: el número de proxies delante del backend (el del servicio y el servidor de Vercel; normalmente `2`). Así el límite de inicios de sesión ve la IP real de cada persona.
-3. En Vercel, define estas variables y vuelve a desplegar:
-   - `BACKEND_URL=https://<tu-backend>`
-   - `NEXT_PUBLIC_REALTIME_URL=wss://<tu-backend>/realtime`
-   - `NEXT_PUBLIC_COLLAB_URL=wss://<tu-backend>/collab`
-4. Activa copias de seguridad del disco: ahí vive toda la información de la wiki.
+- la carpeta raíz `backend` y Node 22;
+- compilación: `corepack enable && pnpm install --frozen-lockfile && pnpm run db:generate && pnpm run build`;
+- arranque: `pnpm run db:deploy && pnpm start`. `db:deploy` solo aplica las migraciones nuevas y **no borra datos**;
+- la ruta de salud `/health`, el disco y las variables.
+
+1. En https://render.com crea una cuenta con **GitHub** y autoriza el acceso al repositorio `vbgjptt89g-beep/wiki-en-equipo`.
+2. **New → Blueprint** y elige ese repositorio y la rama `main`. Render lee `render.yaml` y muestra el servicio `wiki-en-equipo-backend` con el plan **Starter**. El plan gratuito no admite discos.
+3. Te pide dos secretos. Pega valores aleatorios y largos, de 32 caracteres o más, y no los guardes en el repositorio:
+   - `JWT_SECRET`
+   - `BOOTSTRAP_SECRET`
+4. **Apply**. Cuando el servicio diga **Live**, abre `https://<tu-backend>.onrender.com/health`: debe responder `{"status":"ok"}`.
+5. Cada vez que se une un PR a `main`, Render vuelve a desplegar solo, con un corte de unos segundos mientras se reinicia; con disco no hay despliegue sin corte.
+
+Las variables que ya trae `render.yaml` son:
+
+- `DATABASE_URL=file:/data/wiki.db` y `UPLOAD_DIR=/data/uploads`
+- `FRONTEND_ORIGIN=https://wiki-en-equipo.vercel.app`: CORS y origen permitido para la edición en vivo
+- `TRUST_PROXY=2`: el proxy de Render y el servidor de Next en Vercel; así el límite de inicios de sesión ve la IP real
+- `MAX_UPLOAD_BYTES=4194304` (4 MB)
+
+### Frontend en Vercel
+
+En *Settings → Environment Variables*, en **Production**, define estas variables y vuelve a desplegar:
+
+- `BACKEND_URL=https://<tu-backend>.onrender.com`
+- `NEXT_PUBLIC_REALTIME_URL=wss://<tu-backend>.onrender.com/realtime`
+- `NEXT_PUBLIC_COLLAB_URL=wss://<tu-backend>.onrender.com/collab`
+- `NEXT_PUBLIC_MAX_UPLOAD_MB=4`: las subidas pasan por el servidor de Next, y en Vercel una función no acepta más de 4,5 MB.
+
+Las variables `NEXT_PUBLIC_*` quedan dentro del código del navegador, así que hay que volver a desplegar después de cambiarlas.
+
+### Copias de seguridad
+
+Toda la información de la wiki vive en el disco de Render. Render guarda instantáneas diarias del disco y se pueden restaurar desde el panel del servicio, en *Disks*. Antes de un cambio grande, descarga una copia de `/data/wiki.db` desde la *Shell* del servicio.
 
 Cuando haga falta más de una instancia, el siguiente paso es PostgreSQL, almacenamiento de objetos y Redis (ver [frontend/PENDIENTES_BACKEND.md](frontend/PENDIENTES_BACKEND.md)).
 
@@ -141,7 +162,7 @@ Cuando haga falta más de una instancia, el siguiente paso es PostgreSQL, almace
 1. **Si la base de producción todavía no tiene usuarios**, crea el administrador una sola vez (pide `BOOTSTRAP_SECRET` a quien configuró el backend):
 
    ```bash
-   curl -X POST https://<tu-backend>/api/auth/bootstrap -H "Content-Type: application/json" -d '{"name":"Administrador","email":"adminwiki@grupocomidas.com","password":"12345abc","departmentName":"Tecnología","secret":"<BOOTSTRAP_SECRET>"}'
+   curl -X POST https://<tu-backend>.onrender.com/api/auth/bootstrap -H "Content-Type: application/json" -d '{"name":"Administrador","email":"adminwiki@grupocomidas.com","password":"12345abc","departmentName":"Tecnología","secret":"<BOOTSTRAP_SECRET>"}'
    ```
 
    Si responde 409, la base ya tiene usuarios: no pasa nada, sigue con el paso 2.
