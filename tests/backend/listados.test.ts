@@ -73,6 +73,29 @@ describe("subpáginas y menciones con más de 100 páginas (#13)", () => {
     const ids = Array.from({ length: 101 }, (_, i) => `id${i}`).join(",");
     expect((await api.as(pedro).get(`/pages?ids=${ids}`)).status).toBe(400);
   });
+
+  it("mantiene 100 páginas por defecto y usa ese límite ante valores inválidos", async () => {
+    await prisma.page.createMany({ data: Array.from({ length: 105 }, (_, i) => ({ title: `Límite ${i}`, searchText: `limite ${i}`, ownerId: pedro.id, departmentId: pedro.departmentId, visibility: "DEPARTMENT" })) });
+
+    const requests = ["/pages", "/pages?limit=abc", "/pages?limit=-5"];
+    for (const path of requests) {
+      const res = await api.as(pedro).get(path);
+      expect(res.status).toBe(200);
+      expect(res.body.pages).toHaveLength(100);
+      expect(res.body.hasMore).toBe(true);
+    }
+  });
+
+  it("cursor continúa después del último resultado y no repite páginas", async () => {
+    const first = await api.as(pedro).get("/pages?limit=10");
+    expect(first.status).toBe(200);
+    expect(first.body.pages).toHaveLength(10);
+    expect(first.body.hasMore).toBe(true);
+    const next = await api.as(pedro).get(`/pages?limit=10&cursor=${first.body.nextCursor}`);
+    const firstIds = new Set(first.body.pages.map((p: { id: string }) => p.id));
+    expect(next.body.pages).toHaveLength(10);
+    expect(next.body.pages.some((p: { id: string }) => firstIds.has(p.id))).toBe(false);
+  });
 });
 
 describe("campo de icono", () => {

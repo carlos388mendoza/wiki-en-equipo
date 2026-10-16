@@ -1,9 +1,0 @@
-fix(#11): normalize 404 vs 403 responses for read operations
-
-- findAccessiblePage: check page existence first (404), then apply permission filter (403)
-- recordVisit: same pattern - existence check then permission filter
-- findReadableFile (file-service): same pattern for file access via page
-- listPageFiles (file-service): same pattern
-- For write operations (saveUploadedFile, deleteFile), keep 403 as appropriate
-
-Closes #11

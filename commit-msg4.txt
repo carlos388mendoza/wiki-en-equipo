@@ -1,7 +1,0 @@
-fix(#4): preserve original visibility when moving page to trash
-
-- Backend: listTrash now returns visibility field from database
-- Frontend: listTrash uses returned visibility instead of hardcoding "PRIVATE"
-- When restoring, the original visibility is preserved
-
-Closes #4

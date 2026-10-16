@@ -139,13 +139,13 @@ export async function listAccessiblePages(actor: Actor, query: { q?: string; tag
   const cursor = query.cursor ? { id: query.cursor } : undefined;
 
   if (!terms.length) {
-    const pages = await prisma.page.findMany({ where, orderBy: { updatedAt: "desc" }, take: take + 1, cursor, select: { ...pageCardSelect, ...myShareSelect(actor) } });
+    const pages = await prisma.page.findMany({ where, orderBy: { updatedAt: "desc" }, take: take + 1, cursor, skip: cursor ? 1 : undefined, select: { ...pageCardSelect, ...myShareSelect(actor) } });
     const hasMore = pages.length > take;
     const items = hasMore ? pages.slice(0, take) : pages;
     return { pages: items.map((page) => withMyPermission(actor, page)), hasMore, nextCursor: hasMore ? items[items.length - 1].id : undefined };
   }
   // Con búsqueda: primero las que coinciden en el título; las demás traen un fragmento del contenido.
-  const found = await prisma.page.findMany({ where, orderBy: { updatedAt: "desc" }, take: take + 1, cursor, select: { ...pageCardSelect, ...myShareSelect(actor), contentJson: true } });
+  const found = await prisma.page.findMany({ where, orderBy: { updatedAt: "desc" }, take: take + 1, cursor, skip: cursor ? 1 : undefined, select: { ...pageCardSelect, ...myShareSelect(actor), contentJson: true } });
   const hasMore = found.length > take;
   const items = hasMore ? found.slice(0, take) : found;
   const results = items.map(({ contentJson, ...page }) => {

@@ -1,5 +1,5 @@
 import type { Page, Template, User } from "@prisma/client";
-import { forbidden, notFound } from "../services/errors.js";
+import { forbidden } from "../services/errors.js";
 
 export type Actor = Pick<User, "id" | "role" | "departmentId">;
 export type PageAccessRecord = Pick<Page, "id" | "ownerId" | "departmentId" | "visibility" | "isWall"> & {
@@ -24,7 +24,7 @@ export function canEditPage(page: PageAccessRecord, actor: Actor): boolean {
 }
 
 export function assertCanReadPage(page: PageAccessRecord, actor: Actor): void {
-  if (!canReadPage(page, actor)) throw notFound("No se encontró la página.");
+  if (!canReadPage(page, actor)) throw forbidden("No tienes acceso a esta página.");
 }
 
 export function assertCanEditPage(page: PageAccessRecord, actor: Actor): void {

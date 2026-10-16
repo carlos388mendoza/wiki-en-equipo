@@ -1,1 +1,0 @@
-chore: quitar pnpm-lock.yaml y pnpm-workspace.yaml del frontend (usa npm)
