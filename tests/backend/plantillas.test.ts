@@ -159,7 +159,7 @@ describe("archivos de plantillas", () => {
     expect(subida.status).toBe(201);
     expect(subida.body.file.templateId).toBe(t.id);
     expect(await readFileStatus(api, maria, subida.body.file.id)).toBe(200);
-    expect(await readFileStatus(api, pedro, subida.body.file.id)).toBe(403);
+    expect(await readFileStatus(api, pedro, subida.body.file.id)).toBe(404); // como la plantilla: sin acceso no se revela que existe
   });
 
   it("al crear una página desde la plantilla, sus archivos se copian a la página", async () => {
@@ -178,7 +178,7 @@ describe("archivos de plantillas", () => {
     // María puede leer la página pero no la plantilla privada: aun así ve la imagen.
     await api.as(luis).put(`/pages/${page.id}/shares/${maria.id}`, { permission: "READ" });
     expect(await readFileStatus(api, maria, block.data.fileId)).toBe(200);
-    expect(await readFileStatus(api, maria, fileId)).toBe(403);
+    expect(await readFileStatus(api, maria, fileId)).toBe(404);
   });
 
   it("guardar una página como plantilla copia sus archivos a la plantilla", async () => {

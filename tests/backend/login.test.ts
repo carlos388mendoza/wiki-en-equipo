@@ -39,7 +39,7 @@ describe("límite de inicios de sesión con la IP real (trust proxy)", () => {
     const victima = await createUser("Rosa Lainez", luis.departmentId, "USER", { passwordHash: await hashPassword(PASSWORD) });
     for (let i = 0; i < 30; i++) expect((await login(victima.email, "incorrecta", `198.18.0.${i + 1}`)).status).toBe(401);
     expect((await login(victima.email, PASSWORD, "198.18.1.1")).status).toBe(429);
-  });
+  }, 60_000); // 31 comprobaciones de bcrypt: en una máquina ocupada pasa de 20 s
 
   it("TRUST_PROXY nunca acepta `true` y entiende saltos y listas", () => {
     expect(() => trustProxySetting("true")).toThrow();

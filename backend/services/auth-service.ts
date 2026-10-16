@@ -2,7 +2,7 @@ import { prisma } from "../models/client.js";
 import { hashPassword, verifyPassword } from "../auth/password.js";
 import { signAccessToken } from "../auth/token.js";
 import type { Actor } from "../permissions/access.js";
-import { badRequest, conflict, forbidden, unauthorized } from "./errors.js";
+import { badRequest, conflict, forbidden, notFound, unauthorized } from "./errors.js";
 import { foldText } from "./search-text.js";
 
 const publicUser = (user: { id: string; name: string; email: string; role: string; departmentId: string; department?: { id: string; name: string; slug: string } }) => ({
@@ -103,7 +103,7 @@ export async function searchDirectory(actor: Actor, query: string, limit: number
 export async function updateUser(id: string, patch: { name?: string; role?: string; departmentId?: string; active?: boolean }) {
   if (patch.departmentId && !await prisma.department.findUnique({ where: { id: patch.departmentId } })) throw badRequest("El departamento indicado no existe.");
   const current = await prisma.user.findUnique({ where: { id } });
-  if (!current) throw badRequest("No se encontró el usuario.");
+  if (!current) throw notFound("No se encontró el usuario.");
   if (current.role === "ADMIN" && ((patch.role && patch.role !== "ADMIN") || patch.active === false)) {
     const activeAdmins = await prisma.user.count({ where: { role: "ADMIN", active: true } });
     if (activeAdmins <= 1) throw conflict("Debe quedar al menos un administrador activo.");

@@ -47,7 +47,8 @@ export async function findReadableFile(actor: Actor, id: string) {
     assertCanReadPage(page as PageAccessRecord, actor);
   } else if (asset.templateId) {
     const template = await prisma.template.findUnique({ where: { id: asset.templateId }, include: { shares: { select: { userId: true, permission: true } } } });
-    if (!template || !canReadTemplate(template, actor)) throw forbidden("No tienes permiso para ver este archivo.");
+    // Como las plantillas: si no se puede leer, no se revela que existe.
+    if (!template || !canReadTemplate(template, actor)) throw notFound("No se encontró el archivo.");
   } else if (asset.ownerId !== actor.id && actor.role !== "ADMIN") throw forbidden("No tienes permiso para ver este archivo.");
   return { ...asset, path: path.join(uploadDirectory, path.basename(asset.storageName)) };
 }
