@@ -56,7 +56,7 @@ export default async function PageView({ params }: { params: Promise<{ id: strin
             {editable ? (
               <>
                 <NewPageButton parentId={page.id} parentTitle={page.title} variant="secondary" />
-                <Link href={`/paginas/${page.id}/editar`} className="inline-flex items-center gap-2 rounded-lg bg-ink px-3 py-2 text-sm font-medium text-white hover:bg-basil">
+                <Link href={`/paginas/${page.id}/editar`} className="inline-flex items-center gap-2 rounded-lg bg-ink px-3 py-2 text-sm font-medium text-white hover:bg-brand">
                   <Pencil size={14} aria-hidden /> Editar
                 </Link>
               </>
@@ -108,7 +108,7 @@ export default async function PageView({ params }: { params: Promise<{ id: strin
               successHref="/papelera"
               danger
               className="inline-flex items-center gap-1.5 text-muted hover:text-danger hover:underline"
-              confirm={{ title: "¿Mover a la papelera?", body: `“${page.title}”${page.children.length ? " y sus subpáginas" : ""} dejarán de verse en la wiki. Podrás restaurarla desde la papelera.`, cta: "Mover a la papelera" }}
+              confirm={{ title: "¿Mover a la papelera?", body: page.children.length ? `“${page.title}” y sus subpáginas dejarán de verse en la wiki. Podrás restaurarlas desde la papelera.` : `“${page.title}” dejará de verse en la wiki. Podrás restaurarla desde la papelera.`, cta: "Mover a la papelera" }}
             >
               <Trash2 size={14} aria-hidden /> Mover a la papelera
             </ActionButton>
@@ -125,7 +125,7 @@ export default async function PageView({ params }: { params: Promise<{ id: strin
             <ul className="flex flex-col gap-2">
               {unlinkedChildren.map((c) => (
                 <li key={c.id}>
-                  <Link href={`/paginas/${c.id}`} className="flex items-center gap-3 rounded-lg border border-line px-3 py-2 hover:border-basil">
+                  <Link href={`/paginas/${c.id}`} className="flex items-center gap-3 rounded-lg border border-line px-3 py-2 hover:border-brand">
                     <PageIcon icon={c.icon} size={18} /> {c.title}
                   </Link>
                 </li>

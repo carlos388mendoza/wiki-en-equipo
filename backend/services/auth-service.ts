@@ -33,7 +33,7 @@ export async function bootstrapAdmin(input: { name: string; email: string; passw
           { id: "exceptions", type: "heading", data: { level: 2, text: "Excepciones y ayuda" } },
           { id: "exceptions-body", type: "paragraph", data: { text: "Documenta casos especiales, riesgos conocidos y a quién contactar si algo falla." } },
           { id: "review", type: "paragraph", data: { text: "Última revisión: agrega fecha, responsable y enlace a la fuente relacionada." } },
-        ]), backgroundJson: JSON.stringify({ type: "gradient", value: "linear-gradient(135deg, #eef6ff 0%, #f7f3ff 100%)" }), ownerId: user.id,
+        ]), backgroundJson: JSON.stringify({ type: "gradient", value: "linear-gradient(135deg, #e8f0fa 0%, #fde9eb 100%)" }), ownerId: user.id,
       },
       {
         title: "Bienvenida al departamento", description: "Guía de bienvenida con contactos, herramientas y primeros pasos.", icon: "3d:bienvenida", scope: "COMPANY", isDefault: true,
@@ -46,7 +46,7 @@ export async function bootstrapAdmin(input: { name: string; email: string; passw
           { id: "tools-body", type: "paragraph", data: { text: "Incluye los sistemas que utiliza el equipo y dónde solicitar acceso. No escribas contraseñas aquí." } },
           { id: "first-weeks", type: "heading", data: { level: 2, text: "Tus primeras semanas" } },
           { id: "checklist", type: "paragraph", data: { text: "□ Completar la orientación\n□ Conocer los procesos principales\n□ Agendar una reunión con el equipo\n□ Leer la documentación recomendada" } },
-        ]), backgroundJson: JSON.stringify({ type: "gradient", value: "linear-gradient(135deg, #e7f7f0 0%, #eef6ff 100%)" }), ownerId: user.id,
+        ]), backgroundJson: JSON.stringify({ type: "gradient", value: "linear-gradient(135deg, #e8f0fa 0%, #fff6c7 100%)" }), ownerId: user.id,
       },
       {
         title: "Inicio del departamento", description: "Base para crear el muro con prioridades, enlaces y páginas destacadas.", icon: "3d:inicio-departamento", scope: "COMPANY", isDefault: true,
@@ -59,7 +59,7 @@ export async function bootstrapAdmin(input: { name: string; email: string; passw
           { id: "resources-body", type: "paragraph", data: { text: "Agrega enlaces a procesos frecuentes, herramientas, calendarios y canales de comunicación." } },
           { id: "updates", type: "heading", data: { level: 2, text: "Novedades" } },
           { id: "updates-body", type: "paragraph", data: { text: "Publica anuncios y cambios importantes. Mantén aquí solo información vigente." } },
-        ]), backgroundJson: JSON.stringify({ type: "gradient", value: "linear-gradient(135deg, #fff4df 0%, #fff0ed 100%)" }), ownerId: user.id,
+        ]), backgroundJson: JSON.stringify({ type: "gradient", value: "linear-gradient(135deg, #fff6c7 0%, #fde9eb 100%)" }), ownerId: user.id,
       },
     ];
     await tx.template.createMany({ data: defaults });

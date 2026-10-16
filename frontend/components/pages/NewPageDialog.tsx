@@ -15,9 +15,9 @@ export function NewPageButton({ parentId, parentTitle, variant = "primary", init
   const [open, setOpen] = useState(false);
   const router = useRouter();
   const cls = {
-    primary: "flex w-full items-center justify-center gap-2 rounded-lg bg-ink px-3 py-2 text-sm font-medium text-white hover:bg-basil",
-    secondary: "inline-flex items-center gap-2 rounded-lg border border-line bg-surface px-3 py-2 text-sm font-medium hover:border-basil",
-    small: "inline-flex items-center gap-1 rounded-md bg-ink px-2 py-1 text-xs font-medium text-white hover:bg-basil",
+    primary: "flex w-full items-center justify-center gap-2 rounded-lg bg-ink px-3 py-2 text-sm font-medium text-white hover:bg-brand",
+    secondary: "inline-flex items-center gap-2 rounded-lg border border-line bg-surface px-3 py-2 text-sm font-medium hover:border-brand",
+    small: "inline-flex items-center gap-1 rounded-md bg-ink px-2 py-1 text-xs font-medium text-white hover:bg-brand",
   }[variant];
   return (
     <>
@@ -27,13 +27,14 @@ export function NewPageButton({ parentId, parentTitle, variant = "primary", init
       <Modal open={open} onClose={() => setOpen(false)} size="xl"
         title={parentId ? "Nueva subpágina" : "Nueva página"}
         description={parentId ? `Dentro de “${parentTitle ?? "esta página"}”. Queda privada hasta que la compartas.` : "Las páginas nuevas son privadas hasta que las compartas o publiques."}>
-        <NewPageForm parentId={parentId} initialTemplateId={initialTemplateId} />
+        {/* La barra lateral no se vuelve a montar al navegar: el diálogo se cierra al crear la página. */}
+        <NewPageForm parentId={parentId} initialTemplateId={initialTemplateId} onCreated={() => setOpen(false)} />
       </Modal>
     </>
   );
 }
 
-function NewPageForm({ parentId, initialTemplateId }: { parentId?: string; initialTemplateId?: string }) {
+function NewPageForm({ parentId, initialTemplateId, onCreated }: { parentId?: string; initialTemplateId?: string; onCreated?: () => void }) {
   const router = useRouter();
   const { templates, error: loadError } = useTemplates(true);
   const [templateId, setTemplateId] = useState<string | undefined>(initialTemplateId);
@@ -59,6 +60,7 @@ function NewPageForm({ parentId, initialTemplateId }: { parentId?: string; initi
         start(async () => {
           const res = await createPage({ title: title || chosen?.title || "Página sin título", parentId, templateId });
           if (!res.ok) { setError(res.message); return; }
+          onCreated?.();
           router.push(`/paginas/${res.data.id}/editar`);
           router.refresh();
         });
@@ -66,8 +68,8 @@ function NewPageForm({ parentId, initialTemplateId }: { parentId?: string; initi
     >
       <label className="flex flex-col gap-1 text-sm font-medium">
         Título
-        <input autoFocus value={title} onChange={(e) => setTitle(e.target.value)} maxLength={200} placeholder={chosen?.title ?? "Página sin título"}
-          className="h-11 rounded-lg border border-line px-3 text-base font-normal outline-none focus:border-basil" />
+        <input data-autofocus value={title} onChange={(e) => setTitle(e.target.value)} maxLength={200} placeholder={chosen?.title ?? "Página sin título"}
+          className="h-11 rounded-lg border border-line px-3 text-base font-normal outline-none focus:border-brand" />
       </label>
 
       <section aria-labelledby="empezar">
@@ -82,7 +84,7 @@ function NewPageForm({ parentId, initialTemplateId }: { parentId?: string; initi
 
       {error && <p role="alert" className="rounded-lg bg-danger-soft px-3 py-2 text-sm text-danger">{error}</p>}
       <div className="sticky bottom-0 -mx-5 -mb-4 flex justify-end gap-2 border-t border-line bg-surface px-5 py-3">
-        <button type="submit" disabled={pending} className="inline-flex h-10 items-center gap-2 rounded-lg bg-ink px-4 font-medium text-white hover:bg-basil disabled:opacity-60">
+        <button type="submit" disabled={pending} className="inline-flex h-10 items-center gap-2 rounded-lg bg-ink px-4 font-medium text-white hover:bg-brand disabled:opacity-60">
           {pending && <LoaderCircle size={14} className="animate-spin" aria-hidden />} Crear y editar
         </button>
       </div>

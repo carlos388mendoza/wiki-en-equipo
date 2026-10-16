@@ -51,8 +51,8 @@ export function ConflictDialog({ result, onResolve, onCancel, origin }: {
       description="Ya combinamos todo lo que no chocaba. Elige qué versión conservar en cada caso.">
       <div className="flex flex-col gap-4 text-sm">
         <div className="flex flex-wrap gap-2">
-          <button type="button" onClick={() => setAll("mine")} className="rounded-lg border border-line px-3 py-1.5 font-medium hover:border-basil">Conservar todo lo mío</button>
-          <button type="button" onClick={() => setAll("theirs")} className="rounded-lg border border-line px-3 py-1.5 font-medium hover:border-basil">Usar todo lo de la otra persona</button>
+          <button type="button" onClick={() => setAll("mine")} className="rounded-lg border border-line px-3 py-1.5 font-medium hover:border-brand">Conservar todo lo mío</button>
+          <button type="button" onClick={() => setAll("theirs")} className="rounded-lg border border-line px-3 py-1.5 font-medium hover:border-brand">Usar todo lo de la otra persona</button>
         </div>
         <ol className="flex flex-col gap-3">
           {items.map((item) => {
@@ -62,9 +62,9 @@ export function ConflictDialog({ result, onResolve, onCancel, origin }: {
                 <p className="mb-2 font-medium">{item.label}</p>
                 <div className="grid gap-2 sm:grid-cols-2">
                   {(["mine", "theirs"] as const).map((side) => (
-                    <label key={side} className={`flex cursor-pointer flex-col gap-1 rounded-lg border p-2 ${choice === side ? "border-basil bg-basil-soft" : "border-line hover:border-basil"}`}>
+                    <label key={side} className={`flex cursor-pointer flex-col gap-1 rounded-lg border p-2 ${choice === side ? "border-brand bg-brand-soft" : "border-line hover:border-brand"}`}>
                       <span className="flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-muted">
-                        <input type="radio" name={item.key} checked={choice === side} onChange={() => setChoices((c) => ({ ...c, [item.key]: side }))} className="accent-basil" />
+                        <input type="radio" name={item.key} checked={choice === side} onChange={() => setChoices((c) => ({ ...c, [item.key]: side }))} className="accent-brand" />
                         {side === "mine" ? "Tu versión" : "Versión de la otra persona"}
                       </span>
                       <span>{side === "mine" ? item.mine : item.theirs}</span>
@@ -76,7 +76,7 @@ export function ConflictDialog({ result, onResolve, onCancel, origin }: {
           })}
         </ol>
         <div className="flex justify-end gap-2 border-t border-line pt-3">
-          <button type="button" onClick={() => onResolve(resolveConflicts(result, choices))} className="rounded-lg bg-ink px-4 py-2 font-medium text-white hover:bg-basil">
+          <button type="button" onClick={() => onResolve(resolveConflicts(result, choices))} className="rounded-lg bg-ink px-4 py-2 font-medium text-white hover:bg-brand">
             Aplicar y guardar
           </button>
         </div>

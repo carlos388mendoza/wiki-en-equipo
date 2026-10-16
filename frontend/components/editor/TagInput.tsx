@@ -21,9 +21,9 @@ export function TagInput({ value, onChange, suggestions }: { value: string[]; on
     <div className="flex flex-wrap items-center gap-1.5">
       <Tag size={14} className="text-muted" aria-hidden />
       {value.map((t) => (
-        <span key={t} className="inline-flex items-center gap-1 rounded-md bg-basil-soft px-2 py-0.5 text-xs font-medium text-basil">
+        <span key={t} className="inline-flex items-center gap-1 rounded-md bg-brand-soft px-2 py-0.5 text-xs font-medium text-brand-strong">
           #{t}
-          <button type="button" onClick={() => onChange(value.filter((x) => x !== t))} aria-label={`Quitar etiqueta ${t}`} className="rounded hover:bg-basil hover:text-white">
+          <button type="button" onClick={() => onChange(value.filter((x) => x !== t))} aria-label={`Quitar etiqueta ${t}`} className="rounded hover:bg-brand hover:text-white">
             <X size={12} />
           </button>
         </span>

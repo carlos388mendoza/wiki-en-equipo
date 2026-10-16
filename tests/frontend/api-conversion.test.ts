@@ -5,8 +5,8 @@ const base = { id: "p1", title: "Guía", visibility: "DEPARTMENT" as const, vers
 
 describe("conversión de las respuestas del backend", () => {
   it("el listado trae icono, fondo, autor y permiso propio", () => {
-    const summary = toSummary({ ...base, icon: "lucide:book-open:cielo", backgroundJson: JSON.stringify({ type: "color", value: "#eef6ff" }), owner: { id: "u1", name: "Luis Paz" }, tags: [{ name: "procesos" }], myPermission: "EDIT" });
-    expect(summary).toMatchObject({ icon: "lucide:book-open:cielo", background: { type: "color", value: "#eef6ff" }, owner: { name: "Luis Paz" }, tags: ["procesos"], myPermission: "EDIT" });
+    const summary = toSummary({ ...base, icon: "lucide:book-open:cielo", backgroundJson: JSON.stringify({ type: "color", value: "#eef6ff" }), owner: { id: "u1", name: "Usuario Tecnología" }, tags: [{ name: "procesos" }], myPermission: "EDIT" });
+    expect(summary).toMatchObject({ icon: "lucide:book-open:cielo", background: { type: "color", value: "#eef6ff" }, owner: { name: "Usuario Tecnología" }, tags: ["procesos"], myPermission: "EDIT" });
   });
 
   it("usa el icono de su campo y, si no hay, el que estaba dentro del fondo (páginas anteriores)", () => {
@@ -25,11 +25,11 @@ describe("conversión de las respuestas del backend", () => {
   it("la página trae personas con nombre, ruta superior y visitas", () => {
     const page = toPage({
       ...base, icon: "🧰", contentJson: "[]", backgroundJson: null, isWall: false, isCompanyWall: false, createdAt: base.updatedAt,
-      owner: { id: "u1", name: "Luis Paz" }, tags: [], children: [],
-      shares: [{ userId: "u2", permission: "READ", user: { id: "u2", name: "María Zelaya", department: { name: "Compras" } } }],
+      owner: { id: "u1", name: "Usuario Tecnología" }, tags: [], children: [],
+      shares: [{ userId: "u2", permission: "READ", user: { id: "u2", name: "Usuario Compras", department: { name: "Compras" } } }],
       ancestors: [{ id: "p0", title: "Soporte", icon: "🛠️" }], visitCount: 7,
     });
-    expect(page.shares[0].user?.name).toBe("María Zelaya");
+    expect(page.shares[0].user?.name).toBe("Usuario Compras");
     expect(page.ancestors).toEqual([{ id: "p0", title: "Soporte", icon: "🛠️" }]);
     expect(page.views).toBe(7);
     expect(page.icon).toBe("🧰");

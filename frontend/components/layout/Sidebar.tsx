@@ -23,7 +23,7 @@ function TreeNode({ page, all, depth }: { page: PageSummary; all: PageSummary[];
   return (
     <li>
       <div
-        className={`group flex items-center rounded-md pr-2 text-sm ${active ? "bg-basil-soft font-semibold text-basil" : "hover:bg-line/60"}`}
+        className={`group flex items-center rounded-md pr-2 text-sm ${active ? "bg-brand-soft font-semibold text-brand-strong" : "hover:bg-line/60"}`}
         style={{ paddingLeft: depth * 12 }}
       >
         {children.length > 0 ? (
@@ -79,7 +79,7 @@ export function Sidebar({ user, sections }: { user: User; sections: SidebarSecti
       <Link
         href={href}
         aria-current={active ? "page" : undefined}
-        className={`flex items-center gap-2 rounded-md px-2 py-1.5 text-sm ${active ? "bg-basil-soft font-semibold text-basil" : "hover:bg-line/60"}`}
+        className={`flex items-center gap-2 rounded-md px-2 py-1.5 text-sm ${active ? "bg-brand-soft font-semibold text-brand-strong" : "hover:bg-line/60"}`}
       >
         {Icon && <Icon size={16} aria-hidden />} {label}
       </Link>

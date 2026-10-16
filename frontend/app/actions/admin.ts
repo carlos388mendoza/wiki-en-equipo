@@ -109,7 +109,7 @@ export async function restoreVersion(pageId: string, version: number): Promise<A
 export type UserForm = { name: string; email: string; password: string; role: UserRole; departmentId: string };
 
 export async function createUser(input: UserForm): Promise<ActionResult> {
-  if (input.password.length < 12) return { ok: false, message: "La contraseña temporal debe tener al menos 12 caracteres." };
+  if (input.password.length < 8) return { ok: false, message: "La contraseña temporal debe tener al menos 8 caracteres." };
   const res = await backend("/users", { method: "POST", body: { ...input, name: input.name.trim(), email: input.email.trim() } });
   if (!res.ok) {
     if (res.error === "conflicto") return { ok: false, message: "Ya existe una cuenta con ese correo." };

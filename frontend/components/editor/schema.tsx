@@ -10,8 +10,8 @@ import { videoEmbed } from "@/lib/embeds";
 /** Bloques propios del editor de la wiki (además de los de BlockNote). */
 
 const calloutEmojis = ["💡", "📣", "⚠️", "✅", "📌", "🎯", "🍽️", "❗"];
-const tones = { info: "Verde", success: "Éxito", warning: "Ámbar", danger: "Rojo" } as const;
-const toneBg: Record<string, string> = { info: "var(--color-basil-soft)", success: "var(--color-basil-soft)", warning: "var(--color-saffron-soft)", danger: "var(--color-danger-soft)" };
+const tones = { info: "Azul", success: "Rojo", warning: "Amarillo", danger: "Alerta" } as const;
+const toneBg: Record<string, string> = { info: "var(--color-sky-soft)", success: "var(--color-brand-soft)", warning: "var(--color-sun-soft)", danger: "var(--color-danger-soft)" };
 
 const Callout = createReactBlockSpec(
   {

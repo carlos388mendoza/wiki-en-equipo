@@ -16,8 +16,8 @@ const SHAPES: { id: ShapePattern; label: string }[] = [
   { id: "puntos", label: "Puntos" }, { id: "rayas", label: "Rayas" }, { id: "cuadricula", label: "Cuadrícula" },
   { id: "zigzag", label: "Zigzag" }, { id: "circulos", label: "Círculos" },
 ];
-/** Color de las figuras: albahaca semitransparente, combina con cualquier fondo claro. */
-const SHAPE_INK = "#2e6a4f2e";
+/** Color de las figuras: rojo del logo semitransparente, combina con cualquier fondo claro. */
+const SHAPE_INK = "#e2001a2e";
 
 const tabs: { id: Tab; label: string }[] = [
   { id: "imagenes", label: "Imágenes" },
@@ -31,9 +31,9 @@ type SearchResult = { id: string; url: string; thumb: string; alt: string; credi
 function Swatch({ selected, onClick, label, style, children }: { selected: boolean; onClick: () => void; label: string; style?: React.CSSProperties; children?: React.ReactNode }) {
   return (
     <button type="button" onClick={onClick} aria-label={label} aria-pressed={selected} title={label} style={style}
-      className={`relative grid h-16 place-items-center overflow-hidden rounded-lg border text-2xl ${selected ? "border-basil ring-2 ring-basil" : "border-line hover:border-basil"}`}>
+      className={`relative grid h-16 place-items-center overflow-hidden rounded-lg border text-2xl ${selected ? "border-brand ring-2 ring-brand" : "border-line hover:border-brand"}`}>
       {children}
-      {selected && <Check size={16} className="absolute right-1 top-1 rounded-full bg-surface text-basil" aria-hidden />}
+      {selected && <Check size={16} className="absolute right-1 top-1 rounded-full bg-surface text-brand-strong" aria-hidden />}
     </button>
   );
 }
@@ -105,13 +105,13 @@ export function BackgroundPicker({ open, onClose, value, onChange, uploadTarget 
           <div className="flex flex-col gap-5">
             <div className="flex flex-col gap-2 sm:flex-row">
               {searchEnabled && (
-                <form onSubmit={search} className="flex flex-1 items-center gap-2 rounded-lg border border-line px-3 focus-within:border-basil">
+                <form onSubmit={search} className="flex flex-1 items-center gap-2 rounded-lg border border-line px-3 focus-within:border-brand">
                   <Search size={16} className="text-muted" aria-hidden />
                   <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Buscar en Unsplash (ej. café, cocina, equipo)" aria-label="Buscar en Unsplash" className="h-10 flex-1 bg-transparent text-sm outline-none" />
                   {busy && <LoaderCircle size={16} className="animate-spin text-muted" aria-hidden />}
                 </form>
               )}
-              <button type="button" onClick={() => fileRef.current?.click()} disabled={busy} className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-line px-3 text-sm font-medium hover:border-basil disabled:opacity-60">
+              <button type="button" onClick={() => fileRef.current?.click()} disabled={busy} className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-line px-3 text-sm font-medium hover:border-brand disabled:opacity-60">
                 <Upload size={16} aria-hidden /> Subir imagen
               </button>
               <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) void upload(f); e.target.value = ""; }} />
@@ -165,12 +165,12 @@ export function BackgroundPicker({ open, onClose, value, onChange, uploadTarget 
                 setLink("");
               }}
             >
-              <label className="flex flex-1 items-center gap-2 rounded-lg border border-line px-3 focus-within:border-basil">
+              <label className="flex flex-1 items-center gap-2 rounded-lg border border-line px-3 focus-within:border-brand">
                 <ImagePlus size={16} className="text-muted" aria-hidden />
                 <span className="sr-only">Enlace de una imagen</span>
                 <input value={link} onChange={(e) => setLink(e.target.value)} placeholder="O pega el enlace de una imagen (https://…)" className="h-10 flex-1 bg-transparent text-sm outline-none" />
               </label>
-              <button type="submit" className="h-10 rounded-lg bg-ink px-3 text-sm font-medium text-white hover:bg-basil">Usar enlace</button>
+              <button type="submit" className="h-10 rounded-lg bg-ink px-3 text-sm font-medium text-white hover:bg-brand">Usar enlace</button>
             </form>
             {value?.type === "image" && !isOptimizableImage(value.url) && !value.url.startsWith("/archivos/") && (
               <p className="text-xs text-muted">Las imágenes de otros sitios se muestran tal cual, sin optimizar. Si el sitio la quita, el fondo desaparecerá.</p>
@@ -197,7 +197,7 @@ export function BackgroundPicker({ open, onClose, value, onChange, uploadTarget 
             </div>
             <label className="flex items-center gap-2 text-sm">
               Otro color
-              <input type="color" value={value?.type === "color" ? value.value : "#e3efe8"} onChange={(e) => pick({ type: "color", value: e.target.value })} className="h-9 w-14 cursor-pointer rounded border border-line" />
+              <input type="color" value={value?.type === "color" ? value.value : "#fde9eb"} onChange={(e) => pick({ type: "color", value: e.target.value })} className="h-9 w-14 cursor-pointer rounded border border-line" />
             </label>
           </div>
         )}
@@ -209,7 +209,7 @@ export function BackgroundPicker({ open, onClose, value, onChange, uploadTarget 
               <div className="flex flex-wrap gap-1">
                 {PATTERN_EMOJIS.map((e) => (
                   <button key={e} type="button" aria-pressed={value?.type === "pattern" && patternEmoji === e} onClick={() => { setPatternEmoji(e); pick({ type: "pattern", emoji: e, color: patternColor }); }}
-                    className={`grid h-10 w-10 place-items-center rounded-lg text-xl ${value?.type === "pattern" && patternEmoji === e ? "bg-basil-soft ring-2 ring-basil" : "hover:bg-paper"}`}>{e}</button>
+                    className={`grid h-10 w-10 place-items-center rounded-lg text-xl ${value?.type === "pattern" && patternEmoji === e ? "bg-brand-soft ring-2 ring-brand" : "hover:bg-paper"}`}>{e}</button>
                 ))}
               </div>
             </div>
@@ -232,7 +232,7 @@ export function BackgroundPicker({ open, onClose, value, onChange, uploadTarget 
                       setPatternColor(c);
                       pick(value?.type === "shapes" ? { ...value, color: c } : { type: "pattern", emoji: patternEmoji, color: c });
                     }}
-                    className={`h-9 w-9 rounded-full border ${patternColor === c ? "ring-2 ring-basil" : "border-line"}`} style={{ backgroundColor: c }} />
+                    className={`h-9 w-9 rounded-full border ${patternColor === c ? "ring-2 ring-brand" : "border-line"}`} style={{ backgroundColor: c }} />
                 ))}
               </div>
             </div>
@@ -242,7 +242,7 @@ export function BackgroundPicker({ open, onClose, value, onChange, uploadTarget 
         )}
 
         <div className="flex justify-end border-t border-line pt-3">
-          <button type="button" onClick={onClose} className="rounded-lg bg-ink px-4 py-2 text-sm font-medium text-white hover:bg-basil">Listo</button>
+          <button type="button" onClick={onClose} className="rounded-lg bg-ink px-4 py-2 text-sm font-medium text-white hover:bg-brand">Listo</button>
         </div>
       </div>
     </Modal>

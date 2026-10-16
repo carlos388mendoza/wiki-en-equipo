@@ -29,7 +29,7 @@ type ShareTemplate = Pick<Template, "id" | "title" | "scope" | "isDefault" | "ow
 type Subject = { kind: "page"; page: SharePage } | { kind: "template"; template: ShareTemplate };
 
 const triggerClass = {
-  normal: "inline-flex items-center gap-2 rounded-lg border border-line bg-surface px-3 py-2 text-sm font-medium hover:border-basil",
+  normal: "inline-flex items-center gap-2 rounded-lg border border-line bg-surface px-3 py-2 text-sm font-medium hover:border-brand",
   small: "inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-muted hover:bg-paper hover:text-ink",
 };
 
@@ -77,7 +77,7 @@ function PermissionSelect({ value, onChange, disabled, label }: { value: PagePer
       value={value}
       disabled={disabled}
       onChange={(e) => onChange(e.target.value as PagePermission)}
-      className="h-9 rounded-lg border border-line bg-surface px-2 text-sm outline-none focus:border-basil disabled:opacity-60"
+      className="h-9 rounded-lg border border-line bg-surface px-2 text-sm outline-none focus:border-brand disabled:opacity-60"
     >
       <option value="READ">{permissionLabel.READ}</option>
       <option value="EDIT">{permissionLabel.EDIT}</option>
@@ -107,7 +107,7 @@ function ShareDialogBody({ subject, viewer }: { subject: Subject; viewer: User }
   return (
     <div className="flex flex-col gap-6">
       {message && (
-        <p role={message.tone === "error" ? "alert" : "status"} className={`rounded-lg px-3 py-2 text-sm ${message.tone === "error" ? "bg-danger-soft text-danger" : "bg-basil-soft text-basil"}`}>
+        <p role={message.tone === "error" ? "alert" : "status"} className={`rounded-lg px-3 py-2 text-sm ${message.tone === "error" ? "bg-danger-soft text-danger" : "bg-sky-soft text-sky"}`}>
           {message.text}
         </p>
       )}
@@ -217,9 +217,9 @@ function VisibilitySection({ page, viewer, pending, run }: { page: SharePage; vi
                   return res;
                 }, value === "PRIVATE" ? "La página ahora es privada." : value === "DEPARTMENT" ? "Publicada en el departamento." : "Publicada para toda la empresa.");
               }}
-              className={`flex flex-col items-start gap-1 rounded-xl border px-3 py-2.5 text-left text-sm disabled:cursor-not-allowed ${active ? "border-basil bg-basil-soft" : "border-line hover:border-basil disabled:opacity-50 disabled:hover:border-line"}`}
+              className={`flex flex-col items-start gap-1 rounded-xl border px-3 py-2.5 text-left text-sm disabled:cursor-not-allowed ${active ? "border-brand bg-brand-soft" : "border-line hover:border-brand disabled:opacity-50 disabled:hover:border-line"}`}
             >
-              <span className="flex items-center gap-1.5 font-medium"><Icon size={14} aria-hidden /> {label} {active && <Check size={14} className="text-basil" aria-label="(actual)" />}</span>
+              <span className="flex items-center gap-1.5 font-medium"><Icon size={14} aria-hidden /> {label} {active && <Check size={14} className="text-brand-strong" aria-label="(actual)" />}</span>
               <span className="text-xs text-muted">{!allowed && !active && reason ? reason : help}</span>
             </button>
           );
@@ -255,8 +255,8 @@ function ScopeSection({ template, viewer, pending, run }: { template: ShareTempl
                   return res;
                 }, "Listo: se actualizó con quién está disponible.");
               }}
-              className={`flex flex-col items-start gap-1 rounded-xl border px-3 py-2.5 text-left text-sm disabled:cursor-not-allowed ${active ? "border-basil bg-basil-soft" : "border-line hover:border-basil disabled:opacity-50"}`}>
-              <span className="flex items-center gap-1.5 font-medium"><Icon size={14} aria-hidden /> {label} {active && <Check size={14} className="text-basil" aria-label="(actual)" />}</span>
+              className={`flex flex-col items-start gap-1 rounded-xl border px-3 py-2.5 text-left text-sm disabled:cursor-not-allowed ${active ? "border-brand bg-brand-soft" : "border-line hover:border-brand disabled:opacity-50"}`}>
+              <span className="flex items-center gap-1.5 font-medium"><Icon size={14} aria-hidden /> {label} {active && <Check size={14} className="text-brand-strong" aria-label="(actual)" />}</span>
               <span className="text-xs text-muted">{help}</span>
             </button>
           );
@@ -301,7 +301,7 @@ function InviteSection({ target, excluded, pending, run, onInvited }: {
       <h3 id="invitar" className="mb-2 text-sm font-semibold">Invitar a una persona</h3>
       <div className="flex flex-col gap-2">
         <div className="flex flex-col gap-2 sm:flex-row">
-          <label className="flex flex-1 items-center gap-2 rounded-lg border border-line px-3 focus-within:border-basil">
+          <label className="flex flex-1 items-center gap-2 rounded-lg border border-line px-3 focus-within:border-brand">
             {searching ? <LoaderCircle size={16} className="animate-spin text-muted" aria-hidden /> : <Search size={16} className="text-muted" aria-hidden />}
             <span className="sr-only">Buscar por nombre o correo completo</span>
             <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Nombre o correo completo" autoComplete="off" className="h-10 min-w-0 flex-1 bg-transparent text-sm outline-none" />
@@ -329,7 +329,7 @@ function InviteSection({ target, excluded, pending, run, onInvited }: {
                       onInvited(p, permission);
                       setQuery("");
                     })}
-                    className="inline-flex items-center gap-1.5 rounded-lg bg-ink px-3 py-1.5 text-sm font-medium text-white hover:bg-basil disabled:opacity-60"
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-ink px-3 py-1.5 text-sm font-medium text-white hover:bg-brand disabled:opacity-60"
                   >
                     <UserPlus size={14} aria-hidden /> Invitar
                   </button>
@@ -367,14 +367,14 @@ function LinksSection({ target, pending, run }: { target: ShareTarget; pending: 
       <p className="mb-2 text-xs text-muted">Quien lo abra debe iniciar sesión con su cuenta de la wiki. Al aceptarlo recibe el permiso del enlace (si ya podía editar, conserva la edición).</p>
 
       {created && (
-        <div className="mb-3 flex flex-col gap-2 rounded-lg border border-basil/40 bg-basil-soft/40 p-3">
-          <p className="text-xs font-medium text-basil">Enlace nuevo: cópialo ahora, después solo se muestra en la lista sin la dirección.</p>
+        <div className="mb-3 flex flex-col gap-2 rounded-lg border border-brand/40 bg-brand-soft/40 p-3">
+          <p className="text-xs font-medium text-brand-strong">Enlace nuevo: cópialo ahora, después solo se muestra en la lista sin la dirección.</p>
           <div className="flex gap-2">
             <input readOnly value={created.url} aria-label="Enlace para compartir" onFocus={(e) => e.currentTarget.select()} className="h-10 min-w-0 flex-1 rounded-lg border border-line bg-surface px-3 text-sm" />
             <button
               type="button"
               onClick={async () => { await navigator.clipboard.writeText(created.url); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
-              className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-ink px-3 text-sm font-medium text-white hover:bg-basil"
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-ink px-3 text-sm font-medium text-white hover:bg-brand"
             >
               {copied ? <Check size={14} aria-hidden /> : <Copy size={14} aria-hidden />} {copied ? "Copiado" : "Copiar"}
             </button>
@@ -384,7 +384,7 @@ function LinksSection({ target, pending, run }: { target: ShareTarget; pending: 
 
       <div className="flex flex-col gap-2 sm:flex-row">
         <PermissionSelect value={linkPermission} onChange={setLinkPermission} label="Permiso del enlace" />
-        <select aria-label="Vencimiento del enlace" value={linkHours} onChange={(e) => setLinkHours(Number(e.target.value))} className="h-9 rounded-lg border border-line bg-surface px-2 text-sm outline-none focus:border-basil">
+        <select aria-label="Vencimiento del enlace" value={linkHours} onChange={(e) => setLinkHours(Number(e.target.value))} className="h-9 rounded-lg border border-line bg-surface px-2 text-sm outline-none focus:border-brand">
           {expirations.map((x) => <option key={x.hours} value={x.hours}>{x.label}</option>)}
         </select>
         <button
@@ -395,7 +395,7 @@ function LinksSection({ target, pending, run }: { target: ShareTarget; pending: 
             if (res.ok) { setCreated(res.data); setLinks((list) => [res.data, ...(list ?? [])]); }
             return res;
           }, "Enlace creado. Cópialo y envíalo.")}
-          className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg bg-ink px-3 text-sm font-medium text-white hover:bg-basil disabled:opacity-60"
+          className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg bg-ink px-3 text-sm font-medium text-white hover:bg-brand disabled:opacity-60"
         >
           {pending ? <LoaderCircle size={14} className="animate-spin" aria-hidden /> : <Link2 size={14} aria-hidden />} Crear enlace
         </button>

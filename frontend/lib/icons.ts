@@ -22,12 +22,13 @@ export const LUCIDE_ICONS: Record<string, LucideIcon> = {
 
 /** Tonos de la tesela: degradado (claro → oscuro) en los colores de la marca y complementarios. */
 export const ICON_TONES = {
+  rojo: ["#ff4b5c", "#e2001a"],
   albahaca: ["#4f9a76", "#2e6a4f"],
   azafran: ["#efb54f", "#c9861f"],
   tomate: ["#e2735c", "#b4432f"],
-  cielo: ["#6fa0d6", "#3b6ea5"],
+  cielo: ["#5b8fd6", "#1f5fae"],
   uva: ["#a77fd1", "#7a4fa3"],
-  carbon: ["#4b5a52", "#1d2420"],
+  carbon: ["#4a4444", "#1b1717"],
 } as const;
 export type IconTone = keyof typeof ICON_TONES;
 
@@ -60,7 +61,7 @@ export function parseIcon(icon: string | null | undefined): ParsedIcon | null {
   if (m) {
     if (!Object.hasOwn(LUCIDE_ICONS, m[1])) return null;
     const Icon = LUCIDE_ICONS[m[1]];
-    const tone = (Object.hasOwn(ICON_TONES, m[2]) ? m[2] : "albahaca") as IconTone;
+    const tone = (Object.hasOwn(ICON_TONES, m[2]) ? m[2] : "rojo") as IconTone;
     return { kind: "lucide", Icon, name: m[1], tone };
   }
   return icon.startsWith("lucide:") ? null : { kind: "emoji", value: icon };

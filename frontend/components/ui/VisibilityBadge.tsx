@@ -4,8 +4,8 @@ import type { PageVisibility } from "@/lib/types";
 
 const map = {
   PRIVATE: { Icon: Lock, cls: "text-muted bg-paper" },
-  DEPARTMENT: { Icon: Users, cls: "text-basil bg-basil-soft" },
-  COMPANY: { Icon: Building2, cls: "text-saffron bg-saffron-soft" },
+  DEPARTMENT: { Icon: Users, cls: "text-sky bg-sky-soft" },
+  COMPANY: { Icon: Building2, cls: "text-brand-strong bg-brand-soft" },
 } as const;
 
 export function VisibilityBadge({ visibility }: { visibility: PageVisibility }) {

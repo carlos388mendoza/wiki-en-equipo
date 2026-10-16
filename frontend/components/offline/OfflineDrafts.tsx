@@ -115,11 +115,11 @@ export function OfflineDrafts() {
   return (
     <div className="grid gap-6 lg:grid-cols-[260px_1fr]">
       <aside className="flex flex-col gap-3">
-        <p className={`inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm ${online ? "bg-basil-soft text-basil" : "bg-saffron-soft text-ink"}`}>
+        <p className={`inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm ${online ? "bg-sky-soft text-sky" : "bg-sun-soft text-ink"}`}>
           {online ? <Wifi size={14} aria-hidden /> : <CloudOff size={14} aria-hidden />}
           {online ? "Tienes conexión" : "Sin conexión"}
         </p>
-        <button type="button" onClick={newDraft} className="inline-flex items-center justify-center gap-2 rounded-lg bg-ink px-3 py-2 text-sm font-medium text-white hover:bg-basil">
+        <button type="button" onClick={newDraft} className="inline-flex items-center justify-center gap-2 rounded-lg bg-ink px-3 py-2 text-sm font-medium text-white hover:bg-brand">
           <FilePlus2 size={16} aria-hidden /> Nuevo borrador
         </button>
         {drafts.length === 0 ? (
@@ -129,7 +129,7 @@ export function OfflineDrafts() {
             {drafts.map((d) => (
               <li key={d.id}>
                 <button type="button" onClick={() => setCurrent(d.id)} aria-current={current === d.id ? "true" : undefined}
-                  className={`w-full truncate rounded-md px-2 py-1.5 text-left text-sm ${current === d.id ? "bg-basil-soft font-semibold text-basil" : "hover:bg-line/60"}`}>
+                  className={`w-full truncate rounded-md px-2 py-1.5 text-left text-sm ${current === d.id ? "bg-brand-soft font-semibold text-brand-strong" : "hover:bg-line/60"}`}>
                   {d.title || "Borrador sin título"}
                 </button>
               </li>
@@ -140,7 +140,7 @@ export function OfflineDrafts() {
 
       <section aria-label="Borrador" className="min-w-0 rounded-xl border border-line bg-surface p-4 sm:p-6">
         {message && (
-          <p role={message.ok ? "status" : "alert"} className={`mb-4 rounded-lg px-3 py-2 text-sm ${message.ok ? "bg-basil-soft text-basil" : "bg-danger-soft text-danger"}`}>
+          <p role={message.ok ? "status" : "alert"} className={`mb-4 rounded-lg px-3 py-2 text-sm ${message.ok ? "bg-sky-soft text-sky" : "bg-danger-soft text-danger"}`}>
             {message.text} {message.href && <Link href={message.href} className="font-medium underline">Abrir la página</Link>}
           </p>
         )}
@@ -152,7 +152,7 @@ export function OfflineDrafts() {
               <input value={title} onChange={(e) => { setTitle(e.target.value); touch({ title: e.target.value }); }} placeholder="Borrador sin título" aria-label="Título del borrador" maxLength={200}
                 className="min-w-0 flex-1 bg-transparent font-display text-3xl font-bold outline-none placeholder:text-line" />
               <button type="button" disabled={!online || busy} onClick={publish} title={online ? "Crear la página en la wiki" : "Necesitas conexión para publicar"}
-                className="inline-flex items-center gap-2 rounded-lg bg-ink px-3 py-2 text-sm font-medium text-white hover:bg-basil disabled:opacity-50">
+                className="inline-flex items-center gap-2 rounded-lg bg-ink px-3 py-2 text-sm font-medium text-white hover:bg-brand disabled:opacity-50">
                 {busy ? <LoaderCircle size={14} className="animate-spin" aria-hidden /> : <CloudUpload size={14} aria-hidden />} Subir a la wiki
               </button>
               <button type="button" onClick={async () => { if (!confirm("¿Borrar este borrador? No se puede deshacer.")) return; await deleteDraft(user.id, current); index.current?.map.delete(current); setCurrent(null); }}

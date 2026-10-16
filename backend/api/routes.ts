@@ -30,7 +30,8 @@ const bootstrapLimiter = rateLimit({ windowMs: 15 * 60 * 1000, limit: 5, ...limi
 const directoryLimiter = rateLimit({ windowMs: 60 * 1000, limit: 120, keyGenerator: (req) => req.auth?.sub ?? ipKeyGenerator(req.ip ?? ""), ...limiterDefaults });
 const id = z.string().min(1).max(100);
 const email = z.string().email().max(254);
-const password = z.string().min(12).max(200);
+// Mínimo 8 caracteres (decisión del equipo: las cuentas de prueba usan una contraseña de 8).
+const password = z.string().min(8).max(200);
 const title = z.string().trim().min(1).max(200);
 const role = z.enum(["USER", "DEPARTMENT_ADMIN", "ADMIN"]);
 const visibility = z.enum(["PRIVATE", "DEPARTMENT", "COMPANY"]);

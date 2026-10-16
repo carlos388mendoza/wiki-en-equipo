@@ -15,7 +15,12 @@ export function Modal({ open, onClose, title, description, children, size = "md"
   useEffect(() => {
     const dialog = ref.current;
     if (!dialog) return;
-    if (open && !dialog.open) dialog.showModal();
+    if (open && !dialog.open) {
+      dialog.showModal();
+      // showModal() enfoca el primer botón (Cerrar) y anula el autoFocus de React: el campo
+      // principal se marca con data-autofocus y se enfoca aquí.
+      dialog.querySelector<HTMLElement>("[data-autofocus]")?.focus();
+    }
     if (!open && dialog.open) dialog.close();
   }, [open]);
 

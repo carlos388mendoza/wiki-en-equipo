@@ -43,7 +43,7 @@ export function LogoutButton({ userId }: { userId: string }) {
           <ul className="flex flex-col divide-y divide-line rounded-lg border border-line">
             {unsynced?.map((u, i) => (
               <li key={i} className="flex items-center gap-2 px-3 py-2">
-                <CloudOff size={14} className="text-saffron" aria-hidden />
+                <CloudOff size={14} className="text-sun-ink" aria-hidden />
                 <span className="min-w-0 flex-1 truncate">{u.title}</span>
                 <span className="text-xs text-muted">{u.kind === "pagina" ? "Página con cambios sin subir" : "Borrador sin conexión"}</span>
               </li>

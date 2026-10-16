@@ -15,7 +15,7 @@ const MAX_FEATURED = 12;
 
 function Feedback({ message }: { message: { ok: boolean; text: string } | null }) {
   if (!message) return null;
-  return <p role={message.ok ? "status" : "alert"} className={`rounded-lg px-3 py-2 text-sm ${message.ok ? "bg-basil-soft text-basil" : "bg-danger-soft text-danger"}`}>{message.text}</p>;
+  return <p role={message.ok ? "status" : "alert"} className={`rounded-lg px-3 py-2 text-sm ${message.ok ? "bg-sky-soft text-sky" : "bg-danger-soft text-danger"}`}>{message.text}</p>;
 }
 
 /** Elegir (o crear) la página que se muestra como muro. */
@@ -53,9 +53,9 @@ export function WallPagePicker({ target, wall, candidates }: { target: Target; w
       <div className="mt-4 flex flex-col gap-4">
         {wall ? (
           <div className="flex flex-wrap items-center gap-3 rounded-lg border border-line px-3 py-2">
-            <Check size={16} className="text-basil" aria-hidden />
+            <Check size={16} className="text-brand-strong" aria-hidden />
             <span className="min-w-0 flex-1 truncate font-medium">{wall.title}</span>
-            <Link href={`/paginas/${wall.id}/editar`} className="inline-flex items-center gap-1.5 rounded-lg bg-ink px-3 py-1.5 text-sm font-medium text-white hover:bg-basil">
+            <Link href={`/paginas/${wall.id}/editar`} className="inline-flex items-center gap-1.5 rounded-lg bg-ink px-3 py-1.5 text-sm font-medium text-white hover:bg-brand">
               <Pencil size={14} aria-hidden /> Editar contenido
             </Link>
             <button type="button" disabled={pending} onClick={() => run(() => (target.kind === "company" ? clearCompanyWall() : clearDepartmentWall(target.departmentId)), "El muro ya no tiene página de inicio. La página sigue existiendo.")}
@@ -69,24 +69,24 @@ export function WallPagePicker({ target, wall, candidates }: { target: Target; w
 
         <div className="flex flex-col gap-2 sm:flex-row">
           <label className="sr-only" htmlFor="muro-pagina">Usar otra página</label>
-          <select id="muro-pagina" value={choice} onChange={(e) => setChoice(e.target.value)} className="h-10 min-w-0 flex-1 rounded-lg border border-line bg-surface px-2 text-sm outline-none focus:border-basil">
+          <select id="muro-pagina" value={choice} onChange={(e) => setChoice(e.target.value)} className="h-10 min-w-0 flex-1 rounded-lg border border-line bg-surface px-2 text-sm outline-none focus:border-brand">
             <option value="">{options.length ? "Elegir una página existente…" : "No hay otras páginas disponibles"}</option>
             {options.map((p) => <option key={p.id} value={p.id}>{p.title}{willPublish(p) ? " (se publicará)" : ""}</option>)}
           </select>
           <button type="button" disabled={!choice || pending} onClick={() => run(() => (target.kind === "company" ? setCompanyWall(choice) : setDepartmentWall(target.departmentId, choice)), "Listo: esa página ahora es el inicio del muro.", () => setChoice(""))}
-            className="h-10 rounded-lg border border-line px-3 text-sm font-medium hover:border-basil disabled:opacity-50">
+            className="h-10 rounded-lg border border-line px-3 text-sm font-medium hover:border-brand disabled:opacity-50">
             Usar como muro
           </button>
           <button type="button" disabled={pending} onClick={() => start(async () => {
             const res = await createWallPage(target.kind === "company" ? "company" : { departmentId: target.departmentId, name: target.name });
             if (!res.ok) { setMessage({ ok: false, text: res.message }); return; }
             router.push(`/paginas/${res.data.id}/editar`);
-          })} className="inline-flex h-10 items-center justify-center gap-1.5 rounded-lg bg-ink px-3 text-sm font-medium text-white hover:bg-basil disabled:opacity-60">
+          })} className="inline-flex h-10 items-center justify-center gap-1.5 rounded-lg bg-ink px-3 text-sm font-medium text-white hover:bg-brand disabled:opacity-60">
             {pending ? <LoaderCircle size={14} className="animate-spin" aria-hidden /> : <Sparkles size={14} aria-hidden />} Crear desde plantilla
           </button>
         </div>
         {chosen && willPublish(chosen) && (
-          <p role="note" className="rounded-lg bg-saffron-soft px-3 py-2 text-sm">
+          <p role="note" className="rounded-lg bg-sun-soft px-3 py-2 text-sm">
             {(() => {
               const from = chosen.visibility === "PRIVATE" ? "privada" : chosen.visibility === "DEPARTMENT" ? "del departamento" : "de la empresa";
               const to = target.kind === "company" ? "toda la empresa" : "todo el departamento";
@@ -131,7 +131,7 @@ export function FeaturedEditor({ target, initial, candidates }: { target: Target
         <ol className="mt-4 flex flex-col divide-y divide-line rounded-lg border border-line">
           {selected.map((p, i) => (
             <li key={p.id} className="flex items-center gap-2 px-3 py-2">
-              <Star size={14} className="text-saffron" aria-hidden />
+              <Star size={14} className="fill-sun text-sun-ink" aria-hidden />
               <span className="min-w-0 flex-1 truncate text-sm font-medium">{p.title}</span>
               <button type="button" disabled={i === 0} onClick={() => move(i, -1)} aria-label={`Subir ${p.title}`} className="grid h-8 w-8 place-items-center rounded-md text-muted hover:bg-paper disabled:opacity-30"><ArrowUp size={14} /></button>
               <button type="button" disabled={i === selected.length - 1} onClick={() => move(i, 1)} aria-label={`Bajar ${p.title}`} className="grid h-8 w-8 place-items-center rounded-md text-muted hover:bg-paper disabled:opacity-30"><ArrowDown size={14} /></button>
@@ -151,7 +151,7 @@ export function FeaturedEditor({ target, initial, candidates }: { target: Target
               <span className="min-w-0 flex-1 truncate text-sm">{p.title}</span>
               <VisibilityBadge visibility={p.visibility} />
               <button type="button" disabled={selected.length >= MAX_FEATURED} onClick={() => setSelected((l) => [...l, p])} aria-label={`Destacar ${p.title}`}
-                className="grid h-8 w-8 place-items-center rounded-md text-basil hover:bg-basil-soft disabled:opacity-30"><Plus size={16} /></button>
+                className="grid h-8 w-8 place-items-center rounded-md text-brand-strong hover:bg-brand-soft disabled:opacity-30"><Plus size={16} /></button>
             </li>
           ))}
         </ul>
@@ -163,7 +163,7 @@ export function FeaturedEditor({ target, initial, candidates }: { target: Target
           const res = target.kind === "company" ? await setCompanyFeaturedPages(ids) : await setFeaturedPages(target.departmentId, ids);
           setMessage(res.ok ? { ok: true, text: "Destacadas guardadas." } : { ok: false, text: res.message });
           if (res.ok) router.refresh();
-        })} className="inline-flex h-10 items-center gap-2 rounded-lg bg-ink px-4 text-sm font-medium text-white hover:bg-basil disabled:opacity-50">
+        })} className="inline-flex h-10 items-center gap-2 rounded-lg bg-ink px-4 text-sm font-medium text-white hover:bg-brand disabled:opacity-50">
           {pending && <LoaderCircle size={14} className="animate-spin" aria-hidden />} Guardar destacadas
         </button>
         {dirty && <span className="text-sm text-muted">Tienes cambios sin guardar.</span>}
@@ -192,7 +192,7 @@ export function DepartmentInfoEditor({ departmentId, initial }: { departmentId: 
           <span className="font-medium">Descripción</span>
           <textarea value={description} onChange={(e) => setDescription(e.target.value)} maxLength={500} rows={2}
             placeholder="Por ejemplo: pagos a proveedores, facturación y cierres contables del grupo."
-            className="rounded-lg border border-line bg-surface px-3 py-2 outline-none focus:border-basil" />
+            className="rounded-lg border border-line bg-surface px-3 py-2 outline-none focus:border-brand" />
           <span className="self-end text-xs text-muted">{description.length}/500</span>
         </label>
       </div>
@@ -201,7 +201,7 @@ export function DepartmentInfoEditor({ departmentId, initial }: { departmentId: 
           const res = await updateDepartmentInfo(departmentId, { description, icon });
           setMessage(res.ok ? { ok: true, text: "Presentación guardada." } : { ok: false, text: res.message });
           if (res.ok) router.refresh();
-        })} className="inline-flex h-10 items-center gap-2 rounded-lg bg-ink px-4 text-sm font-medium text-white hover:bg-basil disabled:opacity-50">
+        })} className="inline-flex h-10 items-center gap-2 rounded-lg bg-ink px-4 text-sm font-medium text-white hover:bg-brand disabled:opacity-50">
           {pending && <LoaderCircle size={14} className="animate-spin" aria-hidden />} Guardar presentación
         </button>
         <Feedback message={message} />

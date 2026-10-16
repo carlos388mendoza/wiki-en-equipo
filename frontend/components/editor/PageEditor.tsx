@@ -424,12 +424,12 @@ export function PageEditor({ mode, id, initial, pages, tagSuggestions, viewer, b
   const parentOptions = pages.filter((p) => !descendants.has(p.id));
 
   const statusView: Record<Status, { text: string; Icon: typeof Check; cls: string }> = {
-    saved: { text: "Guardado", Icon: Check, cls: "text-basil" },
+    saved: { text: "Guardado", Icon: Check, cls: "text-sky" },
     dirty: { text: "Cambios sin guardar", Icon: Save, cls: "text-muted" },
     saving: { text: "Guardando…", Icon: LoaderCircle, cls: "text-muted" },
     error: { text: "No se pudo guardar", Icon: TriangleAlert, cls: "text-danger" },
     conflict: { text: "Hay que resolver un conflicto", Icon: TriangleAlert, cls: "text-danger" },
-    offline: { text: isPage ? "Guardado en este dispositivo" : "Sin conexión: no cierres hasta reconectar", Icon: CloudOff, cls: "text-saffron" },
+    offline: { text: isPage ? "Guardado en este dispositivo" : "Sin conexión: no cierres hasta reconectar", Icon: CloudOff, cls: "text-sun-ink" },
   };
   const S = statusView[status];
 
@@ -444,10 +444,10 @@ export function PageEditor({ mode, id, initial, pages, tagSuggestions, viewer, b
         </span>
         <div className="ml-auto flex items-center gap-2">
           {isPage && <CollabStatus status={collab.status} peers={collab.peers} live={collab.live} />}
-          <button type="button" onClick={() => setSaveTemplate(selectionBlocks().length ? "selection" : "page")} className="hidden items-center gap-1.5 rounded-lg border border-line px-3 py-1.5 text-sm font-medium hover:border-basil lg:inline-flex" title="Guardar toda la página o los bloques seleccionados como plantilla">
+          <button type="button" onClick={() => setSaveTemplate(selectionBlocks().length ? "selection" : "page")} className="hidden items-center gap-1.5 rounded-lg border border-line px-3 py-1.5 text-sm font-medium hover:border-brand lg:inline-flex" title="Guardar toda la página o los bloques seleccionados como plantilla">
             <LayoutTemplate size={14} aria-hidden /> Guardar como plantilla
           </button>
-          <button type="button" onClick={finish} className="inline-flex items-center gap-1.5 rounded-lg bg-ink px-3 py-1.5 text-sm font-medium text-white hover:bg-basil">
+          <button type="button" onClick={finish} className="inline-flex items-center gap-1.5 rounded-lg bg-ink px-3 py-1.5 text-sm font-medium text-white hover:bg-brand">
             <Check size={14} aria-hidden /> Listo
           </button>
         </div>
@@ -459,7 +459,7 @@ export function PageEditor({ mode, id, initial, pages, tagSuggestions, viewer, b
         </p>
       )}
       {notice && (
-        <p role="status" className="mx-auto mt-3 flex max-w-3xl items-center gap-2 rounded-lg bg-basil-soft px-4 py-2 text-sm text-basil">
+        <p role="status" className="mx-auto mt-3 flex max-w-3xl items-center gap-2 rounded-lg bg-sky-soft px-4 py-2 text-sm text-sky">
           <span className="flex-1">{notice}</span>
           <button type="button" onClick={() => setNotice("")} aria-label="Cerrar aviso" className="rounded p-0.5 hover:bg-surface"><X size={14} /></button>
         </p>
@@ -493,7 +493,7 @@ export function PageEditor({ mode, id, initial, pages, tagSuggestions, viewer, b
               <label className="flex flex-wrap items-center gap-2 text-muted">
                 Dentro de
                 <select value={parentId ?? ""} onChange={(e) => { parentChanged.current = true; setParentId(e.target.value || null); }}
-                  className="h-8 max-w-full rounded-lg border border-line bg-surface px-2 text-ink outline-none focus:border-basil">
+                  className="h-8 max-w-full rounded-lg border border-line bg-surface px-2 text-ink outline-none focus:border-brand">
                   <option value="">— Sin página superior —</option>
                   {parentOptions.map((p) => <option key={p.id} value={p.id}>{p.title}</option>)}
                 </select>
@@ -502,10 +502,10 @@ export function PageEditor({ mode, id, initial, pages, tagSuggestions, viewer, b
           ) : (
             <>
               <input value={description} onChange={(e) => setDescription(e.target.value)} maxLength={1000} placeholder="Descripción breve: ¿para qué sirve esta plantilla?" aria-label="Descripción de la plantilla"
-                className="h-9 w-full rounded-lg border border-line bg-surface px-3 outline-none focus:border-basil" />
+                className="h-9 w-full rounded-lg border border-line bg-surface px-3 outline-none focus:border-brand" />
               <label className="flex flex-wrap items-center gap-2 text-muted">
                 Disponible para
-                <select value={scope} disabled={initial.canManage === false} title={initial.canManage === false ? "Solo quien creó la plantilla puede cambiar su alcance" : undefined} onChange={(e) => setScope(e.target.value as TemplateScope)} className="h-8 rounded-lg border border-line bg-surface px-2 text-ink outline-none focus:border-basil disabled:opacity-60">
+                <select value={scope} disabled={initial.canManage === false} title={initial.canManage === false ? "Solo quien creó la plantilla puede cambiar su alcance" : undefined} onChange={(e) => setScope(e.target.value as TemplateScope)} className="h-8 rounded-lg border border-line bg-surface px-2 text-ink outline-none focus:border-brand disabled:opacity-60">
                   <option value="PRIVATE">Solo con invitación</option>
                   <option value="DEPARTMENT">Mi departamento</option>
                   {(viewer.role === "ADMIN" || scope === "COMPANY") && <option value="COMPANY">Toda la empresa</option>}
@@ -569,9 +569,9 @@ export function PageEditor({ mode, id, initial, pages, tagSuggestions, viewer, b
             setSubpagePrompt(null);
           }}
         >
-          <input autoFocus value={subpageTitle} onChange={(e) => setSubpageTitle(e.target.value)} placeholder="Título de la subpágina" aria-label="Título de la subpágina" maxLength={200}
-            className="h-11 rounded-lg border border-line px-3 outline-none focus:border-basil" />
-          <button type="submit" className="h-10 rounded-lg bg-ink font-medium text-white hover:bg-basil">Crear subpágina</button>
+          <input data-autofocus value={subpageTitle} onChange={(e) => setSubpageTitle(e.target.value)} placeholder="Título de la subpágina" aria-label="Título de la subpágina" maxLength={200}
+            className="h-11 rounded-lg border border-line px-3 outline-none focus:border-brand" />
+          <button type="submit" className="h-10 rounded-lg bg-ink font-medium text-white hover:bg-brand">Crear subpágina</button>
         </form>
       </Modal>
 

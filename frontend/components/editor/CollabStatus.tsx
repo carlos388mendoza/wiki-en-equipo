@@ -8,9 +8,9 @@ import { initials } from "@/lib/format";
 /** Indicador de conexión y de quién más está editando. */
 export function CollabStatus({ status, peers, live }: { status: ChannelStatus; peers: Peer[]; live: boolean }) {
   const view = {
-    online: { Icon: Wifi, text: live ? "En vivo" : "En línea", cls: "text-basil", help: live ? "Ves los cambios de los demás al instante." : "Si otra persona guarda, sus cambios se combinan con los tuyos." },
+    online: { Icon: Wifi, text: live ? "En vivo" : "En línea", cls: "text-sky", help: live ? "Ves los cambios de los demás al instante." : "Si otra persona guarda, sus cambios se combinan con los tuyos." },
     connecting: { Icon: LoaderCircle, text: "Conectando…", cls: "text-muted", help: "Intentando conectar. Puedes seguir escribiendo." },
-    offline: { Icon: CloudOff, text: "Sin conexión", cls: "text-saffron", help: "Tus cambios se guardan en este dispositivo y se suben al reconectar." },
+    offline: { Icon: CloudOff, text: "Sin conexión", cls: "text-sun-ink", help: "Tus cambios se guardan en este dispositivo y se suben al reconectar." },
   }[status];
 
   return (

@@ -1,26 +1,26 @@
 import type { Background } from "./types";
 
-/** Fondos listos para elegir. Colores en tonos de la marca y complementarios. */
+/** Fondos listos para elegir: los colores del logo (rojo, amarillo y negro), el azul de los enlaces y tonos claros. */
 export const COLORS = [
-  "#e3efe8", "#fbf0da", "#f8e6e2", "#dce2de", "#eef6ff", "#f7f3ff",
-  "#fff4df", "#e7f7f0", "#2e6a4f", "#c9861f", "#1d2420", "#b4432f",
+  "#fde9eb", "#fff6c7", "#e8f0fa", "#f8f6f4", "#e7e1df", "#f7f3ff",
+  "#fff4df", "#fbe8e4", "#e2001a", "#fddb00", "#1b1717", "#1f5fae",
 ];
 
 export const GRADIENTS: { name: string; value: string }[] = [
-  { name: "Albahaca y azafrán", value: "linear-gradient(120deg, #2e6a4f 0%, #e3a33a 100%)" },
-  { name: "Huerta", value: "linear-gradient(135deg, #e3efe8 0%, #fbf0da 100%)" },
+  { name: "Grupo Comidas", value: "linear-gradient(120deg, #e2001a 0%, #ff5a1f 60%, #fddb00 100%)" },
+  { name: "Mostaza", value: "linear-gradient(135deg, #fff6c7 0%, #fde9eb 100%)" },
   { name: "Amanecer", value: "linear-gradient(135deg, #fff4df 0%, #fff0ed 100%)" },
-  { name: "Menta", value: "linear-gradient(135deg, #e7f7f0 0%, #eef6ff 100%)" },
+  { name: "Cielo", value: "linear-gradient(135deg, #e8f0fa 0%, #fff6c7 100%)" },
   { name: "Lavanda", value: "linear-gradient(135deg, #eef6ff 0%, #f7f3ff 100%)" },
-  { name: "Tomate", value: "linear-gradient(135deg, #f8e6e2 0%, #fbf0da 100%)" },
-  { name: "Bosque", value: "linear-gradient(160deg, #1d2420 0%, #2e6a4f 100%)" },
-  { name: "Brasa", value: "linear-gradient(135deg, #b4432f 0%, #c9861f 100%)" },
-  { name: "Noche", value: "linear-gradient(135deg, #1d2420 0%, #3b4a43 100%)" },
-  { name: "Papel", value: "linear-gradient(180deg, #ffffff 0%, #f4f6f4 100%)" },
+  { name: "Tomate", value: "linear-gradient(135deg, #fde9eb 0%, #fff6c7 100%)" },
+  { name: "Salsa", value: "linear-gradient(160deg, #1b1717 0%, #b30015 100%)" },
+  { name: "Brasa", value: "linear-gradient(135deg, #e2001a 0%, #fddb00 100%)" },
+  { name: "Noche", value: "linear-gradient(135deg, #1b1717 0%, #4a4444 100%)" },
+  { name: "Papel", value: "linear-gradient(180deg, #ffffff 0%, #f8f6f4 100%)" },
 ];
 
 export const PATTERN_EMOJIS = ["🍽️", "🥑", "🌮", "🍕", "☕", "🥗", "🍋", "🌶️", "🧾", "📊", "💻", "📦", "⭐", "🌿", "🎉", "🔧"];
-export const PATTERN_COLORS = ["#fbf0da", "#e3efe8", "#f8e6e2", "#eef6ff", "#f4f6f4", "#fff4df"];
+export const PATTERN_COLORS = ["#fff6c7", "#fde9eb", "#fbe8e4", "#e8f0fa", "#f8f6f4", "#fff4df"];
 
 const unsplash = (id: string) => `https://images.unsplash.com/photo-${id}`;
 

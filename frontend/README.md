@@ -15,16 +15,16 @@ npm run seed                 # solo la primera vez, con la base recién migrada
 npm run dev
 ```
 
-Abre http://localhost:3000 e inicia sesión con un usuario de `.dev-users.local.json` (lo crea `npm run seed`; no se sube a git).
+Abre http://localhost:3000 e inicia sesión con uno de estos usuarios (los crea `npm run seed`, definidos en `scripts/seed-users.mjs`). Todos usan la contraseña **12345abc**; en producción, cada persona debe cambiarla al entrar por primera vez.
 
-| Usuario | Rol | Departamento |
-|---|---|---|
-| Ana Rivera | Administrador | Tecnología |
-| Carlos Mejía | Admin. de departamento | Contabilidad |
-| Luis Paz | Usuario | Tecnología |
-| María Zelaya | Usuario | Compras |
+| Nombre | Correo | Rol | Departamento |
+|---|---|---|---|
+| Administrador | adminwiki@grupocomidas.com | Administrador | Tecnología |
+| Admin Contabilidad | contabilidadwiki@grupocomidas.com | Admin. de departamento | Contabilidad |
+| Usuario Tecnología | tecnologiawiki@grupocomidas.com | Usuario | Tecnología |
+| Usuario Compras | compraswiki@grupocomidas.com | Usuario | Compras |
 
-Casos para probar: María no puede abrir "Mis notas" de Luis (privada); ve "Borrador: guía de VPN" en solo lectura y puede editar "Checklist de soporte en sucursales". María no entra al muro de Tecnología. Carlos edita el muro de Contabilidad. Ana ve "Administración". Cualquier persona puede invitar a otra desde "Compartir" (buscador por nombre). Luis compartió la plantilla "Visita técnica a sucursal" con María (lectura) y con Carlos (edición).
+Casos para probar: Usuario Compras no puede abrir "Mis notas" de Usuario Tecnología (privada); ve "Borrador: guía de VPN" en solo lectura y puede editar "Checklist de soporte en sucursales". Usuario Compras no entra al muro de Tecnología. Admin Contabilidad edita el muro de Contabilidad. Administrador ve "Administración". Cualquier persona puede invitar a otra desde "Compartir" (buscador por nombre). Usuario Tecnología compartió la plantilla "Visita técnica a sucursal" con Usuario Compras (lectura) y con Admin Contabilidad (edición).
 
 > **OneDrive:** si el repositorio está dentro de una carpeta sincronizada con OneDrive, `.next` puede quedar con archivos "solo en la nube" y Next falla con `EINVAL: readlink`. Borra `.next` y vuelve a arrancar, o excluye la carpeta de la sincronización.
 
@@ -87,11 +87,11 @@ Necesitas dos terminales y dos navegadores (o uno normal y una ventana de incóg
 
 1. **Backend** (terminal 1): `cd backend && corepack pnpm run dev`. Si la base está vacía, en `frontend/` corre `npm run seed`.
 2. **Frontend** (terminal 2): `cd frontend && npm run dev`.
-3. En el navegador A entra como **Luis** y en el B como **María** (contraseñas en `frontend/.dev-users.local.json`). Ambos abren **Checklist de soporte en sucursales** → **Editar** (Luis es el dueño; María tiene permiso de edición).
+3. En el navegador A entra como **Usuario Tecnología** y en el B como **Usuario Compras** (contraseña `12345abc`). Ambos abren **Checklist de soporte en sucursales** → **Editar** (Usuario Tecnología es el dueño; Usuario Compras tiene permiso de edición).
 4. Arriba a la derecha cada uno ve **En vivo** y el avatar de la otra persona ("También editando"). Lo que escribe uno aparece al instante en el otro, con su cursor.
-5. **Solo lectura:** María abre **Borrador: guía de VPN**: no tiene botón Editar y, si entra a `/editar`, ve "Solo puedes leer esta página". El servidor también ignora los cambios de quien solo tiene lectura.
-6. **Invitar:** María (usuaria normal) abre **Compartir** en el checklist, escribe "mejia" y ve a Carlos Mejía (solo nombre y departamento); lo invita con "Puede ver". La lista de acceso muestra los nombres y la sección de enlaces muestra los activos, que se pueden desactivar.
-7. **Sin conexión y conflictos:** en el navegador B abre las herramientas de desarrollo → *Network* → *Offline*. María cambia un bloque; Luis cambia **el mismo** bloque y agrega otro. Al volver a *Online*, María ve el diálogo para elegir en el bloque en conflicto; el bloque nuevo de Luis se combina solo.
+5. **Solo lectura:** Usuario Compras abre **Borrador: guía de VPN**: no tiene botón Editar y, si entra a `/editar`, ve "Solo puedes leer esta página". El servidor también ignora los cambios de quien solo tiene lectura.
+6. **Invitar:** Usuario Compras (usuario normal) abre **Compartir** en el checklist, escribe "contabilidad" y ve a Admin Contabilidad (solo nombre y departamento); lo invita con "Puede ver". La lista de acceso muestra los nombres y la sección de enlaces muestra los activos, que se pueden desactivar.
+7. **Sin conexión y conflictos:** en el navegador B abre las herramientas de desarrollo → *Network* → *Offline*. Usuario Compras cambia un bloque; Usuario Tecnología cambia **el mismo** bloque y agrega otro. Al volver a *Online*, Usuario Compras ve el diálogo para elegir en el bloque en conflicto; el bloque nuevo de Usuario Tecnología se combina solo.
 8. **Borradores sin conexión:** `npm run build && npm start`, abre algunas páginas, corta la red y entra a `/sin-conexion` → **Nuevo borrador**. Al volver la red, **Subir a la wiki**.
 
 ### Qué falta para producción
