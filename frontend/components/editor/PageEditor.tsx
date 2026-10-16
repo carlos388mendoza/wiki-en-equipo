@@ -569,7 +569,7 @@ export function PageEditor({ mode, id, initial, pages, tagSuggestions, viewer, b
             setSubpagePrompt(null);
           }}
         >
-          <input autoFocus value={subpageTitle} onChange={(e) => setSubpageTitle(e.target.value)} placeholder="Título de la subpágina" aria-label="Título de la subpágina" maxLength={200}
+          <input data-autofocus value={subpageTitle} onChange={(e) => setSubpageTitle(e.target.value)} placeholder="Título de la subpágina" aria-label="Título de la subpágina" maxLength={200}
             className="h-11 rounded-lg border border-line px-3 outline-none focus:border-brand" />
           <button type="submit" className="h-10 rounded-lg bg-ink font-medium text-white hover:bg-brand">Crear subpágina</button>
         </form>

@@ -68,7 +68,7 @@ function NewPageForm({ parentId, initialTemplateId, onCreated }: { parentId?: st
     >
       <label className="flex flex-col gap-1 text-sm font-medium">
         Título
-        <input autoFocus value={title} onChange={(e) => setTitle(e.target.value)} maxLength={200} placeholder={chosen?.title ?? "Página sin título"}
+        <input data-autofocus value={title} onChange={(e) => setTitle(e.target.value)} maxLength={200} placeholder={chosen?.title ?? "Página sin título"}
           className="h-11 rounded-lg border border-line px-3 text-base font-normal outline-none focus:border-brand" />
       </label>
 
