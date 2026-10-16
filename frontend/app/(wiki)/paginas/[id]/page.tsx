@@ -108,7 +108,7 @@ export default async function PageView({ params }: { params: Promise<{ id: strin
               successHref="/papelera"
               danger
               className="inline-flex items-center gap-1.5 text-muted hover:text-danger hover:underline"
-              confirm={{ title: "¿Mover a la papelera?", body: `“${page.title}”${page.children.length ? " y sus subpáginas" : ""} dejarán de verse en la wiki. Podrás restaurarla desde la papelera.`, cta: "Mover a la papelera" }}
+              confirm={{ title: "¿Mover a la papelera?", body: page.children.length ? `“${page.title}” y sus subpáginas dejarán de verse en la wiki. Podrás restaurarlas desde la papelera.` : `“${page.title}” dejará de verse en la wiki. Podrás restaurarla desde la papelera.`, cta: "Mover a la papelera" }}
             >
               <Trash2 size={14} aria-hidden /> Mover a la papelera
             </ActionButton>
