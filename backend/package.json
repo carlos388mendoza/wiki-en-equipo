@@ -5,7 +5,9 @@
   "description": "API para Wiki en equipo",
   "packageManager": "pnpm@11.19.0",
   "type": "module",
-  "engines": { "node": ">=20" },
+  "engines": {
+    "node": ">=20"
+  },
   "scripts": {
     "dev": "tsx watch api/server.ts",
     "start": "node dist/api/server.js",
@@ -13,9 +15,13 @@
     "db:generate": "prisma generate --schema models/schema.prisma",
     "db:migrate": "prisma migrate dev --schema models/schema.prisma",
     "db:deploy": "prisma migrate deploy --schema models/schema.prisma",
-    "test": "vitest run"
+    "db:deploy:turso": "tsx models/deploy-turso.ts",
+    "test": "vitest run",
+    "test:turso": "vitest run --mode turso"
   },
   "dependencies": {
+    "@libsql/client": "^0.8.1",
+    "@prisma/adapter-libsql": "6.19.3",
     "@prisma/client": "^6.16.2",
     "bcryptjs": "^3.0.2",
     "cors": "^2.8.5",
