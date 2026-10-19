@@ -12,7 +12,6 @@ import * as pages from "../services/page-service.js";
 import * as templates from "../services/template-service.js";
 import { syncPage } from "../sync/service.js";
 import { uploadSingleFile, isInlineSafeImage } from "../storage/files.js";
-import { openFile } from "../services/file-service.js";
 import type { CollabServer } from "../realtime/collab.js";
 import type { RealtimeHub } from "../realtime/hub.js";
 
@@ -266,11 +265,12 @@ router.post("/files", (req, res, next) => uploadSingleFile.single("file")(req, r
 });
 router.get("/pages/:pageId/files", async (req, res) => res.json({ files: await files.listPageFiles(actor(req), param(req, "pageId")) }));
 router.get("/files/:fileId/content", async (req, res) => {
-  const file = await files.findReadableFile(actor(req), param(req, "fileId"));
+  // Primero los permisos; después los bytes (de la base o del disco, según dónde se guardó).
+  const { asset: file, data } = await files.readFileContent(actor(req), param(req, "fileId"));
   res.setHeader("Content-Type", file.mimeType);
-  res.setHeader("Content-Length", String(file.sizeBytes));
+  res.setHeader("Content-Length", String(data.length));
   res.setHeader("Content-Disposition", `${isInlineSafeImage(file.mimeType) ? "inline" : "attachment"}; filename*=UTF-8''${encodeURIComponent(file.originalName)}`);
-  openFile(file.path).pipe(res);
+  res.end(data);
 });
 router.delete("/files/:fileId", async (req, res) => { await files.deleteFile(actor(req), param(req, "fileId")); res.status(204).end(); });
 

@@ -38,18 +38,29 @@ Desde el 16/10/2026, A termina todo lo que falta, también el backend (con permi
 - Roles: `USER` (crea y publica en su departamento), `DEPARTMENT_ADMIN` (además edita el muro de su departamento), `ADMIN` (gestiona usuarios y permisos; lee todo lo público y todos los muros). Todos pertenecen a un departamento.
 - Extras: subpáginas, historial, visitas (solo páginas públicas), papelera restaurable, límites de subida.
 
-## Estado actual (16/10/2026)
+## Estado actual (19/10/2026)
 
-En `main`: los PR #1 (frontend), #2 (pendientes del backend), #15 (issues del backend), #16 (issues del frontend y correcciones al #15) y #17 (rama `usuarios-y-colores`). Los issues #3 a #13 están cerrados, cada uno con el commit que lo resolvió.
+En `main`: los PR #1, #2, #15, #16, #17 (usuarios de prueba y colores del logo) y #18 (`render.yaml` con disco de pago y latido en `/realtime`). Los issues #3 a #13 están cerrados.
 
-- **PR #17**: usuarios de prueba fijos de Grupo Comidas (contraseña `12345abc`; el backend acepta desde 8 caracteres), colores del logo en lugar del verde y tres arreglos que salieron al probar en el navegador (el diálogo de nueva página se quedaba abierto, el título no recibía el foco en los diálogos y la concordancia del aviso de la papelera).
-- Todos los requisitos están cumplidos. Pendiente de infraestructura: **dónde corre el backend en producción** (ver "Despliegue" en el README) y, más adelante, varias instancias del backend (`frontend/PENDIENTES_BACKEND.md`).
+**PR abierto, rama `turso` (lo revisa y une B; no unirlo nosotros):** despliegue 100 % gratis. Backend en Render plan free (sin disco), base en Turso (SQLite en la nube) y archivos subidos dentro de la base.
+- Prisma usa `@prisma/adapter-libsql` si hay `TURSO_DATABASE_URL`/`TURSO_AUTH_TOKEN`; si no, el archivo de `DATABASE_URL` (local y pruebas, sin internet).
+- `backend/models/migrate-turso.ts`: al arrancar aplica las migraciones que falten, cada una en una transacción (`batch` "write") con su registro en `_prisma_migrations`. Si una falla se deshace; si una quedó a medias, se detiene. Nunca borra. A mano: `pnpm run db:deploy:turso`.
+- Archivos: `FILE_STORAGE` = `disk` | `database` (tabla `FileBlob`; por defecto `database` con Turso). Se leen y borran de los dos sitios. Multer en memoria: se guarda solo después de revisar permisos.
+- `render.yaml`: plan free, `FILE_STORAGE=database`; Render pide `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`, `JWT_SECRET` y `BOOTSTRAP_SECRET`. **Sin `NODE_ENV=production`** (pnpm no instalaría TypeScript ni Prisma).
+- Render gratis se duerme a los 15 min: el frontend tiene `maxDuration = 60` (layout raíz y `/archivos`) para esperar a que despierte.
 
-Pruebas: backend 130 (`cd backend && corepack pnpm test`), frontend 75, de ellas 16 de integración contra el backend con el seed (`cd frontend && npm test`). Los dos builds compilan. `npm audit` y `pnpm audit`: 0 vulnerabilidades (se fuerza `deepmerge-ts >= 8` en `backend/pnpm-workspace.yaml`).
+Pruebas: backend 152 (`cd backend && corepack pnpm test`), las mismas con el adaptador de Turso (`corepack pnpm run test:turso`), y frontend 75, de ellas 16 de integración contra el backend con el seed (`cd frontend && npm test`). Los dos builds compilan. `npm audit` y `pnpm audit`: 0 vulnerabilidades (se fuerza `deepmerge-ts >= 8` en `backend/pnpm-workspace.yaml`).
 
-Verificado en el navegador con la compilación de producción: inicio de sesión con los 4 usuarios, crear y editar una página, compartir (invitar con edición), subpáginas, papelera (con la visibilidad al restaurar), edición en vivo con dos usuarios a la vez (`localhost` y `127.0.0.1`), página privada bloqueada para otro usuario y solo lectura sin edición. Colores revisados en el login, el inicio, un muro, una página, el editor y las plantillas, en celular y escritorio.
+Verificado en el navegador con el backend compilado en modo producción (Turso sobre un archivo libSQL local y `FILE_STORAGE=database`; lanzador local `.claude/backend-turso.cmd`, no se sube):
+- inicio de sesión;
+- crear y editar una página;
+- subir una imagen (queda en `FileBlob`, no en disco);
+- compartir con edición;
+- edición en vivo con dos usuarios;
+- dormir y despertar el backend: se reconecta solo en un minuto, conserva lo escrito sin conexión y la sesión sigue;
+- página privada bloqueada y solo lectura sin edición.
 
-**Despliegue (16/10/2026):** Vercel publica solo el frontend (carpeta raíz `frontend`, https://wiki-en-equipo.vercel.app, vista previa por cada PR). El repositorio no tiene configuración para el backend y desde aquí no se pueden ver las variables de Vercel: hay que confirmar con B qué `BACKEND_URL` tiene. El backend necesita un servidor siempre encendido con disco persistente (SQLite y `uploads/`) y WebSockets; Vercel no sirve para eso. Detalle y pasos para crear los usuarios en producción: README, sección "Despliegue". **Nunca reiniciar la base de producción ni correr `npm run seed` contra ella.**
+**Producción:** Vercel (frontend, https://wiki-en-equipo.vercel.app). El backend aún no está publicado: falta crear la base en Turso y el Blueprint en Render (pasos en el README, "Despliegue"), poner en Vercel `BACKEND_URL`, `NEXT_PUBLIC_REALTIME_URL`, `NEXT_PUBLIC_COLLAB_URL` y `NEXT_PUBLIC_MAX_UPLOAD_MB=4`, y crear los usuarios. **Nunca reiniciar la base de producción ni correr `npm run seed` contra ella.** Las claves nunca se piden por chat: el usuario las pega en Render.
 
 Correo de los commits: la cuenta de GitHub bloquea los push que muestran el Gmail; en este repo `user.email` es el `noreply` de GitHub (`206388899+carlos388mendoza@users.noreply.github.com`).
 
@@ -67,7 +78,7 @@ Correo de los commits: la cuenta de GitHub bloquea los push que muestran el Gmai
 
 ## Backend (lo que hay que saber)
 
-Node 20+, Express 5, Prisma + SQLite, Zod, JWT, Yjs 13 (y-protocols). Gestor: **pnpm** (vía `corepack pnpm`, desde la carpeta `backend/`: desde la raíz corepack usa otra versión). Detalle de rutas y permisos en `backend/README.md`.
+Node 20+ (22 en Render), Express 5, Prisma + SQLite (en producción Turso con `@prisma/adapter-libsql`), Zod, JWT, Yjs 13 (y-protocols). Gestor: **pnpm** (vía `corepack pnpm`, desde la carpeta `backend/`: desde la raíz corepack usa otra versión). Detalle de rutas y permisos en `backend/README.md`.
 
 ### Correrlo en local
 
@@ -78,7 +89,8 @@ cp .env.example .env        # poner JWT_SECRET (>= 32 caracteres) y BOOTSTRAP_SE
 corepack pnpm run db:generate
 corepack pnpm run db:deploy # aplica las migraciones
 corepack pnpm run dev       # http://localhost:4000 y ws://localhost:4000/collab
-corepack pnpm test          # 105 pruebas en ../tests/backend (base aparte: models/test.db)
+corepack pnpm test          # pruebas en ../tests/backend (base aparte: models/test.db)
+corepack pnpm run test:turso # las mismas, con el adaptador de Turso (libSQL) sobre un archivo local
 ```
 
 Datos de prueba: `cd frontend && npm run seed` (con la base vacía). Usuarios fijos en `frontend/scripts/seed-users.mjs` (tabla en el README), todos con la contraseña `12345abc` (decisión del equipo; el backend pide mínimo 8 caracteres): Administrador `adminwiki@grupocomidas.com` (ADMIN, Tecnología), Admin Contabilidad `contabilidadwiki@grupocomidas.com` (DEPARTMENT_ADMIN, Contabilidad), Usuario Tecnología `tecnologiawiki@grupocomidas.com` (USER, Tecnología), Usuario Compras `compraswiki@grupocomidas.com` (USER, Compras). Ya no existe `.dev-users.local.json`: las pruebas de integración usan esos usuarios y buscan las páginas por título. El seed también crea la plantilla "Visita técnica a sucursal" de Usuario Tecnología, compartida con Usuario Compras (lectura) y Admin Contabilidad (edición), y las destacadas de la empresa. Las pruebas del backend crean sus propias personas ficticias (Ana, Luis, María… con `@wiki.test`), independientes del seed.

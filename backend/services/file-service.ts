@@ -1,33 +1,40 @@
 import { randomUUID } from "node:crypto";
-import { createReadStream } from "node:fs";
-import { copyFile, rm } from "node:fs/promises";
 import path from "node:path";
 import type { Actor, PageAccessRecord } from "../permissions/access.js";
 import { assertCanEditPage, canReadPage, canEditTemplate, canReadTemplate } from "../permissions/access.js";
 import { prisma } from "../models/client.js";
-import { uploadDirectory } from "../storage/files.js";
+import { readStoredFile, removeStoredFiles, storeFile } from "../storage/files.js";
 import { badRequest, forbidden, notFound } from "./errors.js";
 
 /** Un archivo se sube suelto, para una página o para una plantilla (con los permisos de esa plantilla). */
+// Lo que se devuelve de un archivo (nunca sus bytes).
+const assetFields = { id: true, storageName: true, originalName: true, mimeType: true, sizeBytes: true, ownerId: true, pageId: true, templateId: true, createdAt: true } as const;
+
+/** Guarda un archivo nuevo (en disco o en la base, según FILE_STORAGE) y su registro. */
+async function createStoredFile(data: Buffer, record: { originalName: string; mimeType: string; ownerId: string; pageId?: string | null; templateId?: string | null }) {
+  const storageName = randomUUID();
+  try {
+    return await prisma.fileAsset.create({ data: { storageName, sizeBytes: data.length, ...record, ...(await storeFile(storageName, data)) }, select: assetFields });
+  } catch (error) { await removeStoredFiles([storageName]).catch(() => {}); throw error; }
+}
+
+/** Los permisos se revisan antes de guardar: un archivo rechazado no llega ni al disco ni a la base. */
 export async function saveUploadedFile(actor: Actor, file: Express.Multer.File, target: { pageId?: string; templateId?: string } = {}) {
-  const discard = () => rm(file.path, { force: true });
   const maxFiles = Number(process.env.MAX_UPLOADS_PER_USER ?? 1000);
   const total = await prisma.fileAsset.count({ where: { ownerId: actor.id } });
-  if (total >= maxFiles) { await discard(); throw badRequest("Alcanzaste el límite de archivos subidos."); }
-  if (target.pageId && target.templateId) { await discard(); throw badRequest("Un archivo pertenece a una página o a una plantilla, no a ambas."); }
+  if (total >= maxFiles) throw badRequest("Alcanzaste el límite de archivos subidos.");
+  if (target.pageId && target.templateId) throw badRequest("Un archivo pertenece a una página o a una plantilla, no a ambas.");
   if (target.pageId) {
     const page = await prisma.page.findFirst({ where: { id: target.pageId, deletedAt: null }, include: { shares: { select: { userId: true, permission: true } }, departmentWall: { select: { id: true } } } });
-    if (!page) { await discard(); throw notFound("No se encontró la página."); }
-    try { assertCanEditPage(page as PageAccessRecord, actor); } catch (error) { await discard(); throw error; }
+    if (!page) throw notFound("No se encontró la página.");
+    assertCanEditPage(page as PageAccessRecord, actor);
   }
   if (target.templateId) {
     const template = await prisma.template.findUnique({ where: { id: target.templateId }, include: { shares: { select: { userId: true, permission: true } } } });
-    if (!template || !canReadTemplate(template, actor)) { await discard(); throw notFound("No se encontró la plantilla."); }
-    if (!canEditTemplate(template, actor)) { await discard(); throw forbidden("Necesitas permiso de edición para cambiar esta plantilla."); }
+    if (!template || !canReadTemplate(template, actor)) throw notFound("No se encontró la plantilla.");
+    if (!canEditTemplate(template, actor)) throw forbidden("Necesitas permiso de edición para cambiar esta plantilla.");
   }
-  try {
-    return await prisma.fileAsset.create({ data: { storageName: path.basename(file.filename), originalName: path.basename(file.originalname).slice(0, 240), mimeType: file.mimetype, sizeBytes: file.size, ownerId: actor.id, pageId: target.pageId ?? null, templateId: target.templateId ?? null } });
-  } catch (error) { await discard(); throw error; }
+  return createStoredFile(file.buffer, { originalName: path.basename(file.originalname).slice(0, 240), mimeType: file.mimetype, ownerId: actor.id, pageId: target.pageId ?? null, templateId: target.templateId ?? null });
 }
 
 export async function listPageFiles(actor: Actor, pageId: string) {
@@ -42,7 +49,7 @@ export async function listPageFiles(actor: Actor, pageId: string) {
 
 /** Lo ve quien puede leer su página o su plantilla; un archivo suelto, solo quien lo subió (o un ADMIN). */
 export async function findReadableFile(actor: Actor, id: string) {
-  const asset = await prisma.fileAsset.findUnique({ where: { id } });
+  const asset = await prisma.fileAsset.findUnique({ where: { id }, select: assetFields });
   if (!asset) throw notFound("No se encontró el archivo.");
   if (asset.pageId) {
     // Primero verificar si la página existe
@@ -56,7 +63,15 @@ export async function findReadableFile(actor: Actor, id: string) {
     // Como las plantillas: si no se puede leer, no se revela que existe.
     if (!template || !canReadTemplate(template, actor)) throw notFound("No se encontró el archivo.");
   } else if (asset.ownerId !== actor.id && actor.role !== "ADMIN") throw forbidden("No tienes permiso para ver este archivo.");
-  return { ...asset, path: path.join(uploadDirectory, path.basename(asset.storageName)) };
+  return asset;
+}
+
+/** Los bytes de un archivo, solo después de comprobar que la persona puede verlo. */
+export async function readFileContent(actor: Actor, id: string) {
+  const asset = await findReadableFile(actor, id);
+  const data = await readStoredFile(asset.storageName);
+  if (!data) throw notFound("El archivo ya no está disponible.");
+  return { asset, data };
 }
 
 export async function deleteFile(actor: Actor, id: string) {
@@ -64,10 +79,8 @@ export async function deleteFile(actor: Actor, id: string) {
   if (!asset) throw notFound("No se encontró el archivo.");
   if (asset.ownerId !== actor.id && actor.role !== "ADMIN") throw forbidden("Solo quien subió el archivo puede eliminarlo.");
   await prisma.fileAsset.delete({ where: { id } });
-  await rm(path.join(uploadDirectory, path.basename(asset.storageName)), { force: true });
+  await removeStoredFiles([asset.storageName]);
 }
-
-export function openFile(filePath: string) { return createReadStream(filePath); }
 
 // El contenido cita archivos con la URL del frontend (/archivos/:id), la del backend (/api/files/:id/content) o en `fileId`.
 const FILE_URL = /\/(?:archivos|api\/files)\/([A-Za-z0-9_-]{8,64})/g;
@@ -91,9 +104,9 @@ export async function copyReferencedFiles(actor: Actor, target: { pageId: string
   for (const fileId of referencedFileIds(contentJson, backgroundJson).slice(0, MAX_COPIES)) {
     const asset = await findReadableFile(actor, fileId).catch(() => null);
     if (!asset || ("pageId" in target ? asset.pageId === target.pageId : asset.templateId === target.templateId)) continue;
-    const storageName = randomUUID();
-    try { await copyFile(asset.path, path.join(uploadDirectory, storageName)); } catch { continue; }
-    const copy = await prisma.fileAsset.create({ data: { storageName, originalName: asset.originalName, mimeType: asset.mimeType, sizeBytes: asset.sizeBytes, ownerId: actor.id, ...target } });
+    const data = await readStoredFile(asset.storageName);
+    if (!data) continue;
+    const copy = await createStoredFile(data, { originalName: asset.originalName, mimeType: asset.mimeType, ownerId: actor.id, ...target });
     contentJson = contentJson.replaceAll(fileId, copy.id);
     backgroundJson = backgroundJson?.replaceAll(fileId, copy.id) ?? null;
   }

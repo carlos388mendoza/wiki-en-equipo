@@ -10,7 +10,12 @@ const dependency = (name: string) => realpathSync(here(`./node_modules/${name}`)
 
 // Las pruebas viven en tests/backend/ (carpeta compartida del repo) y usan una base SQLite aparte
 // (models/test.db) que global-setup.ts crea desde cero con las migraciones.
-export default defineConfig({
+// `pnpm run test:turso` (--mode turso) corre las mismas pruebas con el adaptador de Turso (libSQL) sobre ese
+// archivo y con las migraciones aplicadas por models/migrate-turso.ts, como en producción, sin internet.
+export default defineConfig(({ mode }) => {
+  const turso = mode === "turso";
+  if (turso) process.env.WIKI_TEST_TURSO = "1";
+  return {
   // La raíz de las pruebas es el repo: la caché va dentro de backend/ para no crear node_modules/ en la raíz.
   cacheDir: here("./node_modules/.vite"),
   resolve: {
@@ -21,6 +26,7 @@ export default defineConfig({
       { find: /^y-protocols\//, replacement: `${dependency("y-protocols")}/` },
       { find: /^lib0\//, replacement: `${dependency("lib0")}/` },
       { find: /^ws$/, replacement: dependency("ws") },
+      { find: /^@libsql\/client$/, replacement: dependency("@libsql/client") },
     ],
   },
   server: { fs: { allow: [here("..")] } },
@@ -42,6 +48,14 @@ export default defineConfig({
       UPLOAD_DIR: path.join(tmpdir(), "wiki-en-equipo-test-uploads"),
       TRUST_PROXY: "loopback",
       TRASH_RETENTION_DAYS: "0",
+      // El mismo límite que en producción (las subidas pasan por Vercel, que no acepta más de 4,5 MB).
+      MAX_UPLOAD_BYTES: String(4 * 1024 * 1024),
+      // Archivos en disco en las dos modalidades; archivos-en-la-base.test.ts prueba el modo base.
+      FILE_STORAGE: "disk",
+      // Nunca una base de Turso real: vacía en el modo normal, el archivo de pruebas en --mode turso.
+      TURSO_DATABASE_URL: turso ? `file:${here("./models/test.db").replaceAll("\\", "/")}` : "",
+      TURSO_AUTH_TOKEN: "",
     },
   },
+  };
 });
