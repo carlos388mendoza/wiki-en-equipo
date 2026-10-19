@@ -12,14 +12,10 @@ export default async function LoginPage({ searchParams }: { searchParams: Promis
   if (session.ok) redirect(next && isInternalPath(next) ? next : "/");
   const backendDown = !session.ok && session.error === "error_servidor";
 
+  // Fondo blanco cálido de la wiki; la tarjeta, blanca pura con borde y sombra para distinguirse.
   return (
-    <main className="relative grid min-h-dvh place-items-center overflow-hidden bg-brand px-4 py-10">
-      {/* La curva amarilla del logo, como detalle de fondo. */}
-      <svg aria-hidden viewBox="0 0 1200 200" preserveAspectRatio="none" className="pointer-events-none absolute inset-x-0 bottom-0 h-32 w-full sm:h-44">
-        <path d="M0 170 C 380 210, 820 150, 1200 30 L 1200 200 L 0 200 Z" fill="var(--color-sun)" />
-        <path d="M0 150 C 380 190, 820 130, 1200 10" fill="none" stroke="var(--color-ink)" strokeOpacity="0.15" strokeWidth="6" />
-      </svg>
-      <div className="relative w-full max-w-md rounded-2xl bg-surface p-6 shadow-xl sm:p-8">
+    <main className="grid min-h-dvh place-items-center bg-paper px-4 py-10">
+      <div className="w-full max-w-md rounded-2xl border border-line bg-surface p-6 shadow-xl shadow-ink/10 sm:p-8">
         <BrandLogo size={88} priority />
         <h1 className="mt-4 font-display text-3xl font-bold">Wiki Grupo Comidas</h1>
         <p className="mt-1 text-muted">Procesos, guías y documentación de todo el grupo.</p>

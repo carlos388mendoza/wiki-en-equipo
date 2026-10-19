@@ -100,20 +100,32 @@ En producción, cada persona debe cambiar su contraseña al entrar por primera v
 
 ## Despliegue
 
-Todo con planes gratis: frontend en Vercel, backend en Render y base de datos en Turso.
+Todo con planes gratis y **sin tarjeta**: frontend en Vercel, backend en Back4App Containers y base de datos en Turso.
 
 ### Dónde corre cada parte
 
 - **Frontend:** Vercel, con la carpeta raíz `frontend`. Dirección: https://wiki-en-equipo.vercel.app. Cada PR genera su propia vista previa.
-- **Backend:** Render, plan **gratis**, definido en [`render.yaml`](render.yaml) (*Blueprint*).
+- **Backend:** Back4App Containers, plan **Free**: un contenedor Docker construido con [`backend/Dockerfile`](backend/Dockerfile). Dirección: `https://<tu-backend>.b4a.run`.
 - **Base de datos:** Turso, que es SQLite en la nube, también gratis. El backend usa el mismo esquema y las mismas migraciones que en local.
-- **Archivos subidos:** dentro de la base de datos (`FILE_STORAGE=database`), porque Render gratis no tiene disco permanente. Límite de 4 MB por archivo.
+- **Archivos subidos:** dentro de la base de datos (`FILE_STORAGE=database`), porque el contenedor no tiene disco permanente. Límite de 4 MB por archivo.
 
-### Qué cambia con los planes gratis
+### Por qué Back4App
 
-- **Render se duerme** después de 15 minutos sin uso. La siguiente visita tarda cerca de un minuto mientras despierta; el frontend espera hasta 60 s en lugar de dar error. Después todo va normal.
-- **No se pierde nada al dormir.** Las páginas, los usuarios y los archivos viven en Turso. Antes de apagarse, el backend guarda lo que se estaba editando en vivo. Las sesiones siguen valiendo y la edición en vivo se reconecta sola, aunque puede tardar hasta un minuto.
-- **Una sola instancia**, como hasta ahora. Para crecer, ver [frontend/PENDIENTES_BACKEND.md](frontend/PENDIENTES_BACKEND.md).
+Se compararon en octubre de 2026 los servicios que publican un servidor Node.js gratis:
+
+| Servicio | Tarjeta | WebSockets | Resultado |
+|---|---|---|---|
+| **Back4App Containers** | No | Sí | Elegido. 0,25 CPU, 256 MB de RAM y 100 GB de tráfico al mes; el backend usa unos 60–90 MB |
+| Koyeb | Sí, retención de US$29 desde febrero de 2026 | — | Descartado |
+| Hugging Face Spaces | No | — | Descartado: Docker pide PRO desde julio de 2026 |
+| SnapDeploy | No | Solo pagando "Always-On" | Descartado |
+| Railway | No para la prueba | — | Descartado: crédito único de US$5, luego US$1 al mes |
+
+Lo que hay que vigilar en Back4App, porque su documentación no lo aclara:
+- si el contenedor gratis se detiene por inactividad o por tiempo;
+- cuánto tarda en volver.
+
+Si se reinicia no se pierde nada: todo vive en Turso. La edición en vivo se reconecta sola y el frontend espera hasta 60 s a que el backend responda.
 
 ### Cómo funciona la base en Turso
 
@@ -123,53 +135,80 @@ Todo con planes gratis: frontend en Vercel, backend en Render y base de datos en
   - si una falla, se deshace completa y el servidor no arranca;
   - nunca borra datos.
 - Para aplicarlas a mano: `cd backend && pnpm run db:deploy:turso`, con las dos variables definidas.
-- Para probar todo como en producción, sin internet: `cd backend && corepack pnpm run test:turso`. Corre todas las pruebas del backend con el adaptador sobre un archivo local.
+- Para probar todo como en producción, sin internet: `cd backend && corepack pnpm run test:turso`.
+
+### La imagen del backend
+
+`backend/Dockerfile` compila el backend en una etapa y deja una imagen final con solo lo necesario:
+- Node 22;
+- corre con el usuario `node`, sin permisos de administrador;
+- las migraciones van dentro de la imagen.
+
+Ya trae los valores fijos de producción:
+
+| Variable | Valor |
+|---|---|
+| `PORT` | `8080` (el que expone la imagen) |
+| `FILE_STORAGE` | `database` |
+| `FRONTEND_ORIGIN` | `https://wiki-en-equipo.vercel.app` |
+| `TRUST_PROXY` | `2` (el proxy del servicio y el servidor de Next en Vercel) |
+| `MAX_UPLOAD_BYTES` | `4194304` (4 MB) |
+| `NODE_ENV` | `production` |
+
+Los secretos nunca van en la imagen: se pegan en el panel del servicio. `backend/.dockerignore` deja fuera `.env`, las bases locales y los archivos subidos.
+
+Para probarla en local, con Docker y una base libSQL dentro del contenedor:
+
+```bash
+cd backend && docker build -t wiki-backend .
+```
+
+```bash
+docker run --rm -p 4000:8080 -e TURSO_DATABASE_URL=file:/tmp/prueba.db -e JWT_SECRET=<32+ caracteres> -e BOOTSTRAP_SECRET=<texto> -e FRONTEND_ORIGIN=http://localhost:3000 wiki-backend
+```
+
+Después `curl http://localhost:4000/health` debe responder `{"status":"ok"}`, y con el frontend en local funcionan `npm run seed` y `npm test`.
 
 ### 1. Base de datos en Turso
 
 1. Entra a https://turso.tech y crea una cuenta gratis con **GitHub**.
-2. Crea una base (*Create Database*) llamada `wiki-en-equipo`, en la región **AWS US East (Virginia)**, la más cercana a Honduras y la misma de Render.
+2. Crea una base (*Create Database*) llamada `wiki-en-equipo`, en la región **AWS US East (Virginia)**, la más cercana a Honduras.
 3. Abre la base y copia su **URL**, que empieza con `libsql://`.
 4. En la misma página crea un **token** (*Create Token* o *Generate Token*), con permiso de lectura y escritura y sin vencimiento. Cópialo: solo se muestra una vez.
 
-Esos dos valores van en Render, nunca en el repositorio. Las tablas las crea el backend la primera vez que arranca.
+Esos dos valores van en Back4App, nunca en el repositorio. Las tablas las crea el backend la primera vez que arranca.
 
-### 2. Backend en Render (Blueprint, plan gratis)
+### 2. Backend en Back4App Containers
 
-`render.yaml` ya trae todo:
-
-- la carpeta raíz `backend` y Node 22;
-- compilación: `corepack enable && pnpm install --frozen-lockfile && pnpm run db:generate && pnpm run build`;
-- arranque: `pnpm start` (aplica las migraciones en Turso y abre el servidor);
-- la ruta de salud `/health`;
-- `FILE_STORAGE=database`, `FRONTEND_ORIGIN=https://wiki-en-equipo.vercel.app`, `TRUST_PROXY=2` y `MAX_UPLOAD_BYTES=4194304` (4 MB).
-
-Pasos:
-
-1. En https://render.com crea una cuenta con **GitHub** y autoriza el repositorio `vbgjptt89g-beep/wiki-en-equipo`.
-2. **New → Blueprint**, elige ese repositorio y la rama `main`. Render muestra el servicio `wiki-en-equipo-backend` con el plan **Free**.
-3. Render pide cuatro valores:
+1. Entra a https://www.back4app.com/signup-containers y crea una cuenta con **GitHub**. El plan Free no pide tarjeta.
+2. Crea una app nueva de **Containers** y elige **Import GitHub Repo**. GitHub te pide instalar la app de Back4App: dale acceso solo al repositorio `vbgjptt89g-beep/wiki-en-equipo`.
+3. Configura la app:
+   - **App Name:** `wiki-en-equipo-backend`
+   - **Branch:** `main`
+   - **Root** (carpeta raíz): `./backend`, donde está el Dockerfile
+   - **Auto-Deploy:** activado
+4. En **Environment Variables** agrega estas cuatro, cada una con su valor:
    - `TURSO_DATABASE_URL`: la URL `libsql://…` de Turso
    - `TURSO_AUTH_TOKEN`: el token de Turso
    - `JWT_SECRET`: un texto aleatorio de 32 caracteres o más
    - `BOOTSTRAP_SECRET`: otro texto aleatorio, distinto
 
-   Para generar cada texto aleatorio:
+   Las demás ya vienen en la imagen. Para generar cada texto aleatorio:
 
    ```bash
    node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
    ```
 
-4. **Apply**. Cuando el servicio diga **Live**, abre `https://<tu-backend>.onrender.com/health`. Debe responder `{"status":"ok"}`, y en los registros (*Logs*) aparecen las migraciones aplicadas.
-5. Cada vez que se une un PR a `main`, Render vuelve a desplegar solo.
+5. **Create App** o **Deploy**. En los registros (*Logs*) deben aparecer las migraciones aplicadas y `Wiki en equipo API escuchando…`.
+6. Copia la dirección de la app (`https://….b4a.run`) y abre `/health` en ella. Debe responder `{"status":"ok"}`.
 
 ### 3. Frontend en Vercel
 
 En *Settings → Environment Variables*, en **Production**, define estas variables y vuelve a desplegar:
 
-- `BACKEND_URL=https://<tu-backend>.onrender.com`
-- `NEXT_PUBLIC_REALTIME_URL=wss://<tu-backend>.onrender.com/realtime`
-- `NEXT_PUBLIC_COLLAB_URL=wss://<tu-backend>.onrender.com/collab`
+- `BACKEND_URL=https://<tu-backend>.b4a.run`
+- `NEXT_PUBLIC_REALTIME_URL=wss://<tu-backend>.b4a.run/realtime`
+- `NEXT_PUBLIC_COLLAB_URL=wss://<tu-backend>.b4a.run/collab`
 - `NEXT_PUBLIC_MAX_UPLOAD_MB=4`: las subidas pasan por el servidor de Next, y en Vercel una función no acepta más de 4,5 MB.
 
 Las variables `NEXT_PUBLIC_*` quedan dentro del código del navegador, así que hay que volver a desplegar después de cambiarlas.
@@ -187,7 +226,7 @@ Toda la información de la wiki vive en Turso. Antes de un cambio grande, saca u
 1. **Si la base de producción todavía no tiene usuarios**, crea el administrador una sola vez (pide `BOOTSTRAP_SECRET` a quien configuró el backend):
 
    ```bash
-   curl -X POST https://<tu-backend>.onrender.com/api/auth/bootstrap -H "Content-Type: application/json" -d '{"name":"Administrador","email":"adminwiki@grupocomidas.com","password":"12345abc","departmentName":"Tecnología","secret":"<BOOTSTRAP_SECRET>"}'
+   curl -X POST https://<tu-backend>.b4a.run/api/auth/bootstrap -H "Content-Type: application/json" -d '{"name":"Administrador","email":"adminwiki@grupocomidas.com","password":"12345abc","departmentName":"Tecnología","secret":"<BOOTSTRAP_SECRET>"}'
    ```
 
    Si responde 409, la base ya tiene usuarios: no pasa nada, sigue con el paso 2.
