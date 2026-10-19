@@ -36,3 +36,8 @@ frontend/public/sw-build.js
 
 # Copia generada de assets/templates/3dicons
 frontend/public/iconos/3d/
+
+# Vínculo local con proyectos de Vercel (vercel link)
+.vercel
+
+.vercel
