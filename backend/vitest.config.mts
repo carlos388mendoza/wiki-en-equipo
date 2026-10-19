@@ -48,6 +48,10 @@ export default defineConfig(({ mode }) => {
       UPLOAD_DIR: path.join(tmpdir(), "wiki-en-equipo-test-uploads"),
       TRUST_PROXY: "loopback",
       TRASH_RETENTION_DAYS: "0",
+      // El mismo límite que en producción (las subidas pasan por Vercel, que no acepta más de 4,5 MB).
+      MAX_UPLOAD_BYTES: String(4 * 1024 * 1024),
+      // Archivos en disco en las dos modalidades; archivos-en-la-base.test.ts prueba el modo base.
+      FILE_STORAGE: "disk",
       // Nunca una base de Turso real: vacía en el modo normal, el archivo de pruebas en --mode turso.
       TURSO_DATABASE_URL: turso ? `file:${here("./models/test.db").replaceAll("\\", "/")}` : "",
       TURSO_AUTH_TOKEN: "",

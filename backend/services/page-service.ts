@@ -1,7 +1,5 @@
 import { createHash, randomBytes } from "node:crypto";
-import { rm } from "node:fs/promises";
-import path from "node:path";
-import { uploadDirectory } from "../storage/files.js";
+import { removeStoredFiles } from "../storage/files.js";
 import type { Prisma, Page } from "@prisma/client";
 import type { Actor, PageAccessRecord } from "../permissions/access.js";
 import { assertCanEditPage, assertCanReadPage, canReadPage } from "../permissions/access.js";
@@ -272,7 +270,7 @@ async function purgeTrashedPages(rootIds: string[]) {
     prisma.syncOperation.deleteMany({ where: { pageId: { in: ids } } }),
     prisma.page.deleteMany({ where: { id: { in: ids }, deletedAt: { not: null } } }),
   ]);
-  await Promise.all(files.map((file) => rm(path.join(uploadDirectory, path.basename(file.storageName)), { force: true })));
+  await removeStoredFiles(files.map((file) => file.storageName));
   return ids.length;
 }
 

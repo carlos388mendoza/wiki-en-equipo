@@ -201,8 +201,17 @@ model FileAsset {
   templateId  String?
   template    Template? @relation(fields: [templateId], references: [id], onDelete: SetNull)
   createdAt   DateTime @default(now())
+  /// Contenido en la base (FILE_STORAGE=database, Render gratis sin disco); en disco no tiene fila.
+  blob        FileBlob?
   @@index([ownerId, createdAt])
   @@index([templateId])
+}
+
+/// Bytes de un archivo subido cuando se guardan en la base. Tabla aparte para no cargarlos al listar archivos.
+model FileBlob {
+  storageName String    @id
+  data        Bytes
+  asset       FileAsset @relation(fields: [storageName], references: [storageName], onDelete: Cascade)
 }
 
 model SyncOperation {
