@@ -1,0 +1,15 @@
+# Lo que nunca se sube a Vercel al desplegar el frontend desde la raíz del repo (carpeta raíz: frontend).
+# El frontend solo necesita frontend/, shared/ (tipos) y assets/ (iconos 3D y logo).
+node_modules
+**/node_modules
+**/.next
+**/.vercel
+**/.env*
+!**/.env.example
+**/*.db
+**/*.db-journal
+**/uploads
+backend
+tests
+docs
+.claude
