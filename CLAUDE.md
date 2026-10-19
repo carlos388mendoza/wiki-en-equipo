@@ -40,13 +40,14 @@ Desde el 16/10/2026, A termina todo lo que falta, también el backend (con permi
 
 ## Estado actual (19/10/2026)
 
-En `main`: los PR #1, #2, #15, #16, #17 (usuarios de prueba y colores del logo), #18 (latido en `/realtime`), #19 (Turso y archivos en la base) y #20 (Back4App, ya retirado). Los issues #3 a #13 están cerrados.
+En `main`: los PR #1, #2, #15, #16, #17 (usuarios de prueba y colores del logo), #18 (latido en `/realtime`), #19 (Turso y archivos en la base), #20 (Back4App, ya retirado), #21 (backend en Vercel por HTTP y Turso) y #22 (correcciones para que el backend arranque en Vercel). Los issues #3 a #13 están cerrados.
 
-**Despliegue: todo gratis y sin tarjeta (decisión del equipo; nunca planes de pago ni tarjeta).** Frontend y backend viven en Vercel; la base, en Turso.
+**Despliegue: todo gratis y sin tarjeta (decisión del equipo; nunca planes de pago ni tarjeta).** Frontend y backend viven en Vercel; la base, en Turso. **El backend ya está publicado y con los 4 usuarios creados** (19/10/2026). Falta conectar el frontend (ver "Producción" más abajo).
 
-- **Frontend:** Vercel, proyecto `wiki-en-equipo`, https://wiki-en-equipo.vercel.app.
-- **Backend:** Vercel, proyecto `wiki-en-equipo-backend`, raíz `backend`, `backend/vercel.json` (`framework: express`, `buildCommand: pnpm run vercel-build`, región `iad1`, Cron diario). Express usa `src/app.ts` como exportación por defecto.
-  - Variables en Production: `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`, `FRONTEND_ORIGIN`, `JWT_SECRET`, `BOOTSTRAP_SECRET`, `PROXY_SECRET`, `CRON_SECRET`, `FILE_STORAGE=database`, `TRUST_PROXY=false`, `MAX_UPLOAD_BYTES=4194304`.
+- **Frontend:** Vercel, proyecto `wiki-en-equipo`, https://wiki-en-equipo.vercel.app (cuenta de Vercel `vbgjptt89g-beep`). Todavía no tiene definidas `BACKEND_URL`, `NEXT_PUBLIC_COLLAB_URL`, `NEXT_PUBLIC_MAX_UPLOAD_MB` ni `PROXY_SECRET`.
+- **Backend:** Vercel, proyecto `wiki-en-equipo-backend`, raíz `backend`, https://wiki-en-equipo-backend.vercel.app (cuenta de Vercel `carlosmendozazelaya2009-7802`). `backend/vercel.json` (`framework: express`, `buildCommand: pnpm run vercel-build`, región `iad1`, Cron diario). Express usa `src/app.ts` como exportación por defecto. Deployment Protection desactivada (si no, el frontend no podría llamarlo). **Sin conexión Git**: la app de GitHub de Vercel no está instalada en esa cuenta, así que se despliega con `vercel --prod` desde `backend/`, no con `git push`.
+  - Variables en Production y Preview: `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN`, `FRONTEND_ORIGIN`, `COLLAB_ALLOWED_ORIGINS`, `JWT_SECRET`, `BOOTSTRAP_SECRET`, `PROXY_SECRET`, `CRON_SECRET`, `FILE_STORAGE=database`, `TRUST_PROXY=false`, `MAX_UPLOAD_BYTES=4194304`, `MAX_UPLOADS_PER_USER=1000`, `TRASH_RETENTION_DAYS=30`.
+  - Dos correcciones fueron necesarias para Vercel (PR #22): `helmet` se carga con `createRequire` (su importación por defecto no es invocable con la resolución de módulos del compilador de Vercel), y el directorio de subidas se crea de forma diferida (en Vercel el disco es de solo lectura). También hay un `backend/.vercelignore` para no subir `dist/`, `.env`, bases ni `uploads/`.
   - Las migraciones se aplican **al compilar** (`vercel-build` → `models/deploy-turso.ts --opcional --mantenimiento`), no en cada petición. Sin `TURSO_DATABASE_URL` (vistas previas) no hace nada.
   - Retirado Back4App Containers (y antes Render): único servicio gratis que publicaba un contenedor; se abandonó para tener las dos partes en Vercel, con una sola CLI y sin Docker. **El `backend/Dockerfile` ya no existe.**
 - **Base:** Turso. Prisma usa `@prisma/adapter-libsql` si hay `TURSO_DATABASE_URL`/`TURSO_AUTH_TOKEN`; si no, el archivo de `DATABASE_URL` (local y pruebas, sin internet). `binaryTargets` incluye `rhel-openssl-3.0.x` para las funciones de Vercel.
@@ -60,7 +61,7 @@ En `main`: los PR #1, #2, #15, #16, #17 (usuarios de prueba y colores del logo),
 
 Pruebas: backend 171 (`cd backend && corepack pnpm test`), las mismas con el adaptador de Turso (`corepack pnpm run test:turso`), y frontend 75+, de ellas las de integración contra el backend con el seed (`cd frontend && npm test`). `tests/backend/despliegue.test.ts` vigila `backend/vercel.json`. Los dos builds compilan. `npm audit` y `pnpm audit`: 0 vulnerabilidades.
 
-**Producción, pendiente:** crear la base en Turso y el proyecto del backend en Vercel (pasos en el README, "Despliegue"), configurar el frontend (`BACKEND_URL`, `NEXT_PUBLIC_COLLAB_URL`, `NEXT_PUBLIC_MAX_UPLOAD_MB=4`, `PROXY_SECRET`) y crear los usuarios con el script de PowerShell (`scripts/crear-usuarios.ps1`). **Nunca reiniciar la base de producción ni correr `npm run seed` contra ella.**
+**Producción:** el backend y la base (Turso, `wiki-en-equipo`) ya están en marcha, y los 4 usuarios están creados con `scripts/crear-usuarios.ps1` (login verificado: `adminwiki@` ADMIN/Tecnología, `contabilidadwiki@` DEPARTMENT_ADMIN/Contabilidad, `tecnologiawiki@` y `compraswiki@` USER). **Falta** conectar el frontend: en el proyecto `wiki-en-equipo` de Vercel (cuenta `vbgjptt89g-beep`) hay que definir `BACKEND_URL=https://wiki-en-equipo-backend.vercel.app`, `NEXT_PUBLIC_COLLAB_URL=https://wiki-en-equipo-backend.vercel.app/api/collab`, `NEXT_PUBLIC_MAX_UPLOAD_MB=4` y `PROXY_SECRET` (el mismo del backend) y volver a desplegar. **Nunca reiniciar la base de producción ni correr `npm run seed` contra ella.**
 
 Correo de los commits: la cuenta de GitHub bloquea los push que muestran el Gmail; en este repo `user.email` es el `noreply` de GitHub (`206388899+carlos388mendoza@users.noreply.github.com`).
 

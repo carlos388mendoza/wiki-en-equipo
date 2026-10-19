@@ -105,9 +105,11 @@ Todo con planes gratis y **sin tarjeta**: frontend y backend en Vercel, y base d
 ### Dónde corre cada parte
 
 - **Frontend:** Vercel, con la carpeta raíz `frontend`. Dirección: https://wiki-en-equipo.vercel.app. Cada PR genera su propia vista previa.
-- **Backend:** Vercel, un proyecto aparte con la carpeta raíz `backend` (funciones de Vercel, `framework: express`). Dirección: `https://<tu-backend>.vercel.app`.
+- **Backend:** Vercel, un proyecto aparte con la carpeta raíz `backend` (funciones de Vercel, `framework: express`). Dirección: https://wiki-en-equipo-backend.vercel.app.
 - **Base de datos:** Turso, que es SQLite en la nube, también gratis. El backend usa el mismo esquema y las mismas migraciones que en local.
 - **Archivos subidos:** dentro de la base de datos (`FILE_STORAGE=database`), porque las funciones de Vercel no conservan disco. Límite de 4 MB por archivo.
+
+> **Estado (19/10/2026):** el backend y la base ya están publicados y funcionando, y los 4 usuarios están creados. Solo falta **conectar el frontend**: definirle `BACKEND_URL`, `NEXT_PUBLIC_COLLAB_URL`, `NEXT_PUBLIC_MAX_UPLOAD_MB` y `PROXY_SECRET` (sección 3) y volver a desplegar.
 
 ### Por qué Vercel para el backend
 
@@ -179,14 +181,18 @@ Esos dos valores van en Vercel, nunca en el repositorio. Las tablas las crea el 
    - **Build & Output Settings:** sin cambios: usa `backend/vercel.json`.
 3. En **Settings → Environment Variables**, en **Production**, define las de la tabla de arriba.
 4. **Deploy**. En los registros del build deben aparecer las migraciones aplicadas; en los *Runtime Logs*, `Wiki en equipo API escuchando…`.
-5. Abre `/health` en la dirección del proyecto (`https://<tu-backend>.vercel.app/health`). Debe responder `{"status":"ok"}`.
+5. Abre `/health` en la dirección del proyecto (`https://wiki-en-equipo-backend.vercel.app/health`). Debe responder `{"status":"ok"}`.
+
+> **Nota (cuenta usada):** el proyecto está en la cuenta de Vercel `carlosmendozazelaya2009-7802`, y **sin conexión Git** (la app de GitHub de Vercel no está instalada ahí). Por eso se despliega a mano desde `backend/`: `vercel --prod`. Para que se despliegue solo con cada `git push`, hay que instalar la app de GitHub de Vercel en esa cuenta desde su panel.
+>
+> **Deployment Protection** debe quedar **desactivada** en este proyecto (`Settings → Deployment Protection`): si está activa, el frontend no puede llamar al backend.
 
 ### 3. Frontend en Vercel
 
 En *Settings → Environment Variables*, en **Production**, define estas variables y vuelve a desplegar:
 
-- `BACKEND_URL=https://<tu-backend>.vercel.app` (solo la usa el servidor de Next; el navegador nunca llama directo al backend)
-- `NEXT_PUBLIC_COLLAB_URL=https://<tu-backend>.vercel.app/api/collab` (edición en vivo por consultas periódicas por HTTP)
+- `BACKEND_URL=https://wiki-en-equipo-backend.vercel.app` (solo la usa el servidor de Next; el navegador nunca llama directo al backend)
+- `NEXT_PUBLIC_COLLAB_URL=https://wiki-en-equipo-backend.vercel.app/api/collab` (edición en vivo por consultas periódicas por HTTP)
 - `NEXT_PUBLIC_MAX_UPLOAD_MB=4`: las subidas pasan por el servidor de Next, y en Vercel una función no acepta más de 4,5 MB.
 - `PROXY_SECRET`: el mismo valor que en el backend; el servidor de Next firma con él la IP real del login.
 
