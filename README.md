@@ -100,43 +100,70 @@ En producción, cada persona debe cambiar su contraseña al entrar por primera v
 
 ## Despliegue
 
+Todo con planes gratis: frontend en Vercel, backend en Render y base de datos en Turso.
+
 ### Dónde corre cada parte
 
 - **Frontend:** Vercel, con la carpeta raíz `frontend`. Dirección: https://wiki-en-equipo.vercel.app. Cada PR genera su propia vista previa.
-- **Backend:** Render, como *Blueprint* definido en [`render.yaml`](render.yaml): un servicio web siempre encendido, con un disco permanente de 1 GB montado en `/data`.
-- **Base de datos:** SQLite en el disco de Render (`/data/wiki.db`). Los archivos subidos también quedan en el disco (`/data/uploads`).
+- **Backend:** Render, plan **gratis**, definido en [`render.yaml`](render.yaml) (*Blueprint*).
+- **Base de datos:** Turso, que es SQLite en la nube, también gratis. El backend usa el mismo esquema y las mismas migraciones que en local.
+- **Archivos subidos:** dentro de la base de datos (`FILE_STORAGE=database`), porque Render gratis no tiene disco permanente. Límite de 4 MB por archivo.
 
-### Por qué el backend no va en Vercel
+### Qué cambia con los planes gratis
 
-- Vercel enciende el servidor solo cuando llega una petición y después lo apaga. Su disco es temporal, así que **la base SQLite y los archivos subidos se borrarían**.
-- La **edición en vivo** necesita una conexión (WebSocket) que quede abierta mientras alguien edita. Las funciones de Vercel no mantienen esas conexiones.
-- El límite de intentos de inicio de sesión y la limpieza automática de la papelera viven en un proceso que tiene que seguir encendido.
+- **Render se duerme** después de 15 minutos sin uso. La siguiente visita tarda cerca de un minuto mientras despierta; el frontend espera hasta 60 s en lugar de dar error. Después todo va normal.
+- **No se pierde nada al dormir.** Las páginas, los usuarios y los archivos viven en Turso. Antes de apagarse, el backend guarda lo que se estaba editando en vivo. Las sesiones siguen valiendo y la edición en vivo se reconecta sola, aunque puede tardar hasta un minuto.
+- **Una sola instancia**, como hasta ahora. Para crecer, ver [frontend/PENDIENTES_BACKEND.md](frontend/PENDIENTES_BACKEND.md).
 
-### Backend en Render (Blueprint)
+### Cómo funciona la base en Turso
+
+- Con `TURSO_DATABASE_URL` y `TURSO_AUTH_TOKEN`, Prisma usa el adaptador de libSQL (`@prisma/adapter-libsql`). Sin ellas, en local y en las pruebas, usa el archivo de `DATABASE_URL` sin internet.
+- `prisma migrate deploy` no llega a Turso. Por eso, **al arrancar**, el backend aplica las migraciones de `backend/models/migrations` que falten:
+  - en orden, cada una en una transacción, junto con su registro en `_prisma_migrations`;
+  - si una falla, se deshace completa y el servidor no arranca;
+  - nunca borra datos.
+- Para aplicarlas a mano: `cd backend && pnpm run db:deploy:turso`, con las dos variables definidas.
+- Para probar todo como en producción, sin internet: `cd backend && corepack pnpm run test:turso`. Corre todas las pruebas del backend con el adaptador sobre un archivo local.
+
+### 1. Base de datos en Turso
+
+1. Entra a https://turso.tech y crea una cuenta gratis con **GitHub**.
+2. Crea una base (*Create Database*) llamada `wiki-en-equipo`, en la región **AWS US East (Virginia)**, la más cercana a Honduras y la misma de Render.
+3. Abre la base y copia su **URL**, que empieza con `libsql://`.
+4. En la misma página crea un **token** (*Create Token* o *Generate Token*), con permiso de lectura y escritura y sin vencimiento. Cópialo: solo se muestra una vez.
+
+Esos dos valores van en Render, nunca en el repositorio. Las tablas las crea el backend la primera vez que arranca.
+
+### 2. Backend en Render (Blueprint, plan gratis)
 
 `render.yaml` ya trae todo:
 
 - la carpeta raíz `backend` y Node 22;
 - compilación: `corepack enable && pnpm install --frozen-lockfile && pnpm run db:generate && pnpm run build`;
-- arranque: `pnpm run db:deploy && pnpm start`. `db:deploy` solo aplica las migraciones nuevas y **no borra datos**;
-- la ruta de salud `/health`, el disco y las variables.
+- arranque: `pnpm start` (aplica las migraciones en Turso y abre el servidor);
+- la ruta de salud `/health`;
+- `FILE_STORAGE=database`, `FRONTEND_ORIGIN=https://wiki-en-equipo.vercel.app`, `TRUST_PROXY=2` y `MAX_UPLOAD_BYTES=4194304` (4 MB).
 
-1. En https://render.com crea una cuenta con **GitHub** y autoriza el acceso al repositorio `vbgjptt89g-beep/wiki-en-equipo`.
-2. **New → Blueprint** y elige ese repositorio y la rama `main`. Render lee `render.yaml` y muestra el servicio `wiki-en-equipo-backend` con el plan **Starter**. El plan gratuito no admite discos.
-3. Te pide dos secretos. Pega valores aleatorios y largos, de 32 caracteres o más, y no los guardes en el repositorio:
-   - `JWT_SECRET`
-   - `BOOTSTRAP_SECRET`
-4. **Apply**. Cuando el servicio diga **Live**, abre `https://<tu-backend>.onrender.com/health`: debe responder `{"status":"ok"}`.
-5. Cada vez que se une un PR a `main`, Render vuelve a desplegar solo, con un corte de unos segundos mientras se reinicia; con disco no hay despliegue sin corte.
+Pasos:
 
-Las variables que ya trae `render.yaml` son:
+1. En https://render.com crea una cuenta con **GitHub** y autoriza el repositorio `vbgjptt89g-beep/wiki-en-equipo`.
+2. **New → Blueprint**, elige ese repositorio y la rama `main`. Render muestra el servicio `wiki-en-equipo-backend` con el plan **Free**.
+3. Render pide cuatro valores:
+   - `TURSO_DATABASE_URL`: la URL `libsql://…` de Turso
+   - `TURSO_AUTH_TOKEN`: el token de Turso
+   - `JWT_SECRET`: un texto aleatorio de 32 caracteres o más
+   - `BOOTSTRAP_SECRET`: otro texto aleatorio, distinto
 
-- `DATABASE_URL=file:/data/wiki.db` y `UPLOAD_DIR=/data/uploads`
-- `FRONTEND_ORIGIN=https://wiki-en-equipo.vercel.app`: CORS y origen permitido para la edición en vivo
-- `TRUST_PROXY=2`: el proxy de Render y el servidor de Next en Vercel; así el límite de inicios de sesión ve la IP real
-- `MAX_UPLOAD_BYTES=4194304` (4 MB)
+   Para generar cada texto aleatorio:
 
-### Frontend en Vercel
+   ```bash
+   node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
+   ```
+
+4. **Apply**. Cuando el servicio diga **Live**, abre `https://<tu-backend>.onrender.com/health`. Debe responder `{"status":"ok"}`, y en los registros (*Logs*) aparecen las migraciones aplicadas.
+5. Cada vez que se une un PR a `main`, Render vuelve a desplegar solo.
+
+### 3. Frontend en Vercel
 
 En *Settings → Environment Variables*, en **Production**, define estas variables y vuelve a desplegar:
 
@@ -149,9 +176,7 @@ Las variables `NEXT_PUBLIC_*` quedan dentro del código del navegador, así que 
 
 ### Copias de seguridad
 
-Toda la información de la wiki vive en el disco de Render. Render guarda instantáneas diarias del disco y se pueden restaurar desde el panel del servicio, en *Disks*. Antes de un cambio grande, descarga una copia de `/data/wiki.db` desde la *Shell* del servicio.
-
-Cuando haga falta más de una instancia, el siguiente paso es PostgreSQL, almacenamiento de objetos y Redis (ver [frontend/PENDIENTES_BACKEND.md](frontend/PENDIENTES_BACKEND.md)).
+Toda la información de la wiki vive en Turso. Antes de un cambio grande, saca una copia desde el panel de Turso o con su herramienta de línea de comandos (`turso db shell wiki-en-equipo .dump > copia.sql`).
 
 ### Crear o actualizar los 4 usuarios en producción
 

@@ -10,7 +10,8 @@ API REST en Node.js, TypeScript, Express y Prisma, con edición en vivo (Yjs) en
 - Genera el cliente y aplica las migraciones con `pnpm run db:generate` y `pnpm run db:deploy`.
 - Inicia en modo desarrollo con `pnpm run dev` (API en `http://localhost:4000` y edición en vivo en `ws://localhost:4000/collab`). En producción: `pnpm run build && pnpm start`.
 - El primer administrador se crea una sola vez con `POST /api/auth/bootstrap`; envía la clave configurada como `BOOTSTRAP_SECRET`. Después del primer usuario, esa ruta queda cerrada. El proceso crea tres plantillas predeterminadas para la empresa y los departamentos, con su icono.
-- Pruebas: `pnpm test` (Vitest). Viven en `../tests/backend/` y usan una base aparte (`models/test.db`) que se crea desde cero con las migraciones.
+- Pruebas: `pnpm test` (Vitest). Viven en `../tests/backend/` y usan una base aparte (`models/test.db`) que se crea desde cero con las migraciones. `pnpm run test:turso` corre las mismas pruebas como en producción: adaptador de Turso (libSQL) sobre ese archivo y migraciones aplicadas por `models/migrate-turso.ts`, sin internet.
+- Producción en Turso: con `TURSO_DATABASE_URL` y `TURSO_AUTH_TOKEN`, Prisma usa `@prisma/adapter-libsql` y el servidor aplica al arrancar las migraciones que falten (`prisma migrate deploy` no llega a Turso). A mano: `pnpm run db:deploy:turso`. Detalle en el README de la raíz, sección "Despliegue".
 
 No subas `.env`, la base de datos ni los archivos cargados al repositorio.
 
@@ -19,6 +20,8 @@ No subas `.env`, la base de datos ni los archivos cargados al repositorio.
 | Variable | Uso |
 | --- | --- |
 | `DATABASE_URL`, `PORT`, `UPLOAD_DIR`, `MAX_UPLOAD_BYTES`, `MAX_UPLOADS_PER_USER` | Base de datos, puerto y archivos |
+| `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN` | Producción en Turso (vacías en local) |
+| `FILE_STORAGE` | `disk` (`UPLOAD_DIR`) o `database` (tabla `FileBlob`); sin definir, `database` con Turso y `disk` sin él |
 | `JWT_SECRET`, `BOOTSTRAP_SECRET` | Secretos (nunca en el repositorio) |
 | `FRONTEND_ORIGIN` | Dirección del frontend: CORS, enlaces compartidos y orígenes permitidos para la edición en vivo |
 | `TRUST_PROXY` | Proxies que pueden informar la IP real (`loopback` por defecto, un número de saltos o una lista de IP). Nunca `true` |
