@@ -1,5 +1,8 @@
 import { BACKEND_URL, getToken } from "@/lib/api/client";
 
+// Render gratis tarda en despertar (ver app/layout.tsx).
+export const maxDuration = 60;
+
 /**
  * Sirve un archivo subido a la wiki. El backend exige el token en la cabecera,
  * así que el navegador lo pide aquí y esta ruta lo reenvía con la sesión.
