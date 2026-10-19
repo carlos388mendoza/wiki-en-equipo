@@ -5,8 +5,8 @@ import "@/styles/globals.css";
 const bricolage = Bricolage_Grotesque({ subsets: ["latin"], variable: "--font-bricolage", display: "swap" });
 const figtree = Figtree({ subsets: ["latin"], variable: "--font-figtree", display: "swap" });
 
-// El backend en Render gratis se duerme y tarda cerca de un minuto en despertar: la función de Vercel
-// espera hasta 60 s (el máximo del plan gratis) en lugar de cortar la primera petición.
+// El backend en un plan gratis puede tardar en responder mientras arranca o se reinicia: la función de
+// Vercel espera hasta 60 s (el máximo del plan gratis) en lugar de cortar la petición.
 export const maxDuration = 60;
 
 export const metadata: Metadata = {

@@ -1,7 +1,7 @@
 import { BACKEND_URL, getToken } from "@/lib/api/client";
 import { MAX_UPLOAD_BYTES, MAX_UPLOAD_MB, allowedList } from "@/lib/uploads";
 
-// Render gratis tarda en despertar (ver app/layout.tsx).
+// El backend puede tardar en responder mientras arranca (ver app/layout.tsx).
 export const maxDuration = 60;
 
 /** Sube un archivo al backend con la sesión del usuario y devuelve la URL para mostrarlo. */

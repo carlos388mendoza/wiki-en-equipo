@@ -1,6 +1,6 @@
 import { BACKEND_URL, getToken } from "@/lib/api/client";
 
-// Render gratis tarda en despertar (ver app/layout.tsx).
+// El backend puede tardar en responder mientras arranca (ver app/layout.tsx).
 export const maxDuration = 60;
 
 /**

@@ -201,7 +201,7 @@ model FileAsset {
   templateId  String?
   template    Template? @relation(fields: [templateId], references: [id], onDelete: SetNull)
   createdAt   DateTime @default(now())
-  /// Contenido en la base (FILE_STORAGE=database, Render gratis sin disco); en disco no tiene fila.
+  /// Contenido en la base (FILE_STORAGE=database, producción sin disco permanente); en disco no tiene fila.
   blob        FileBlob?
   @@index([ownerId, createdAt])
   @@index([templateId])
