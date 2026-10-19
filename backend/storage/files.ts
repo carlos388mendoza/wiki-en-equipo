@@ -5,7 +5,14 @@ import multer from "multer";
 import { prisma, tursoConfig } from "../models/client.js";
 
 export const uploadDirectory = path.resolve(process.env.UPLOAD_DIR ?? "./uploads");
-mkdirSync(uploadDirectory, { recursive: true });
+// El directorio solo se crea cuando de verdad se guarda en disco: en Vercel el sistema de archivos es de
+// solo lectura (las funciones no conservan el disco) y con FILE_STORAGE=database no se usa.
+let uploadDirectoryReady = false;
+function ensureUploadDirectory() {
+  if (uploadDirectoryReady) return;
+  mkdirSync(uploadDirectory, { recursive: true });
+  uploadDirectoryReady = true;
+}
 
 /**
  * Dónde se guardan los archivos subidos (FILE_STORAGE): `disk` (UPLOAD_DIR, desarrollo) o `database`
@@ -44,7 +51,7 @@ const diskPath = (storageName: string) => path.join(uploadDirectory, path.basena
  * crearla junto con su FileAsset (`prisma.fileAsset.create({ data: { ...datos, ...await storeFile() } })`).
  */
 export async function storeFile(storageName: string, data: Buffer) {
-  if (fileStorage() === "disk") { await writeFile(diskPath(storageName), data); return {}; }
+  if (fileStorage() === "disk") { ensureUploadDirectory(); await writeFile(diskPath(storageName), data); return {}; }
   return { blob: { create: { data: new Uint8Array(data) } } };
 }
 

@@ -1,9 +1,9 @@
 import { timingSafeEqual } from "node:crypto";
+import { createRequire } from "node:module";
 import type { Server } from "node:http";
 import { isIP } from "node:net";
-import express, { type ErrorRequestHandler } from "express";
+import express, { type ErrorRequestHandler, type RequestHandler } from "express";
 import cors from "cors";
-import helmet from "helmet";
 import { Prisma } from "@prisma/client";
 import { ZodError } from "zod";
 import { makeRouter } from "./routes.js";
@@ -11,6 +11,13 @@ import { COLLAB_PATH, CollabServer, collabOptionsFromEnv } from "../realtime/col
 import { RealtimeHub } from "../realtime/hub.js";
 import { HttpError } from "../services/errors.js";
 import { purgeExpiredTrash } from "../services/page-service.js";
+
+// `helmet` solo publica tipos CommonJS (`index.d.cts`). Con la resolución de módulos que usa el
+// compilador de funciones de Vercel, ni la importación por defecto ni `namespace.default` son
+// invocables. Se carga con `createRequire` para que funcione con cualquier configuración de módulos.
+const nodeRequire = createRequire(import.meta.url);
+type HelmetOptions = { crossOriginResourcePolicy?: { policy?: string } } & Record<string, unknown>;
+const helmet = nodeRequire("helmet") as (options?: HelmetOptions) => RequestHandler;
 
 /**
  * Qué proxies pueden informar la IP real en `X-Forwarded-For` (el login pasa por el servidor de Next).
