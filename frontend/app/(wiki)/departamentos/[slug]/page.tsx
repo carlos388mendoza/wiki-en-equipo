@@ -38,7 +38,7 @@ export default async function DepartmentWall({ params }: { params: Promise<{ slu
       <header className="relative mb-10 overflow-hidden rounded-2xl border border-line bg-surface">
         <PageBackground background={wall?.background ?? null} seed={department.id} className="h-28 sm:h-36" priority />
         <div className="flex flex-col gap-4 px-6 pb-8 sm:flex-row sm:items-end sm:px-10">
-          <PageIcon icon={department.icon ?? wall?.icon} fallback="🏢" size={64} className="-mt-10 drop-shadow" />
+          <PageIcon icon={department.icon ?? wall?.icon} fallback="🏢" size={64} className="relative -mt-10 drop-shadow" />
           <div className="flex-1">
             <h1 className="font-display text-4xl font-bold leading-tight">{department.name}</h1>
             {department.description && <p className="mt-1 max-w-2xl text-muted">{department.description}</p>}

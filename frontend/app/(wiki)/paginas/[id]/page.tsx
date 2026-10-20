@@ -60,7 +60,8 @@ export default async function PageView({ params }: { params: Promise<{ id: strin
       <PageBackground background={page.background} seed={page.id} className="h-44 sm:h-56" priority />
 
       <div className="mx-auto max-w-3xl px-4 sm:px-8">
-        <div className="-mt-10 flex flex-wrap items-end justify-between gap-4">
+        {/* relative: la portada es una imagen posicionada y, sin esto, tapaba la parte de arriba de los botones y del icono. */}
+        <div className="relative -mt-10 flex flex-wrap items-end justify-between gap-4">
           <PageIcon icon={page.icon} size={76} className="drop-shadow" />
           <div className="flex flex-wrap gap-2 pb-1">
             {shareable && <ShareButton page={page} viewer={user} />}
