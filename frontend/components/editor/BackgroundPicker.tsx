@@ -2,8 +2,8 @@
 
 import Image from "next/image";
 import { useRef, useState } from "react";
-import { Check, ImagePlus, LoaderCircle, RefreshCw, Trash2, Upload } from "lucide-react";
-import { COLORS, GRADIENTS, PATTERN_COLORS, PATTERN_EMOJIS, PHOTO_GALLERY } from "@/lib/backgrounds";
+import { Check, ImagePlus, LoaderCircle, RefreshCw, Search, Trash2, Upload, X } from "lucide-react";
+import { COLORS, GRADIENTS, PATTERN_COLORS, PATTERN_EMOJIS, PHOTO_GALLERY, searchPhotos, type GalleryPhoto } from "@/lib/backgrounds";
 import { safeHref } from "@/lib/blocks";
 import { isOptimizableImage } from "@/lib/images";
 import type { Background, ShapePattern } from "@/lib/types";
@@ -49,6 +49,8 @@ export function BackgroundPicker({ open, onClose, value, onChange, uploadTarget 
   const [uploadError, setUploadError] = useState("");
   const [dragging, setDragging] = useState(false);
   const [link, setLink] = useState("");
+  const [photoQuery, setPhotoQuery] = useState("");
+  const photoResults = searchPhotos(photoQuery);
   const [patternEmoji, setPatternEmoji] = useState(value?.type === "pattern" ? value.emoji : "🍽️");
   const [patternColor, setPatternColor] = useState(value?.type === "pattern" || value?.type === "shapes" ? value.color : PATTERN_COLORS[0]);
   const fileRef = useRef<HTMLInputElement>(null);
@@ -58,6 +60,12 @@ export function BackgroundPicker({ open, onClose, value, onChange, uploadTarget 
 
   const pick = (bg: Background | null) => { onChange(bg); setError(""); setUploadError(""); };
   const isSelected = (bg: Background) => JSON.stringify(bg) === JSON.stringify(value);
+
+  const photoSwatch = (p: GalleryPhoto) => (
+    <Swatch key={p.url} selected={value?.type === "image" && value.url === p.url} label={p.alt} onClick={() => pick({ type: "image", url: p.url })}>
+      <Image src={p.url} alt="" fill sizes="200px" quality={60} className="object-cover" />
+    </Swatch>
+  );
 
   async function upload(file: File) {
     setBusy(true); setProgress(0); setError(""); setUploadError("");
@@ -128,16 +136,25 @@ export function BackgroundPicker({ open, onClose, value, onChange, uploadTarget 
               {uploadError && <p role="alert" className="mt-3 rounded-lg bg-danger-soft px-3 py-2 text-sm text-danger">{uploadError}</p>}
             </section>
 
-            {PHOTO_GALLERY.map((g) => (
+            <label className="flex items-center gap-2 rounded-lg border border-line px-3 focus-within:border-brand">
+              <Search size={16} className="shrink-0 text-muted" aria-hidden />
+              <span className="sr-only">Buscar en la galería</span>
+              <input value={photoQuery} onChange={(e) => setPhotoQuery(e.target.value)} placeholder="Buscar fotos (comida, cocina, oficina, equipo, naturaleza…)"
+                className="h-10 min-w-0 flex-1 bg-transparent text-sm outline-none" />
+              {photoQuery && <button type="button" onClick={() => setPhotoQuery("")} aria-label="Borrar búsqueda" className="rounded p-0.5 text-muted hover:text-ink"><X size={15} /></button>}
+            </label>
+
+            {photoQuery.trim() ? (
+              <section aria-label="Resultados de la búsqueda">
+                <h3 className="mb-2 text-sm font-semibold">{photoResults.length ? `${photoResults.length} ${photoResults.length === 1 ? "foto" : "fotos"}` : "Sin resultados"}</h3>
+                {photoResults.length ? (
+                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-6">{photoResults.map(photoSwatch)}</div>
+                ) : <p className="text-sm text-muted">No encontramos fotos con “{photoQuery.trim()}”. Prueba con comida, cocina, oficina, equipo o naturaleza, o sube tu propia imagen.</p>}
+              </section>
+            ) : PHOTO_GALLERY.map((g) => (
               <section key={g.group} aria-label={g.group}>
                 <h3 className="mb-2 text-sm font-semibold">{g.group}</h3>
-                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-6">
-                  {g.photos.map((p) => (
-                    <Swatch key={p.url} selected={value?.type === "image" && value.url === p.url} label={p.alt} onClick={() => pick({ type: "image", url: p.url })}>
-                      <Image src={`${p.url}?w=400&q=60`} alt="" fill sizes="200px" className="object-cover" />
-                    </Swatch>
-                  ))}
-                </div>
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-6">{g.photos.map(photoSwatch)}</div>
               </section>
             ))}
 
