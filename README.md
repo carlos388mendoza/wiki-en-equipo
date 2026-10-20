@@ -120,7 +120,7 @@ de GitHub de Vercel solo puede instalarla el dueño de cada cuenta, y está inst
 1. Se une un PR a `main` de este repositorio.
 2. En la copia, el flujo [`.github/workflows/sincronizar-copia.yml`](.github/workflows/sincronizar-copia.yml) corre cada
    5 minutos y adelanta su `main` (el botón "Sync fork" de GitHub; nunca fuerza). En este repositorio el flujo no hace nada.
-3. Ese avance hace que Vercel publique **el frontend y el backend** en producción. En total, entre 5 y 15 minutos
+3. Ese avance hace que Vercel publique **el frontend y el backend** en producción (se probó el 20/10/2026 con un PR de solo documentación). En total, entre 5 y 15 minutos
    después de unir (GitHub a veces retrasa los flujos programados).
 
 Detalles:
