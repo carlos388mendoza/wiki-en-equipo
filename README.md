@@ -104,30 +104,33 @@ Todo con planes gratis y **sin tarjeta**: frontend y backend en Vercel, y base d
 
 ### Dónde corre cada parte
 
-- **Frontend:** Vercel, proyecto `wiki-grupo-comidas` con la carpeta raíz `frontend`. Dirección: https://wiki-grupo-comidas.vercel.app.
-- **Backend:** Vercel, proyecto `wiki-en-equipo-backend` con la carpeta raíz `backend` (funciones de Vercel, `framework: express`). Dirección: https://wiki-en-equipo-backend.vercel.app.
+- **Todo en un solo proyecto de Vercel** llamado `wiki-grupo-comidas` (dirección **https://wiki-grupo-comidas.vercel.app**).
+  Desde el 20/10/2026 (punto 5) la web y la API viven en el mismo proyecto, con el backend dentro como servicio de
+  **Vercel Services** (ver [`vercel.json`](vercel.json) de la raíz): el servicio `web` sirve el frontend (`frontend/`) y el
+  servicio `api` sirve el backend (`backend/`), de modo que la web y la API comparten el mismo dominio, con la API bajo
+  `/api/*` (y `/health`). Antes eran dos proyectos (`wiki-grupo-comidas` y `wiki-en-equipo-backend`).
 - **Base de datos:** Turso, que es SQLite en la nube, también gratis. El backend usa el mismo esquema y las mismas migraciones que en local.
 - **Archivos subidos:** dentro de la base de datos (`FILE_STORAGE=database`), porque las funciones de Vercel no conservan disco. Límite de **20 MB por archivo**: Vercel no acepta cuerpos de más de 4,5 MB por petición, así que los archivos de más de 3 MB se suben **en partes de 3 MB** y se guardan y entregan por partes.
 
-> **Estado (20/10/2026):** todo publicado y funcionando de punta a punta; los 4 usuarios están creados.
+> **Estado (20/10/2026):** todo publicado y funcionando de punta a punta en el proyecto único; los 4 usuarios están creados.
 
 ### Cómo se publica (solo, al unir a `main`)
 
-Los dos proyectos de Vercel están en la cuenta `carlosmendozazelaya2009-7802` y conectados por Git a la **copia**
+El proyecto de Vercel está en la cuenta `carlosmendozazelaya2009-7802` y conectado por Git a la **copia**
 [`carlos388mendoza/wiki-en-equipo`](https://github.com/carlos388mendoza/wiki-en-equipo), no a este repositorio: la app
 de GitHub de Vercel solo puede instalarla el dueño de cada cuenta, y está instalada en la de la copia.
 
 1. Se une un PR a `main` de este repositorio.
 2. En la copia, el flujo [`.github/workflows/sincronizar-copia.yml`](.github/workflows/sincronizar-copia.yml) corre cada
    5 minutos y adelanta su `main` (el botón "Sync fork" de GitHub; nunca fuerza). En este repositorio el flujo no hace nada.
-3. Ese avance hace que Vercel publique **el frontend y el backend** en producción (se probó el 20/10/2026 con un PR de solo documentación). En total, entre 5 y 15 minutos
+3. Ese avance hace que Vercel publique **la web y la API** en producción (se probó el 20/10/2026 con un PR de solo documentación). En total, entre 5 y 15 minutos
    después de unir (GitHub a veces retrasa los flujos programados).
 
 Detalles:
-- Solo `main` publica: `git.deploymentEnabled` en `frontend/vercel.json` y `backend/vercel.json`. Las vistas previas
-  del backend tienen las variables de Turso, y una rama sin unir no debe aplicar migraciones a producción.
-- El backend aplica las migraciones de Turso **al compilar** (`pnpm run vercel-build`), igual que antes.
-- Las variables de entorno siguen en cada proyecto de Vercel; conectar Git no las cambia.
+- Solo `main` publica: `git.deploymentEnabled` en el `vercel.json` de la raíz. Las vistas previas de la API tienen las
+  variables de Turso, y una rama sin unir no debe aplicar migraciones a producción.
+- El servicio `api` aplica las migraciones de Turso **al compilar** (`pnpm run vercel-build`), igual que antes.
+- Las variables de entorno del proyecto se comparten con los dos servicios; conectar Git no las cambia.
 - **Si un PR cambia algo de `.github/workflows/`**, GitHub no deja que el flujo lo copie: abre la copia en GitHub y
   presiona **Sync fork → Update branch**.
 - **No subas nada directo a la copia:** si su `main` se separa del de este repositorio, el flujo falla (y GitHub avisa
@@ -139,14 +142,16 @@ Detalles:
 
 ### Por qué Vercel para el backend
 
-Vercel no pide tarjeta y ya aloja el frontend, así que el backend va como un segundo proyecto del mismo repositorio. Se
-compararon en octubre de 2026 otros servicios que publican Node.js gratis y ninguno servía sin tarjeta (Koyeb la pide,
-Hugging Face cobra el Docker, SnapDeploy cobra los WebSockets, Railway da un crédito único); Back4App Containers
-también servía, pero se retiró en favor de Vercel para tener las dos partes en el mismo sitio y una sola CLI.
+Vercel no pide tarjeta y ya aloja la web, así que desde el 20/10/2026 (punto 5) el backend corre **dentro del mismo
+proyecto** como servicio de **Vercel Services** (plan Hobby), sin un segundo proyecto. Se compararon en octubre de 2026
+otros servicios que publican Node.js gratis y ninguno servía sin tarjeta (Koyeb la pide, Hugging Face cobra el Docker,
+SnapDeploy cobra los WebSockets, Railway da un crédito único); Back4App Containers también servía, pero se retiró en
+favor de Vercel para tener las dos partes en el mismo sitio y una sola CLI.
 
 Lo que hay que tener en cuenta:
-- El plan Hobby incluye **4 horas de CPU activa** y 1 millón de invocaciones al mes. Con 10 personas editando caben,
-  pero sin mucho margen: el cálculo completo está en [`docs/limites-vercel-hobby.md`](docs/limites-vercel-hobby.md).
+- El plan Hobby incluye **4 horas de CPU activa**, 1 millón de invocaciones al mes y **1 millón de peticiones a Services
+  al mes**. Con 10 personas editando caben, pero sin mucho margen: el cálculo completo está en
+  [`docs/limites-vercel-hobby.md`](docs/limites-vercel-hobby.md).
 - Las funciones de Vercel **no comparten memoria entre instancias**, así que la edición en vivo en producción va por
   **consultas periódicas por HTTP** (cada 5 s con actividad) en lugar de WebSockets. En local se siguen usando WebSockets.
 - La retención de la papelera la dispara **Vercel Cron** una vez al día (`/api/cron/papelera`).
@@ -165,7 +170,9 @@ Si algo falla no se pierde nada: todo vive en Turso. La edición en vivo se reco
 - Para aplicarlas a mano: `cd backend && pnpm run db:deploy:turso`, con las dos variables definidas.
 - Para probar todo como en producción, sin internet: `cd backend && corepack pnpm run test:turso`.
 
-### Variables de entorno del backend en Vercel
+### Variables de entorno del proyecto único en Vercel
+
+Todas van en el proyecto `wiki-grupo-comidas` y las comparten los dos servicios (`web` y `api`). Las del backend:
 
 | Variable | Valor |
 |---|---|
@@ -174,12 +181,23 @@ Si algo falla no se pierde nada: todo vive en Turso. La edición en vivo se reco
 | `FRONTEND_ORIGIN` | `https://wiki-grupo-comidas.vercel.app` |
 | `JWT_SECRET` | texto aleatorio de 32+ caracteres |
 | `BOOTSTRAP_SECRET` | otro texto aleatorio, distinto (solo para crear el primer administrador) |
-| `PROXY_SECRET` | el mismo valor que en el frontend: el servidor de Next firma con él la IP real del login |
+| `PROXY_SECRET` | el mismo valor que en la web: el servidor de Next firma con él la IP real del login |
 | `CRON_SECRET` | Vercel lo envía en `Authorization: Bearer` al Cron de la papelera |
 | `FILE_STORAGE` | `database` (las funciones no conservan disco) |
 | `TRUST_PROXY` | `false` (Vercel reescribe `X-Forwarded-For`; la IP real llega por `X-Wiki-Client-Ip` con `PROXY_SECRET`) |
 | `MAX_UPLOAD_BYTES` | `20971520` (20 MB; los archivos de más de 3 MB se suben en partes) |
 | `TRASH_RETENTION_DAYS` | `30` |
+
+Y estas, que usa el servicio `web` (el frontend):
+
+| Variable | Valor |
+|---|---|
+| `BACKEND_URL` | `https://wiki-grupo-comidas.vercel.app` (solo la usa el servidor de Next; el navegador nunca llama aparte) |
+| `NEXT_PUBLIC_COLLAB_URL` | `https://wiki-grupo-comidas.vercel.app/api/collab` (edición en vivo por consultas periódicas por HTTP) |
+| `NEXT_PUBLIC_MAX_UPLOAD_MB` | `20` |
+| `NEXT_PUBLIC_TRASH_RETENTION_DAYS` | `30` |
+
+> Si `BACKEND_URL` no está definida, el frontend usa su propio dominio (`VERCEL_PROJECT_PRODUCTION_URL`/`VERCEL_URL`); en local, `http://localhost:4000`.
 
 Para generar cada texto aleatorio:
 
@@ -196,35 +214,32 @@ node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"
 
 Esos dos valores van en Vercel, nunca en el repositorio. Las tablas las crea el backend al desplegar (las migraciones corren en el build).
 
-### 2. Backend en Vercel
+### 2. El proyecto único en Vercel
 
-1. En Vercel, con el mismo repositorio `vbgjptt89g-beep/wiki-en-equipo`, pulsa **Add New → Project** e importa de nuevo el repositorio.
+1. En Vercel, con el repositorio `vbgjptt89g-beep/wiki-en-equipo`, pulsa **Add New → Project** e importa el repositorio.
 2. Configura el proyecto:
-   - **Project Name:** `wiki-en-equipo-backend`
-   - **Root Directory:** `backend`
-   - **Framework Preset:** Express (lo detecta por `backend/vercel.json`)
-   - **Branch:** `main`
-   - **Build & Output Settings:** sin cambios: usa `backend/vercel.json`.
-3. En **Settings → Environment Variables**, en **Production**, define las de la tabla de arriba.
-4. **Deploy**. En los registros del build deben aparecer las migraciones aplicadas; en los *Runtime Logs*, `Wiki en equipo API escuchando…`.
-5. Abre `/health` en la dirección del proyecto (`https://wiki-en-equipo-backend.vercel.app/health`). Debe responder `{"status":"ok"}`.
+   - **Project Name:** `wiki-grupo-comidas`
+   - **Root Directory:** la raíz del repositorio (déjala vacía).
+   - **Framework Preset:** **Services** (el proyecto define los servicios en el `vercel.json` de la raíz).
+   - **Branch:** `main`.
+3. En **Settings → Environment Variables**, en **Production** (y **Preview** si quieres vistas previas completas), define las de las dos tablas de arriba.
+4. **Deploy**. En los registros del build del servicio `api` deben aparecer las migraciones aplicadas (`La base ya tenía todas las migraciones.`); en los *Runtime Logs*, `Wiki en equipo API escuchando…`.
+5. Abre `/health` en la dirección de producción (`https://wiki-grupo-comidas.vercel.app/health`). Debe responder `{"status":"ok"}`.
 
 > **Nota (cuenta usada):** el proyecto está en la cuenta de Vercel `carlosmendozazelaya2009-7802`, conectado a la copia `carlos388mendoza/wiki-en-equipo` (ver "Cómo se publica").
->
-> **Deployment Protection** debe quedar **desactivada** en este proyecto (`Settings → Deployment Protection`): si está activa, el frontend no puede llamar al backend.
 
-### 3. Frontend en Vercel
+**Servicio `api` — detalles que hacen falta para que arranque dentro del proyecto:**
 
-En *Settings → Environment Variables*, en **Production**, define estas variables y vuelve a desplegar:
+- La entrada es **`backend/src/app.mjs`** (siempre se carga como módulo ESM). La app real (`export default app`) vive en
+  `backend/src/http-app.ts` y se **empaqueta con esbuild** en `src/bundle.mjs` durante `pnpm run vercel-build`.
+- `backend/pnpm-workspace.yaml` lleva **`nodeLinker: hoisted`** para que `node_modules` se copie entero a la función.
+- `helmet` se importa de forma **estática** (antes con `createRequire` el empaquetador no lo veía).
+- El **middleware de Next va en runtime Node** (`frontend/middleware.ts`, `runtime: "nodejs"`): Services no admite Edge.
 
-- `BACKEND_URL=https://wiki-en-equipo-backend.vercel.app` (solo la usa el servidor de Next; el navegador nunca llama directo al backend)
-- `NEXT_PUBLIC_COLLAB_URL=https://wiki-en-equipo-backend.vercel.app/api/collab` (edición en vivo por consultas periódicas por HTTP)
-- `NEXT_PUBLIC_MAX_UPLOAD_MB=20`: las subidas pasan por el servidor de Next; los archivos de más de 3 MB se parten en el navegador y se reenvían al backend en partes de 3 MB (una función de Vercel no acepta más de 4,5 MB por petición).
-- `PROXY_SECRET`: el mismo valor que en el backend; el servidor de Next firma con él la IP real del login.
+### 3. Comprobar la web
 
-`NEXT_PUBLIC_REALTIME_URL` **ya no hace falta** en producción: el canal de avisos por WebSocket `/realtime` es para local. Si `NEXT_PUBLIC_COLLAB_URL` usa `https://…`, la edición en vivo va por HTTP y no se abre ningún WebSocket.
-
-Las variables `NEXT_PUBLIC_*` quedan dentro del código del navegador, así que hay que volver a desplegar después de cambiarlas.
+Entra a `https://wiki-grupo-comidas.vercel.app` e inicia sesión. La web y la API comparten dominio, así que no hay que
+configurar CORS entre proyectos distintos.
 
 ### Copias de seguridad
 
@@ -241,7 +256,7 @@ La forma recomendada en Windows es el script [`scripts/crear-usuarios.ps1`](scri
 1. **Si la base de producción todavía no tiene usuarios**, crea el administrador una sola vez (pide `BOOTSTRAP_SECRET` a quien configuró el backend):
 
    ```bash
-   curl -X POST https://<tu-backend>.vercel.app/api/auth/bootstrap -H "Content-Type: application/json" -d '{"name":"Administrador","email":"adminwiki@grupocomidas.com","password":"12345abc","departmentName":"Tecnología","secret":"<BOOTSTRAP_SECRET>"}'
+   curl -X POST https://wiki-grupo-comidas.vercel.app/api/auth/bootstrap -H "Content-Type: application/json" -d '{"name":"Administrador","email":"adminwiki@grupocomidas.com","password":"12345abc","departmentName":"Tecnología","secret":"<BOOTSTRAP_SECRET>"}'
    ```
 
    Si responde 409, la base ya tiene usuarios: no pasa nada, sigue con el paso 2.
