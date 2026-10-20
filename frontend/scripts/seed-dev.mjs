@@ -163,7 +163,7 @@ async function main() {
 
   const cierre = await page("contabilidad", {
     title: "Cierre contable mensual", visibility: "DEPARTMENT", tags: ["procesos", "finanzas"],
-    background: { type: "image", url: "https://images.unsplash.com/photo-1554224155-6726b3ff858f", credit: "Unsplash", icon: "📅" },
+    background: { type: "image", url: "https://images.unsplash.com/photo-1554224155-6726b3ff858f", icon: "📅" },
     content: [p("Calendario y responsables del cierre de cada mes.")],
   });
   await page("contabilidad", {

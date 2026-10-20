@@ -29,7 +29,7 @@ const table = (columns: string[], rows: string[][]): WikiBlock => ({ id: id("t")
 const quote = (text: string): WikiBlock => ({ id: id("q"), type: "quote", data: { text } });
 const divider = (): WikiBlock => ({ id: id("d"), type: "divider", data: {} });
 const image = (photo: string, alt: string, caption: string): WikiBlock => ({ id: id("i"), type: "image", data: { url: `https://images.unsplash.com/photo-${photo}`, alt, caption } });
-const photoBg = (photo: string, icon: string): StoredAppearance => ({ type: "image", url: `https://images.unsplash.com/photo-${photo}`, credit: "Unsplash", creditUrl: "https://unsplash.com/?utm_source=wiki_grupo_comidas&utm_medium=referral", icon });
+const photoBg = (photo: string, icon: string): StoredAppearance => ({ type: "image", url: `https://images.unsplash.com/photo-${photo}`, icon });
 
 export const DEFAULT_TEMPLATES: DefaultTemplate[] = [
   {

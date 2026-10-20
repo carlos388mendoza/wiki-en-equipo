@@ -42,7 +42,7 @@ No corras `npm run build` con `npm run dev` abierto: ambos usan `.next`.
 
 ## Variables (`.env.local`)
 
-`BACKEND_URL`, `NEXT_PUBLIC_COLLAB_URL`, `NEXT_PUBLIC_MAX_UPLOAD_MB`, `NEXT_PUBLIC_TRASH_RETENTION_DAYS`, `UNSPLASH_ACCESS_KEY`, `NEXT_PUBLIC_ENABLE_SW`, `PROXY_SECRET` (producción). Detalle en [.env.example](.env.example).
+`BACKEND_URL`, `NEXT_PUBLIC_COLLAB_URL`, `NEXT_PUBLIC_MAX_UPLOAD_MB`, `NEXT_PUBLIC_TRASH_RETENTION_DAYS`, `NEXT_PUBLIC_ENABLE_SW`, `PROXY_SECRET` (producción). Detalle en [.env.example](.env.example).
 
 ## Estructura
 
@@ -51,7 +51,6 @@ No corras `npm run build` con `npm run dev` abierto: ambos usan `.next`.
       share/[token]                Aceptar enlaces compartidos
       sin-conexion/                Borradores sin conexión (funciona sin internet)
       archivos/                    Subir (POST) y ver (GET /archivos/:id) archivos con la sesión
-      fondos/buscar                Búsqueda opcional en Unsplash
       actions/                     Server actions: sesión, compartir, páginas/plantillas, administración, sincronización
       (wiki)/                      Pantallas con sesión: muros, páginas (ver, editar, historial), buscar,
                                    plantillas, papelera, administración
