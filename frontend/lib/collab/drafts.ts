@@ -2,6 +2,7 @@
 
 import * as Y from "yjs";
 import { IndexeddbPersistence } from "y-indexeddb";
+import type { Background } from "../types";
 
 /**
  * Borradores creados sin conexión. Viven en IndexedDB (y-indexeddb) de este
@@ -9,7 +10,11 @@ import { IndexeddbPersistence } from "y-indexeddb";
  *   wiki-borradores-<usuario>           índice (id → título, fecha)
  *   wiki-borrador-<usuario>-<id>        contenido de cada borrador (Yjs)
  */
-export type DraftInfo = { id: string; title: string; updatedAt: string };
+export type DraftInfo = {
+  id: string; title: string; updatedAt: string;
+  /** Apariencia del borrador, como en el editor con internet (#42). `icon` sin definir: el de siempre (📝). */
+  icon?: string | null; background?: Background | null; tags?: string[];
+};
 
 const LAST_USER_KEY = "wiki-ultimo-usuario";
 
