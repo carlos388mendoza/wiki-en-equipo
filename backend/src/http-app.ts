@@ -1,9 +1,9 @@
 import { timingSafeEqual } from "node:crypto";
-import { createRequire } from "node:module";
 import type { Server } from "node:http";
 import { isIP } from "node:net";
 import express, { type ErrorRequestHandler, type RequestHandler } from "express";
 import cors from "cors";
+import helmet from "helmet";
 import { Prisma } from "@prisma/client";
 import { ZodError } from "zod";
 import { makeRouter } from "./routes.js";
@@ -13,12 +13,12 @@ import { HttpError } from "../services/errors.js";
 import { purgeStaleUploads } from "../services/file-service.js";
 import { purgeExpiredTrash } from "../services/page-service.js";
 
-// `helmet` solo publica tipos CommonJS (`index.d.cts`). Con la resolución de módulos que usa el
-// compilador de funciones de Vercel, ni la importación por defecto ni `namespace.default` son
-// invocables. Se carga con `createRequire` para que funcione con cualquier configuración de módulos.
-const nodeRequire = createRequire(import.meta.url);
+// `helmet` solo publica tipos CommonJS (`index.d.cts`), así que su importación por defecto se tipa a
+// mano. El despliegue empaqueta la app con esbuild (ver "vercel-build"), que resuelve esa conversión;
+// por eso ya no hace falta cargarlo con `createRequire` (además, así el empaquetador ve la dependencia
+// y la incluye en la función; con una carga dinámica no la veía y fallaba con "Cannot find module").
 type HelmetOptions = { crossOriginResourcePolicy?: { policy?: string } } & Record<string, unknown>;
-const helmet = nodeRequire("helmet") as (options?: HelmetOptions) => RequestHandler;
+const helmetOptions = helmet as unknown as (options?: HelmetOptions) => RequestHandler;
 
 /**
  * Qué proxies pueden informar la IP real en `X-Forwarded-For` (el login pasa por el servidor de Next).
@@ -38,7 +38,7 @@ export const app = express();
 
 app.disable("x-powered-by");
 app.set("trust proxy", trustProxySetting(process.env.TRUST_PROXY));
-app.use(helmet({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
+app.use(helmetOptions({ crossOriginResourcePolicy: { policy: "cross-origin" } }));
 // maxAge: el navegador guarda 2 h la respuesta a la comprobación previa (OPTIONS) de la edición en vivo por HTTP,
 // en lugar de repetirla en cada consulta (en Vercel cada petición cuenta como invocación). Los orígenes son los
 // mismos que acepta la edición en vivo: FRONTEND_ORIGIN y COLLAB_ALLOWED_ORIGINS.
@@ -57,6 +57,9 @@ app.use((req, _res, next) => {
 // 4 MB: los cambios de la edición en vivo van en base64 (Vercel no acepta cuerpos de más de 4,5 MB).
 app.use(express.json({ limit: "4mb", strict: true }));
 app.get("/health", (_req, res) => res.json({ status: "ok" }));
+// En el proyecto único de Vercel el servicio "api" se monta bajo /api (ver vercel.json de la raíz), así que
+// la comprobación de salud también responde en /api/health.
+app.get("/api/health", (_req, res) => res.json({ status: "ok" }));
 // Retención de la papelera en Vercel (no hay un proceso siempre encendido): Vercel Cron llama una vez al día
 // con Authorization: Bearer CRON_SECRET. Sin CRON_SECRET la ruta no existe.
 app.get("/api/cron/papelera", async (req, res, next) => {

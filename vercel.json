@@ -1,0 +1,31 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "services": {
+    "web": {
+      "root": "frontend/"
+    },
+    "api": {
+      "root": "backend/",
+      "entrypoint": "src/app.mjs",
+      "installCommand": "corepack pnpm install --frozen-lockfile",
+      "buildCommand": "pnpm run vercel-build"
+    }
+  },
+  "rewrites": [
+    { "source": "/api/(.*)", "destination": { "service": "api" } },
+    { "source": "/health", "destination": { "service": "api" } },
+    { "source": "/(.*)", "destination": { "service": "web" } }
+  ],
+  "crons": [
+    {
+      "path": "/api/cron/papelera",
+      "schedule": "0 9 * * *"
+    }
+  ],
+  "git": {
+    "deploymentEnabled": {
+      "**": false,
+      "main": true
+    }
+  }
+}

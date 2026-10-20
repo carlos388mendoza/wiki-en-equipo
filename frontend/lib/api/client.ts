@@ -2,8 +2,18 @@ import "server-only";
 import { cookies } from "next/headers";
 import type { ApiError, ApiResult } from "../types";
 
-/** URL del backend, solo del lado del servidor. */
-export const BACKEND_URL = (process.env.BACKEND_URL ?? "http://localhost:4000").replace(/\/$/, "");
+/**
+ * URL del backend, solo del lado del servidor.
+ * En el esquema de un solo proyecto (Vercel Services, ver `vercel.json` de la raíz) el backend vive en el mismo
+ * dominio, bajo `/api/*`. Si no hay `BACKEND_URL`, se usa el propio dominio del despliegue; en local, el puerto 4000.
+ */
+function defaultBackendUrl() {
+  // VERCEL_PROJECT_PRODUCTION_URL es el dominio bonito de producción; VERCEL_URL, el del despliegue actual.
+  const sameOrigin = process.env.VERCEL_PROJECT_PRODUCTION_URL ?? process.env.VERCEL_URL;
+  if (process.env.NODE_ENV === "production" && sameOrigin) return `https://${sameOrigin}`;
+  return "http://localhost:4000";
+}
+export const BACKEND_URL = (process.env.BACKEND_URL ?? defaultBackendUrl()).replace(/\/$/, "");
 export const SESSION_COOKIE = "wiki_token";
 
 export async function getToken(): Promise<string | undefined> {
