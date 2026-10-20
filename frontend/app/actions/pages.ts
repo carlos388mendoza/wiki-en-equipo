@@ -127,17 +127,21 @@ export async function deleteTemplate(id: string): Promise<ActionResult> {
   return { ok: true, data: undefined };
 }
 
-/** Instala (o completa) las plantillas por defecto de Grupo Comidas. Solo administradores. */
-export async function installDefaultTemplates(): Promise<ActionResult<{ created: number }>> {
+/**
+ * Instala (o completa) las plantillas por defecto de Grupo Comidas. Solo administradores. Crea las que faltan y pone
+ * la foto de portada a las por defecto ya instaladas que no la tienen (ver lib/default-templates-plan.ts). No borra
+ * ni cambia el contenido de ninguna plantilla.
+ */
+export async function installDefaultTemplates(): Promise<ActionResult<{ created: number; updated: number }>> {
   const user = await requireUser();
   if (user.role !== "ADMIN") return { ok: false, message: "Solo un administrador puede instalar las plantillas de Grupo Comidas." };
   const { DEFAULT_TEMPLATES } = await import("@/lib/default-templates");
+  const { defaultTemplatesPlan } = await import("@/lib/default-templates-plan");
   const existing = await listTemplates(user);
   if (!existing.ok) return { ok: false, message: existing.message };
-  const titles = new Set(existing.data.filter((t) => t.scope === "COMPANY").map((t) => t.title));
+  const { toCreate, toUpdateCover } = defaultTemplatesPlan(existing.data, DEFAULT_TEMPLATES);
   let created = 0;
-  for (const t of DEFAULT_TEMPLATES) {
-    if (titles.has(t.title)) continue;
+  for (const t of toCreate) {
     const { background, icon } = splitAppearance(t.background);
     const res = await backend<{ template: { id: string } }>("/templates", { method: "POST", body: { title: t.title, description: t.description, scope: "COMPANY", content: t.content, background, icon } });
     if (!res.ok) return { ok: false, message: res.message };
@@ -145,6 +149,13 @@ export async function installDefaultTemplates(): Promise<ActionResult<{ created:
     if (!marked.ok) return { ok: false, message: marked.message };
     created++;
   }
+  let updated = 0;
+  for (const { id, template, setIcon } of toUpdateCover) {
+    const { background, icon } = splitAppearance(template.background);
+    const res = await backend(`/templates/${id}`, { method: "PATCH", body: { background, ...(setIcon && icon && { icon }) } });
+    if (!res.ok) return { ok: false, message: res.message };
+    updated++;
+  }
   revalidatePath("/plantillas");
-  return { ok: true, data: { created } };
+  return { ok: true, data: { created, updated } };
 }

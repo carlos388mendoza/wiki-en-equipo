@@ -29,10 +29,14 @@ export default async function CompanyWall() {
       <header className={`relative mb-10 overflow-hidden rounded-2xl px-6 py-10 sm:px-10 ${hasCustomHero ? "text-ink" : "bg-brand text-white"}`}>
         {hasCustomHero && <PageBackground background={wall.wall!.background} className="absolute inset-0" priority />}
         {hasCustomHero && <div aria-hidden className="absolute inset-0 bg-gradient-to-r from-surface/90 to-surface/40" />}
-        <div aria-hidden className="pointer-events-none absolute -right-4 -top-6 select-none text-[9rem] leading-none opacity-20 sm:text-[12rem]">
-          <PageIcon icon={wall.wall?.icon} fallback={BRAND_ICON} size={150} />
+        {/* El logo (o el icono del muro) va dentro del recuadro, con espacio alrededor: arriba en el celular y a la
+            derecha, centrado en altura, desde tableta. Antes era una marca de agua cortada por la orilla. */}
+        <div className="relative flex flex-col gap-5 sm:flex-row sm:items-center sm:gap-8">
+        <div aria-hidden className="shrink-0 drop-shadow-md sm:order-last sm:ml-auto">
+          <span className="block sm:hidden"><PageIcon icon={wall.wall?.icon} fallback={BRAND_ICON} size={72} /></span>
+          <span className="hidden sm:block"><PageIcon icon={wall.wall?.icon} fallback={BRAND_ICON} size={136} /></span>
         </div>
-        <div className="relative">
+        <div className="min-w-0 flex-1">
           <p className={hasCustomHero ? "text-muted" : "text-white/80"}>Hola, {firstName}</p>
           <h1 className="mt-1 max-w-xl font-display text-4xl font-bold leading-tight sm:text-5xl">
             {wall.wall?.title ?? "Lo que todo el grupo necesita saber"}
@@ -48,6 +52,7 @@ export default async function CompanyWall() {
               Abrir la página del muro <ArrowRight size={14} aria-hidden />
             </Link>
           )}
+        </div>
         </div>
       </header>
 
