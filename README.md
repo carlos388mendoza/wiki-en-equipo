@@ -121,10 +121,12 @@ El proyecto de Vercel está en la cuenta `carlosmendozazelaya2009-7802` y conect
 de GitHub de Vercel solo puede instalarla el dueño de cada cuenta, y está instalada en la de la copia.
 
 1. Se une un PR a `main` de este repositorio.
-2. En la copia, el flujo [`.github/workflows/sincronizar-copia.yml`](.github/workflows/sincronizar-copia.yml) corre cada
-   5 minutos y adelanta su `main` (el botón "Sync fork" de GitHub; nunca fuerza). En este repositorio el flujo no hace nada.
-3. Ese avance hace que Vercel publique **la web y la API** en producción (se probó el 20/10/2026 con un PR de solo documentación). En total, entre 5 y 15 minutos
-   después de unir (GitHub a veces retrasa los flujos programados).
+2. En la copia, el flujo [`.github/workflows/sincronizar-copia.yml`](.github/workflows/sincronizar-copia.yml) adelanta su
+   `main` (el botón "Sync fork" de GitHub; nunca fuerza). En este repositorio el flujo no hace nada.
+   **Por ahora hay que correrlo a mano** después de unir: su horario de cada 5 minutos nunca se ha disparado (al
+   20/10/2026). En la copia: **Actions → Sincronizar la copia que publica Vercel → Run workflow**, o
+   `gh workflow run sincronizar-copia.yml -R carlos388mendoza/wiki-en-equipo`.
+3. Ese avance hace que Vercel publique **la web y la API** en producción, en alrededor de un minuto.
 
 Detalles:
 - Solo `main` publica: `git.deploymentEnabled` en el `vercel.json` de la raíz. Las vistas previas de la API tienen las
