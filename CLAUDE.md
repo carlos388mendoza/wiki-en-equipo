@@ -60,8 +60,10 @@ En `main`: los PR #1, #2, #15 a #23 y el #24 (frontend publicable desde la raíz
 - **Retención de la papelera:** Vercel Cron llama una vez al día a `/api/cron/papelera` con `CRON_SECRET`.
 - El frontend tiene `maxDuration = 60` (layout raíz y `/archivos`) para esperar al backend mientras arranca.
 - Inicio de sesión: fondo blanco cálido (`paper`) y tarjeta blanca pura con borde y sombra, sin rojo ni la curva amarilla (decisión del equipo).
+- **Plantillas por defecto:** 16 en `frontend/lib/default-templates.ts`, todas con foto de portada (Unsplash) e icono. En `/plantillas`, un ADMIN ve el aviso y el botón "Instalar plantillas de Grupo Comidas" (`installDefaultTemplates` en `app/actions/pages.ts`, plan en `lib/default-templates-plan.ts`): crea las que faltan por título (alcance empresa) y pone la portada a las por defecto ya instaladas sin foto. Nunca borra ni cambia contenido. En producción hay que presionarlo como Administrador (Claude no inicia sesión ahí).
+- **Editor:** el botón "Agregar fondo" lleva `z-10` y el selector de icono `w-fit` (antes lo tapaba en ventanas medianas); en pantallas táctiles siempre se ve.
 
-Pruebas: backend 171 (`cd backend && corepack pnpm test`), las mismas con el adaptador de Turso (`corepack pnpm run test:turso`), y frontend 75+, de ellas las de integración contra el backend con el seed (`cd frontend && npm test`). `tests/backend/despliegue.test.ts` vigila `backend/vercel.json`. Los dos builds compilan. `npm audit` y `pnpm audit`: 0 vulnerabilidades.
+Pruebas: backend 171 (`cd backend && corepack pnpm test`), las mismas con el adaptador de Turso (`corepack pnpm run test:turso`), y frontend 88, de ellas las de integración contra el backend con el seed (`cd frontend && npm test`). `tests/backend/despliegue.test.ts` vigila `backend/vercel.json`. Los dos builds compilan. `npm audit` y `pnpm audit`: 0 vulnerabilidades.
 
 **Producción:** frontend https://wiki-grupo-comidas.vercel.app → backend https://wiki-en-equipo-backend.vercel.app → Turso (`wiki-en-equipo`). Los 4 usuarios están creados (`scripts/crear-usuarios.ps1`). Verificado el 19/10/2026: `/health`, CORS para el origen nuevo y que el servidor del frontend consulta al backend (`/api/auth/me` en los registros). **Nunca reiniciar la base de producción ni correr `npm run seed` contra ella.**
 

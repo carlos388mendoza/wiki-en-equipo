@@ -122,7 +122,7 @@ export function InstallDefaultsButton() {
     <div className="flex flex-col gap-2">
       <button type="button" disabled={pending} onClick={() => start(async () => {
         const res = await installDefaultTemplates();
-        setMessage(res.ok ? { ok: true, text: res.data.created ? `Se instalaron ${res.data.created} plantillas.` : "Ya estaban todas instaladas." } : { ok: false, text: res.message });
+        setMessage(res.ok ? { ok: true, text: res.data.created || res.data.updated ? [res.data.created && `Se instalaron ${res.data.created} plantillas.`, res.data.updated && `Se puso foto de portada a ${res.data.updated}.`].filter(Boolean).join(" ") : "Ya estaban todas instaladas." } : { ok: false, text: res.message });
         router.refresh();
       })} className="inline-flex items-center gap-2 self-start rounded-lg border border-sun bg-sun-soft px-3 py-2 text-sm font-medium text-ink hover:bg-sun hover:text-ink disabled:opacity-60">
         {pending ? <LoaderCircle size={14} className="animate-spin" aria-hidden /> : <Sparkles size={14} aria-hidden />} Instalar plantillas de Grupo Comidas
