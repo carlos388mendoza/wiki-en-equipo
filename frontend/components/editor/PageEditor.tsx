@@ -467,13 +467,16 @@ export function PageEditor({ mode, id, initial, pages, tagSuggestions, viewer, b
 
       <div className="group relative">
         <PageBackground background={background} seed={id} className="h-40 sm:h-52" />
-        <button type="button" onClick={() => setBgOpen(true)} className="absolute bottom-3 right-3 inline-flex items-center gap-1.5 rounded-lg bg-surface/90 px-3 py-1.5 text-sm font-medium shadow hover:bg-surface sm:opacity-0 sm:group-hover:opacity-100 sm:focus:opacity-100">
+        {/* z-10: el icono de la página sube sobre la portada y no debe tapar el botón. Solo se oculta (hasta pasar el
+            ratón) en equipos con ratón; en pantallas táctiles siempre se ve. */}
+        <button type="button" onClick={() => setBgOpen(true)} className="absolute bottom-3 right-3 z-10 inline-flex items-center gap-1.5 rounded-lg bg-surface/90 px-3 py-1.5 text-sm font-medium shadow hover:bg-surface focus-visible:opacity-100 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100">
           <ImageIcon size={14} aria-hidden /> {background ? "Cambiar fondo" : "Agregar fondo"}
         </button>
       </div>
 
       <div className="mx-auto max-w-3xl px-4 sm:px-8">
-        <div className="-mt-10"><IconPicker value={icon} onChange={setIcon} /></div>
+        {/* w-fit: el selector de icono solo ocupa el ancho del icono (antes cubría toda la franja inferior de la portada). */}
+        <div className="relative -mt-10 w-fit"><IconPicker value={icon} onChange={setIcon} /></div>
 
         <label className="sr-only" htmlFor="titulo">Título</label>
         <textarea
