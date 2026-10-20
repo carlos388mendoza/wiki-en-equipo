@@ -89,7 +89,7 @@ export default async function HistoryPage({ params, searchParams }: { params: Pr
             </div>
             <PageBackground background={selected.snapshot.background} seed={page.id} className="h-24" sizes="800px" />
             <div className="px-5 pb-8 sm:px-8">
-              <PageIcon icon={selected.snapshot.icon} size={48} className="-mt-6" />
+              <PageIcon icon={selected.snapshot.icon} size={48} className="relative -mt-6" />
               <h2 className="mt-2 font-display text-3xl font-bold">{selected.snapshot.title}</h2>
               <div className="mt-2 flex flex-wrap items-center gap-2 text-sm text-muted">
                 <VisibilityBadge visibility={selected.snapshot.visibility} />
