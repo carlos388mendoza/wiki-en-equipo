@@ -21,7 +21,8 @@ export default async function WikiLayout({ children }: { children: React.ReactNo
   return (
     <div className="lg:flex">
       <Sidebar user={user} sections={sections} />
-      <main className="min-w-0 flex-1">
+      {/* pb: espacio para la barra de navegación del celular (está fija abajo). */}
+      <main className="min-w-0 flex-1 pb-[calc(4rem+env(safe-area-inset-bottom))] lg:pb-0">
         <OfflineBanner user={{ id: user.id, name: user.name }} />
         {children}
       </main>
