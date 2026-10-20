@@ -17,6 +17,9 @@ export default defineConfig({
       "fake-indexeddb/auto": here("./node_modules/fake-indexeddb/auto/index.mjs"),
       "y-indexeddb": here("./node_modules/y-indexeddb"),
       yjs: here("./node_modules/yjs"),
+      "y-prosemirror": here("./node_modules/y-prosemirror"),
+      "prosemirror-model": here("./node_modules/prosemirror-model"),
+      "prosemirror-state": here("./node_modules/prosemirror-state"),
       // Pruebas que dibujan componentes (renderToStaticMarkup).
       "react-dom": here("./node_modules/react-dom"),
       react: here("./node_modules/react"),

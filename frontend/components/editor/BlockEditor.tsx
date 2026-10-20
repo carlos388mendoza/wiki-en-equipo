@@ -15,6 +15,7 @@ import {
 } from "@blocknote/react";
 import { FilePlus2, FileText, LayoutTemplate, Link2, Megaphone, PlayCircle } from "lucide-react";
 import type { WikiBlock } from "@/lib/blocks";
+import { deleteWholeBlocksOnKey, removeLeftoverAfterCut } from "@/lib/editor/block-selection";
 import { blockNoteToWiki, trimTrailingEmpty, wikiToBlockNote, type BNBlock } from "@/lib/editor/convert";
 import type { PageSummary } from "@/lib/types";
 import { wikiSchema, type WikiEditor } from "./schema";
@@ -130,6 +131,9 @@ export default function BlockEditor({ initialBlocks, onChange, pages, uploadFile
       theme="light"
       slashMenu={false}
       className="wiki-editor"
+      // Varios bloques completos seleccionados: borrar o cortar quita los bloques, sin dejar un párrafo vacío (#34).
+      onKeyDownCapture={(event) => deleteWholeBlocksOnKey(editor as never, event)}
+      onCutCapture={() => removeLeftoverAfterCut(editor as never)}
       onChange={() => onChange(trimTrailingEmpty(blockNoteToWiki(editor.document as BNBlock[])))}
     >
       <SuggestionMenuController

@@ -13,6 +13,7 @@ import { usePageDraft, type PageDraftState } from "@/lib/collab/usePageDraft";
 import { applyBlocks } from "@/lib/editor/apply";
 import { blockNoteToWiki, trimTrailingEmpty, wikiToBlockNote, type BNBlock } from "@/lib/editor/convert";
 import { mergePages, type MergeResult, type PageState } from "@/lib/editor/merge";
+import { forgetUndoHistory, keepUndoWorking } from "@/lib/editor/undo";
 import { conflictRetryDelay } from "@/lib/editor/retry";
 import type { Background, PageSummary, TemplateScope, User } from "@/lib/types";
 import { allowedList, MAX_UPLOAD_MB, uploadToWiki } from "@/lib/uploads";
@@ -309,6 +310,7 @@ export function PageEditor({ mode, id, initial, pages, tagSuggestions, viewer, b
   /* ---------- Al abrir: recuperar la copia local (IndexedDB por usuario) ---------- */
 
   const onEditorReady = (editor: WikiEditor) => {
+    keepUndoWorking(editor); // Ctrl+Z / Ctrl+Y con la edición en vivo (#34)
     if (!isPage || initDone.current || !draftStore.ready) return;
     initDone.current = true;
     const server: PageState = { title: initial.title, blocks: initial.blocks, background: initial.background, icon: initial.icon, tags: initial.tags };
@@ -319,6 +321,8 @@ export function PageEditor({ mode, id, initial, pages, tagSuggestions, viewer, b
       // Primera vez en este dispositivo. Si nadie más llenó el documento compartido, se carga el del servidor.
       if (editorBlocks.length === 0) {
         editor.replaceBlocks(editor.document, wikiToBlockNote(initial.blocks) as never);
+        // La carga no es un cambio de la persona: si quedara en el historial, Ctrl+Z vaciaría la página (#34).
+        forgetUndoHistory(editor);
         lastBlocks.current = JSON.stringify(initial.blocks);
         blocksRef.current = initial.blocks;
       } else {
