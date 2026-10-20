@@ -4,6 +4,7 @@ import { TemplateCard } from "@/components/templates/TemplateCard";
 import { StatusScreen } from "@/components/ui/StatusScreen";
 import { listTemplates } from "@/lib/api";
 import { DEFAULT_TEMPLATES } from "@/lib/default-templates";
+import { defaultTemplatesPlan } from "@/lib/default-templates-plan";
 import { requireUser } from "@/lib/session";
 import type { TemplateSummary } from "@/lib/types";
 
@@ -28,8 +29,9 @@ export default async function TemplatesPage({ searchParams }: { searchParams: Pr
       ? [{ key: "private", title: "Privadas de otras personas", help: "Visibles solo para administradores.", items: templates.filter((t) => !t.isDefault && t.ownerId !== user.id && !sharedWithMe(t) && t.scope === "PRIVATE") }]
       : []),
   ];
-  const installedTitles = new Set(templates.filter((t) => t.scope === "COMPANY").map((t) => t.title));
-  const missingDefaults = DEFAULT_TEMPLATES.filter((t) => !installedTitles.has(t.title)).length;
+  const plan = defaultTemplatesPlan(templates, DEFAULT_TEMPLATES);
+  const missingDefaults = plan.toCreate.length;
+  const missingCovers = plan.toUpdateCover.length;
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-8">
@@ -49,10 +51,13 @@ export default async function TemplatesPage({ searchParams }: { searchParams: Pr
         </p>
       )}
 
-      {user.role === "ADMIN" && missingDefaults > 0 && (
+      {user.role === "ADMIN" && (missingDefaults > 0 || missingCovers > 0) && (
         <div className="mt-6 rounded-xl border border-sun/40 bg-sun-soft/60 p-4">
           <p className="mb-3 text-sm">
-            Hay {missingDefaults} plantillas de Grupo Comidas sin instalar (documentación, bienvenida, inicio de departamento, recetas, actas y más).
+            {[
+              missingDefaults > 0 && `Hay ${missingDefaults} ${missingDefaults === 1 ? "plantilla" : "plantillas"} de Grupo Comidas sin instalar (manual de puesto, onboarding, reporte de incidente, inventario, capacitación y más).`,
+              missingCovers > 0 && `${missingCovers === 1 ? "Una plantilla ya instalada no tiene" : `${missingCovers} plantillas ya instaladas no tienen`} foto de portada.`,
+            ].filter(Boolean).join(" ")} No se borra ni se cambia el contenido de ninguna plantilla.
           </p>
           <InstallDefaultsButton />
         </div>
