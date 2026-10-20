@@ -11,7 +11,7 @@ const accessInclude = { shares: { select: { userId: true, permission: true } }, 
 const snapshot = (page: Page & { tags?: { name: string }[] }) => JSON.stringify({ title: page.title, icon: page.icon, contentJson: page.contentJson, backgroundJson: page.backgroundJson, visibility: page.visibility, parentId: page.parentId, tags: page.tags?.map((tag) => tag.name) ?? [] });
 
 /** Campos de las páginas en listados (barra lateral, tarjetas, destacadas, más visitadas, búsqueda). */
-export const pageCardSelect = { id: true, title: true, icon: true, backgroundJson: true, visibility: true, version: true, ownerId: true, owner: { select: { id: true, name: true } }, departmentId: true, parentId: true, updatedAt: true, tags: { select: { name: true } } } satisfies Prisma.PageSelect;
+export const pageCardSelect = { id: true, title: true, icon: true, backgroundJson: true, visibility: true, version: true, ownerId: true, owner: { select: { id: true, name: true } }, departmentId: true, parentId: true, updatedAt: true, archivedAt: true, isWall: true, isCompanyWall: true, tags: { select: { name: true } } } satisfies Prisma.PageSelect;
 
 /** Relación directa con la página: dueño o permiso compartido. `null` si se ve por estar publicada o por ser administrador. */
 export type MyPermission = "OWNER" | "EDIT" | "READ" | null;
@@ -112,9 +112,13 @@ export async function recordVisit(actor: Actor, id: string) {
  * Páginas que la persona puede ver (hasta 100 más recientes). Con `ids` devuelve exactamente esas páginas
  * (hasta 100), estén o no entre las recientes: sirve para mostrar subpáginas y menciones del contenido.
  */
-export async function listAccessiblePages(actor: Actor, query: { q?: string; tag?: string; departmentId?: string; parentId?: string; cursor?: string; limit?: number; ids?: string[] }) {
+export async function listAccessiblePages(actor: Actor, query: { q?: string; tag?: string; departmentId?: string; parentId?: string; cursor?: string; limit?: number; ids?: string[]; archived?: boolean }) {
   const where: Prisma.PageWhereInput = { deletedAt: null };
   if (query.ids) where.id = { in: query.ids };
+  // Las archivadas no salen en los listados ni en las búsquedas; con `archived` se listan solo ellas, las que la
+  // persona puede desarchivar (las suyas; un ADMIN, todas). Con `ids` (subpáginas y menciones) salen igual.
+  else if (query.archived) { where.archivedAt = { not: null }; if (actor.role !== "ADMIN") where.ownerId = actor.id; }
+  else where.archivedAt = null;
   // Busca en el título y en el texto del contenido; todas las palabras deben aparecer.
   const terms = query.q ? searchTerms(query.q) : [];
   if (terms.length) where.AND = terms.map((term) => ({ searchText: { contains: term } }));
@@ -242,6 +246,43 @@ export async function trashPage(actor: Actor, id: string) {
     await tx.page.updateMany({ where: { id: { in: ids } }, data: { isCompanyWall: false } });
   });
   return { id, deletedAt: deletedAt.toISOString() };
+}
+
+/** Archivar y desarchivar, como la papelera: solo su dueño o un ADMIN. Los muros no se archivan. */
+async function setArchived(actor: Actor, id: string, archived: boolean) {
+  const page = await prisma.page.findFirst({ where: { id, deletedAt: null }, select: { ownerId: true, isWall: true, isCompanyWall: true } });
+  if (!page) throw notFound("No se encontró la página.");
+  if (actor.role !== "ADMIN" && page.ownerId !== actor.id) throw forbidden(`Solo quien creó la página (o un administrador) puede ${archived ? "archivarla" : "desarchivarla"}.`);
+  if (archived && (page.isWall || page.isCompanyWall)) throw badRequest("La página de un muro no se puede archivar.");
+  const archivedAt = archived ? new Date() : null;
+  await prisma.page.update({ where: { id }, data: { archivedAt } });
+  return { id, archivedAt: archivedAt?.toISOString() ?? null };
+}
+export const archivePage = (actor: Actor, id: string) => setArchived(actor, id, true);
+export const unarchivePage = (actor: Actor, id: string) => setArchived(actor, id, false);
+
+/** Anclar es personal: lo puede hacer cualquiera que pueda ver la página. */
+export async function pinPage(actor: Actor, id: string) {
+  const page = await prisma.page.findFirst({ where: { id, deletedAt: null }, include: { shares: { select: { userId: true, permission: true } }, departmentWall: { select: { id: true } } } });
+  if (!page) throw notFound("No se encontró la página.");
+  assertCanReadPage(page as PageAccessRecord, actor);
+  await prisma.pagePin.upsert({ where: { userId_pageId: { userId: actor.id, pageId: id } }, create: { userId: actor.id, pageId: id }, update: {} });
+  return { pageId: id, pinned: true };
+}
+
+export async function unpinPage(actor: Actor, id: string) {
+  await prisma.pagePin.deleteMany({ where: { userId: actor.id, pageId: id } });
+  return { pageId: id, pinned: false };
+}
+
+/** Las ancladas de la persona, en el orden en que las ancló. Sin las de la papelera, las archivadas ni las que ya no puede ver. */
+export async function listPinnedPages(actor: Actor) {
+  const pins = await prisma.pagePin.findMany({
+    where: { userId: actor.id, page: { deletedAt: null, archivedAt: null } }, orderBy: { createdAt: "asc" },
+    select: { page: { select: { ...pageCardSelect, shares: { where: { userId: actor.id }, select: { userId: true, permission: true } } } } },
+  });
+  return pins.map((pin) => pin.page).filter((page) => canReadPage(page as PageAccessRecord, actor))
+    .map((page) => withMyPermission(actor, page));
 }
 
 export async function listTrash(actor: Actor) {
@@ -411,7 +452,7 @@ export async function revokeShareLink(actor: Actor, id: string, linkId: string) 
 }
 
 export async function getMostVisited(actor: Actor, departmentId?: string) {
-  const where: Prisma.PageWhereInput = { deletedAt: null, visibility: { in: ["DEPARTMENT", "COMPANY"] } };
+  const where: Prisma.PageWhereInput = { deletedAt: null, archivedAt: null, visibility: { in: ["DEPARTMENT", "COMPANY"] } };
   if (actor.role !== "ADMIN") where.OR = [{ visibility: "COMPANY" }, { visibility: "DEPARTMENT", departmentId: actor.departmentId }];
   if (departmentId && (actor.role === "ADMIN" || departmentId === actor.departmentId)) where.departmentId = departmentId;
   const pages = await prisma.page.findMany({ where, select: { ...pageCardSelect, ...myShareSelect(actor), _count: { select: { visits: true } } }, orderBy: { visits: { _count: "desc" } }, take: 20 });

@@ -467,10 +467,11 @@ export function PageEditor({ mode, id, initial, pages, tagSuggestions, viewer, b
 
       <div className="group relative">
         <PageBackground background={background} seed={id} className="h-40 sm:h-52" />
-        {/* z-10: el icono de la página sube sobre la portada y no debe tapar el botón. Solo se oculta (hasta pasar el
-            ratón) en equipos con ratón; en pantallas táctiles siempre se ve. */}
-        <button type="button" onClick={() => setBgOpen(true)} className="absolute bottom-3 right-3 z-10 inline-flex items-center gap-1.5 rounded-lg bg-surface/90 px-3 py-1.5 text-sm font-medium shadow hover:bg-surface focus-visible:opacity-100 [@media(hover:hover)]:opacity-0 [@media(hover:hover)]:group-hover:opacity-100">
-          <ImageIcon size={14} aria-hidden /> {background ? "Cambiar fondo" : "Agregar fondo"}
+        {/* z-10: el icono de la página sube sobre la portada y no debe tapar el botón.
+            Con ratón (any-hover) queda oculto hasta pasar por la portada, como antes; sin ratón (celular o tableta)
+            se ve siempre, pero discreto: un círculo pequeño solo con el icono. */}
+        <button type="button" onClick={() => setBgOpen(true)} title={background ? "Cambiar fondo" : "Agregar fondo"} className="absolute bottom-3 right-3 z-10 inline-flex items-center justify-center gap-1.5 rounded-lg bg-surface/90 px-3 py-1.5 text-sm font-medium shadow hover:bg-surface focus-visible:opacity-100 [@media(any-hover:hover)]:opacity-0 [@media(any-hover:hover)]:group-hover:opacity-100 [@media(any-hover:none)]:h-9 [@media(any-hover:none)]:w-9 [@media(any-hover:none)]:rounded-full [@media(any-hover:none)]:bg-surface/75 [@media(any-hover:none)]:p-0">
+          <ImageIcon size={14} aria-hidden /><span className="[@media(any-hover:none)]:sr-only">{background ? "Cambiar fondo" : "Agregar fondo"}</span>
         </button>
       </div>
 

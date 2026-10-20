@@ -10,6 +10,7 @@ import { makeRouter } from "./routes.js";
 import { COLLAB_PATH, CollabServer, collabOptionsFromEnv } from "../realtime/collab.js";
 import { RealtimeHub } from "../realtime/hub.js";
 import { HttpError } from "../services/errors.js";
+import { purgeStaleUploads } from "../services/file-service.js";
 import { purgeExpiredTrash } from "../services/page-service.js";
 
 // `helmet` solo publica tipos CommonJS (`index.d.cts`). Con la resolución de módulos que usa el
@@ -62,7 +63,7 @@ app.get("/api/cron/papelera", async (req, res, next) => {
   const secret = process.env.CRON_SECRET;
   const given = req.header("authorization") ?? "";
   if (!secret || given.length !== secret.length + 7 || !timingSafeEqual(Buffer.from(given), Buffer.from(`Bearer ${secret}`))) return res.status(404).json({ error: { code: "NOT_FOUND", message: "La ruta solicitada no existe." } });
-  try { res.json({ deleted: await purgeExpiredTrash(Number(process.env.TRASH_RETENTION_DAYS ?? 30)) }); } catch (error) { next(error); }
+  try { res.json({ deleted: await purgeExpiredTrash(Number(process.env.TRASH_RETENTION_DAYS ?? 30)), staleUploads: await purgeStaleUploads() }); } catch (error) { next(error); }
 });
 app.use("/api", makeRouter(realtimeHub, collabServer));
 app.use((_req, res) => res.status(404).json({ error: { code: "NOT_FOUND", message: "La ruta solicitada no existe." } }));

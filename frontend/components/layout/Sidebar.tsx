@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useState } from "react";
 import { Building2, ChevronRight, Home, LayoutTemplate, Shield, Menu, Search, Trash2, X } from "lucide-react";
 import { canManageUsers, roleLabel } from "@/lib/permissions";
 import type { PageSummary, SidebarSections, User } from "@/lib/types";
@@ -11,6 +11,10 @@ import { NewPageButton } from "../pages/NewPageDialog";
 import { Avatar } from "../ui/Avatar";
 import { BrandLogo } from "../ui/BrandLogo";
 import { PageIcon } from "../ui/PageIcon";
+import { PageMenu } from "./PageMenu";
+
+/** Quién mira la barra y qué páginas ancló (para el menú ⋯ de cada página). */
+const MenuContext = createContext<{ user: User; pinned: Set<string> } | null>(null);
 
 
 function TreeNode({ page, all, depth }: { page: PageSummary; all: PageSummary[]; depth: number }) {
@@ -19,11 +23,12 @@ function TreeNode({ page, all, depth }: { page: PageSummary; all: PageSummary[];
   const active = pathname === `/paginas/${page.id}`;
   const containsActive = children.some((c) => pathname === `/paginas/${c.id}`);
   const [open, setOpen] = useState(containsActive);
+  const menu = useContext(MenuContext);
 
   return (
     <li>
       <div
-        className={`group flex items-center rounded-md pr-2 text-sm ${active ? "bg-brand-soft font-semibold text-brand-strong" : "hover:bg-line/60"}`}
+        className={`group flex items-center rounded-md pr-1 text-sm ${active ? "bg-brand-soft font-semibold text-brand-strong" : "hover:bg-line/60"}`}
         style={{ paddingLeft: depth * 12 }}
       >
         {children.length > 0 ? (
@@ -43,6 +48,7 @@ function TreeNode({ page, all, depth }: { page: PageSummary; all: PageSummary[];
           <PageIcon icon={page.icon} size={16} />
           <span className="truncate">{page.title}</span>
         </Link>
+        {menu && <PageMenu page={page} user={menu.user} pinned={menu.pinned.has(page.id)} />}
       </div>
       {open && children.length > 0 && (
         <ul>{children.map((c) => <TreeNode key={c.id} page={c} all={all} depth={depth + 1} />)}</ul>
@@ -72,6 +78,7 @@ export function Sidebar({ user, sections }: { user: User; sections: SidebarSecti
   const [mobileOpen, setMobileOpen] = useState(false);
   const pathname = usePathname();
   useEffect(() => setMobileOpen(false), [pathname]);
+  const menu = { user, pinned: new Set(sections.ancladas.map((p) => p.id)) };
 
   const navItem = (href: string, label: string, Icon?: typeof Home) => {
     const active = pathname === href || (href !== "/" && pathname.startsWith(`${href}/`));
@@ -103,6 +110,7 @@ export function Sidebar({ user, sections }: { user: User; sections: SidebarSecti
         {canManageUsers(user) && navItem("/admin", "Administración", Shield)}
       </nav>
 
+      <Section title="Ancladas" pages={sections.ancladas} />
       <Section title="Empresa" pages={sections.empresa} />
       <Section title={department.name} pages={sections.departamento} empty="Tu departamento no ha publicado páginas." />
       <Section title="Compartidas conmigo" pages={sections.compartidas} />
@@ -123,7 +131,7 @@ export function Sidebar({ user, sections }: { user: User; sections: SidebarSecti
   );
 
   return (
-    <>
+    <MenuContext.Provider value={menu}>
       {/* Barra superior en pantallas pequeñas */}
       <header className="sticky top-0 z-30 flex items-center gap-2 border-b border-line bg-paper/95 px-3 py-2 backdrop-blur lg:hidden">
         <button type="button" onClick={() => setMobileOpen(true)} aria-label="Abrir menú" className="grid h-9 w-9 place-items-center rounded-md hover:bg-line/60">
@@ -150,6 +158,6 @@ export function Sidebar({ user, sections }: { user: User; sections: SidebarSecti
           </aside>
         </div>
       )}
-    </>
+    </MenuContext.Provider>
   );
 }

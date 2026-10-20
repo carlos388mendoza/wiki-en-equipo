@@ -8,7 +8,7 @@ describe("límites de subida", () => {
   });
 
   it("rechaza archivos demasiado grandes con un mensaje claro", () => {
-    expect(checkUpload({ name: "video.mp4", type: "video/mp4", size: MAX_UPLOAD_BYTES + 1 })).toMatch(/máximo es 10 MB/);
+    expect(checkUpload({ name: "video.mp4", type: "video/mp4", size: MAX_UPLOAD_BYTES + 1 })).toMatch(/máximo es 20 MB/);
   });
 
   it("rechaza tipos no permitidos y lista los permitidos", () => {

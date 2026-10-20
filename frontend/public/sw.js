@@ -46,8 +46,10 @@ async function networkFirst(request, cacheName, fallbackUrl) {
   const cache = await caches.open(cacheName);
   try {
     const res = await fetch(request);
-    // No se guardan redirecciones (por ejemplo, al inicio de sesión) ni errores.
-    if (res.ok && !res.redirected) cache.put(request, res.clone());
+    // No se guardan redirecciones (por ejemplo, al inicio de sesión), errores ni archivos grandes (hasta 20 MB:
+    // llenarían el espacio del dispositivo; se vuelven a pedir cuando haya conexión).
+    const size = Number(res.headers.get("Content-Length") ?? 0);
+    if (res.ok && !res.redirected && size <= 5 * 1024 * 1024) cache.put(request, res.clone());
     return res;
   } catch {
     const cached = await cache.match(request, { ignoreVary: true });
