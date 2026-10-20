@@ -18,8 +18,9 @@ export function TemplateCard({ template, background, icon, selected, children }:
   return (
     <div className={`relative flex h-full flex-col overflow-hidden rounded-xl border bg-surface ${selected ? "border-brand ring-2 ring-brand" : "border-line"}`}>
       <PageBackground background={background ?? null} seed={template.id} className="h-16" sizes="320px" />
-      <PageIcon icon={icon} size={34} className="absolute left-3 top-[42px] drop-shadow-sm" />
-      <div className="flex flex-1 flex-col gap-1 px-3 pb-3 pt-7">
+      <div className="flex flex-1 flex-col gap-1 px-3 pb-3">
+        {/* El icono va en el flujo: sube sobre la portada, pero el título siempre queda debajo. */}
+        <div className="relative -mt-5 mb-1 flex h-10 shrink-0 items-end"><PageIcon icon={icon} size={34} className="drop-shadow-sm" /></div>
         <p className="font-display font-semibold leading-snug">{template.title}</p>
         {template.description && <p className="line-clamp-2 text-xs text-muted">{template.description}</p>}
         {template.id !== "blank" && <p className="mt-auto flex items-center gap-2 pt-1 text-[11px] text-muted">

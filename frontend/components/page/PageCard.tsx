@@ -11,8 +11,9 @@ export function PageCard({ page, showViews = false }: { page: PageSummary; showV
   return (
     <article className="group relative flex flex-col overflow-hidden rounded-xl border border-line bg-surface hover:border-brand">
       <PageBackground background={page.background} seed={page.id} className="h-20" sizes="(min-width: 1024px) 320px, 100vw" />
-      <PageIcon icon={page.icon} size={40} className="absolute left-4 top-11 drop-shadow-sm" />
-      <div className="flex flex-1 flex-col gap-2 px-4 pb-4 pt-8">
+      <div className="flex flex-1 flex-col gap-2 px-4 pb-4">
+        {/* El icono va en el flujo (no con posición absoluta): sube sobre la portada, pero el título siempre queda debajo. */}
+        <div className="relative -mt-6 flex h-12 shrink-0 items-end"><PageIcon icon={page.icon} size={40} className="drop-shadow-sm" /></div>
         <h3 className="font-display text-lg font-semibold leading-snug">
           <Link href={`/paginas/${page.id}`} className="after:absolute after:inset-0 group-hover:text-brand-strong">
             {page.title}
