@@ -1,16 +1,19 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
+import { Search, X } from "lucide-react";
 import { ICONS } from "@/lib/backgrounds";
-import { BRAND_ICON, ICON_TONES, LUCIDE_ICONS, lucideIcon, parseIcon, type IconTone } from "@/lib/icons";
+import { searchIcons, type IconMatch } from "@/lib/icon-search";
+import { BRAND_ICON, ICON_TONES, LUCIDE_ICONS, THREE_D_ICONS, lucideIcon, parseIcon, type IconTone } from "@/lib/icons";
 import { PageIcon } from "../ui/PageIcon";
 
 const toneLabel: Record<IconTone, string> = { rojo: "Rojo", albahaca: "Albahaca", azafran: "Azafrán", tomate: "Tomate", cielo: "Cielo", uva: "Uva", carbon: "Carbón" };
 
-/** Selector del icono de la página: iconos de Lucide (con tono) o emojis. */
+/** Selector del icono de la página: iconos de Lucide (con tono), iconos 3D o emojis, con buscador en español. */
 export function IconPicker({ value, onChange }: { value: string | null; onChange: (icon: string | null) => void }) {
   const [open, setOpen] = useState(false);
-  const [tab, setTab] = useState<"iconos" | "emojis">(value?.startsWith("lucide:") ? "iconos" : "emojis");
+  const [tab, setTab] = useState<"iconos" | "3d" | "emojis">(value?.startsWith("lucide:") ? "iconos" : value?.startsWith("3d:") ? "3d" : "emojis");
+  const [query, setQuery] = useState("");
   const current = parseIcon(value);
   const [tone, setTone] = useState<IconTone>(current?.kind === "lucide" ? current.tone : "rojo");
   const [custom, setCustom] = useState("");
@@ -25,7 +28,10 @@ export function IconPicker({ value, onChange }: { value: string | null; onChange
     return () => { document.removeEventListener("mousedown", close); document.removeEventListener("keydown", esc); };
   }, [open]);
 
-  const pick = (icon: string | null) => { onChange(icon); setOpen(false); };
+  const pick = (icon: string | null) => { onChange(icon); setOpen(false); setQuery(""); };
+  const results = searchIcons(query);
+  const valueOf = (m: IconMatch) => m.kind === "lucide" ? lucideIcon(m.name, tone) : m.kind === "3d" ? `3d:${m.name}` : m.kind === "emoji" ? m.value : BRAND_ICON;
+  const labelOf = (m: IconMatch) => m.kind === "emoji" ? `Usar ${m.value}` : m.kind === "brand" ? "Usar el logo de Grupo Comidas" : `Usar icono ${m.name}`;
 
   return (
     <div ref={ref} className="relative">
@@ -35,16 +41,48 @@ export function IconPicker({ value, onChange }: { value: string | null; onChange
       </button>
       {open && (
         <div className="absolute left-0 top-full z-30 mt-2 w-[min(22rem,calc(100vw-2rem))] rounded-xl border border-line bg-surface p-3 shadow-xl">
+          <label className="mb-3 flex items-center gap-2 rounded-lg border border-line px-2.5 focus-within:border-brand">
+            <Search size={15} className="shrink-0 text-muted" aria-hidden />
+            <span className="sr-only">Buscar icono</span>
+            <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Buscar icono (café, equipo, calendario…)" autoFocus
+              className="h-9 min-w-0 flex-1 bg-transparent text-sm outline-none" />
+            {query && <button type="button" onClick={() => setQuery("")} aria-label="Borrar búsqueda" className="rounded p-0.5 text-muted hover:text-ink"><X size={14} /></button>}
+          </label>
+
+          {query.trim() ? (
+            results.length ? (
+              <div className="grid max-h-64 grid-cols-7 gap-1.5 overflow-y-auto p-0.5" aria-label="Resultados de la búsqueda">
+                {results.map((m) => {
+                  const icon = valueOf(m);
+                  return (
+                    <button key={icon} type="button" onClick={() => pick(icon)} aria-label={labelOf(m)} title={m.kind === "emoji" ? m.value : m.kind === "brand" ? "Logo de Grupo Comidas" : m.name}
+                      className={`grid h-10 place-items-center rounded-lg p-1 text-xl hover:bg-paper ${value === icon ? "bg-brand-soft" : ""}`}>
+                      <PageIcon icon={icon} size={30} />
+                    </button>
+                  );
+                })}
+              </div>
+            ) : <p className="py-4 text-center text-sm text-muted">No encontramos iconos con “{query.trim()}”. Prueba otra palabra.</p>
+          ) : (<>
           <div role="tablist" aria-label="Tipo de icono" className="mb-3 flex gap-1 rounded-lg bg-paper p-1">
-            {(["iconos", "emojis"] as const).map((t) => (
+            {(["iconos", "3d", "emojis"] as const).map((t) => (
               <button key={t} role="tab" type="button" aria-selected={tab === t} onClick={() => setTab(t)}
                 className={`flex-1 rounded-md px-3 py-1 text-sm font-medium ${tab === t ? "bg-surface shadow-sm" : "text-muted hover:text-ink"}`}>
-                {t === "iconos" ? "Iconos" : "Emojis"}
+                {t === "iconos" ? "Iconos" : t === "3d" ? "3D" : "Emojis"}
               </button>
             ))}
           </div>
 
-          {tab === "iconos" ? (
+          {tab === "3d" ? (
+            <div className="grid grid-cols-4 gap-1.5">
+              {THREE_D_ICONS.map((name) => (
+                <button key={name} type="button" onClick={() => pick(`3d:${name}`)} aria-label={`Usar icono ${name}`} title={name}
+                  className={`grid place-items-center rounded-lg p-1.5 hover:bg-paper ${value === `3d:${name}` ? "bg-brand-soft" : ""}`}>
+                  <PageIcon icon={`3d:${name}`} size={48} />
+                </button>
+              ))}
+            </div>
+          ) : tab === "iconos" ? (
             <>
               <div className="mb-2 flex flex-wrap gap-1.5" role="radiogroup" aria-label="Color del icono">
                 {(Object.keys(ICON_TONES) as IconTone[]).map((t) => (
@@ -85,6 +123,7 @@ export function IconPicker({ value, onChange }: { value: string | null; onChange
               </form>
             </>
           )}
+          </>)}
           <button type="button" onClick={() => pick(null)} className="mt-2 text-xs text-muted hover:text-ink hover:underline">Quitar icono</button>
         </div>
       )}
