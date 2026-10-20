@@ -35,10 +35,11 @@ export type IconTone = keyof typeof ICON_TONES;
 const PATTERN = /^lucide:([a-z0-9-]{1,30}):([a-z]{2,10})$/;
 
 /**
- * Iconos 3D (3dicons, CC0) para las plantillas por defecto. Se guardan como `3d:<nombre>`;
+ * Iconos 3D (3dicons, CC0): los 120 de lib/icons-3d.ts. Se guardan como `3d:<nombre>`;
  * los archivos viven en assets/templates/3dicons y se sirven en /iconos/3d/<nombre>.webp.
  */
-export const THREE_D_ICONS = ["documentacion", "bienvenida", "inicio-departamento", "proceso", "acta", "receta", "apertura-cierre", "preguntas"] as const;
+import { THREE_D_ICONS } from "./icons-3d";
+export { THREE_D_ICONS };
 
 /** Logo oficial de Grupo Comidas como icono de página (muros, bienvenida, anuncios del grupo). */
 export const BRAND_ICON = "marca:grupo-comidas";
@@ -46,7 +47,8 @@ export const BRAND_LOGO_SRC = "/brand/logo-grupo-comidas.png";
 
 export type ParsedIcon =
   | { kind: "emoji"; value: string }
-  | { kind: "lucide"; Icon: LucideIcon; name: string; tone: IconTone }
+  /** `Icon` solo en los iconos de Lucide que la app trae siempre; los demás se dibujan con /iconos/lucide/<nombre>.svg. */
+  | { kind: "lucide"; Icon: LucideIcon | null; name: string; tone: IconTone }
   | { kind: "3d"; name: string; src: string }
   | { kind: "brand"; src: string };
 
@@ -59,8 +61,9 @@ export function parseIcon(icon: string | null | undefined): ParsedIcon | null {
   }
   const m = icon.match(PATTERN);
   if (m) {
-    if (!Object.hasOwn(LUCIDE_ICONS, m[1])) return null;
-    const Icon = LUCIDE_ICONS[m[1]];
+    // Cualquier icono de Lucide (#46): los más usados vienen en la app; el resto, como imagen generada al compilar.
+    if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(m[1])) return null;
+    const Icon = Object.hasOwn(LUCIDE_ICONS, m[1]) ? LUCIDE_ICONS[m[1]] : null;
     const tone = (Object.hasOwn(ICON_TONES, m[2]) ? m[2] : "rojo") as IconTone;
     return { kind: "lucide", Icon, name: m[1], tone };
   }

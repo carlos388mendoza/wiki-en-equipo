@@ -1,5 +1,8 @@
 import { ICONS } from "./backgrounds";
-import { LUCIDE_ICONS, THREE_D_ICONS } from "./icons";
+import { LUCIDE_ICONS } from "./icons";
+import { THREE_D_ICONS, THREE_D_KEYWORDS } from "./icons-3d";
+
+export { THREE_D_KEYWORDS };
 
 /** Minúsculas y sin tildes, para buscar "cafe" y encontrar "café". */
 export const fold = (text: string) => text.toLowerCase().normalize("NFD").replace(/[̀-ͯ]/g, "").trim();
@@ -52,18 +55,6 @@ export const LUCIDE_KEYWORDS: Record<string, string> = {
   leaf: "hoja planta natural ecologia verde",
   flame: "fuego llama cocina caliente urgente",
   award: "premio reconocimiento medalla logro",
-};
-
-/** Palabras en español de cada icono 3D (3dicons). */
-export const THREE_D_KEYWORDS: Record<(typeof THREE_D_ICONS)[number], string> = {
-  documentacion: "cuaderno libreta documentacion documento notas",
-  bienvenida: "corazon bienvenida bienvenido equipo",
-  "inicio-departamento": "bandera inicio departamento muro",
-  proceso: "check visto proceso pasos aprobado listo",
-  acta: "calendario acta reunion fecha agenda",
-  receta: "vaso cafe receta bebida para llevar",
-  "apertura-cierre": "llave apertura cierre sucursal",
-  preguntas: "chat burbuja preguntas frecuentes dudas faq",
 };
 
 /** Palabras en español de cada emoji de la lista. */
