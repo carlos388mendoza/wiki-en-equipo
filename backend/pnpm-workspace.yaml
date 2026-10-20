@@ -3,5 +3,9 @@ allowBuilds:
   '@prisma/engines': true
   esbuild: true
   prisma: true
+# Vercel copia node_modules del servicio "api" a la función (no lo reinstala). Con el enlace por defecto
+# de pnpm, node_modules/express es un enlace a .pnpm/…, y la copia deja los paquetes sin resolver
+# ("Cannot find module 'express'"). Con nodeLinker: hoisted pnpm crea node_modules plano, que sí se copia.
+nodeLinker: hoisted
 overrides:
   deepmerge-ts: '>=8.0.0'

@@ -4,7 +4,7 @@
  */
 import { createServer, type Server } from "node:http";
 import type { AddressInfo } from "node:net";
-import { app, attachWebSockets } from "../../backend/src/app.js";
+import { app, attachWebSockets } from "../../backend/src/http-app.js";
 import { signAccessToken } from "../../backend/auth/token.js";
 import { prisma } from "../../backend/models/client.js";
 

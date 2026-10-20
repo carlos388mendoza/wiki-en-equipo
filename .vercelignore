@@ -1,15 +1,16 @@
-# Lo que nunca se sube a Vercel al desplegar el frontend desde la raíz del repo (carpeta raíz: frontend).
-# El frontend solo necesita frontend/, shared/ (tipos) y assets/ (iconos 3D y logo).
+# Lo que nunca se sube a Vercel al desplegar el proyecto único (raíz del repo).
+# El proyecto tiene dos servicios (ver vercel.json): web (frontend/) y api (backend/), así que aquí NO se
+# excluye backend. Solo se excluye lo que ninguno de los dos necesita.
 node_modules
 **/node_modules
 **/.next
 **/.vercel
+**/dist
 **/.env*
 !**/.env.example
 **/*.db
 **/*.db-journal
 **/uploads
-backend
 tests
 docs
 .claude

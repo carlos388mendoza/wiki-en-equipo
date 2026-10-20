@@ -6,3 +6,8 @@ uploads/
 *.db-journal
 .vercel
 .env*
+
+# Generado al desplegar (ver "vercel-build" en package.json): el servicio "api" del proyecto único
+# empaqueta la app en un solo archivo ESM para que Vercel la cargue como módulo, no como CommonJS.
+# La entrada versionada es src/app.mjs, que reexporta este archivo.
+src/bundle.mjs

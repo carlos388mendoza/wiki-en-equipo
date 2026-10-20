@@ -1,7 +1,7 @@
 import "dotenv/config";
 import { createServer } from "node:http";
 import { createClient } from "@libsql/client";
-import { app, attachWebSockets, collabServer, realtimeHub } from "./app.js";
+import { app, attachWebSockets, collabServer, realtimeHub } from "./http-app.js";
 import { prisma, tursoConfig } from "../models/client.js";
 import { applyMigrations } from "../models/migrate-turso.js";
 import { purgeExpiredTrash } from "../services/page-service.js";
