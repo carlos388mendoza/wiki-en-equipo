@@ -32,6 +32,7 @@ export default async function TemplatesPage({ searchParams }: { searchParams: Pr
   const plan = defaultTemplatesPlan(templates, DEFAULT_TEMPLATES);
   const missingDefaults = plan.toCreate.length;
   const missingCovers = plan.toUpdateCover.length;
+  const repeated = plan.toRetire.length;
 
   return (
     <div className="mx-auto max-w-6xl px-4 py-8 sm:px-8">
@@ -51,12 +52,13 @@ export default async function TemplatesPage({ searchParams }: { searchParams: Pr
         </p>
       )}
 
-      {user.role === "ADMIN" && (missingDefaults > 0 || missingCovers > 0) && (
+      {user.role === "ADMIN" && (missingDefaults > 0 || missingCovers > 0 || repeated > 0) && (
         <div className="mt-6 rounded-xl border border-sun/40 bg-sun-soft/60 p-4">
           <p className="mb-3 text-sm">
             {[
               missingDefaults > 0 && `Hay ${missingDefaults} ${missingDefaults === 1 ? "plantilla" : "plantillas"} de Grupo Comidas sin instalar (manual de puesto, onboarding, reporte de incidente, inventario, capacitación y más).`,
               missingCovers > 0 && `${missingCovers === 1 ? "Una plantilla ya instalada no tiene" : `${missingCovers} plantillas ya instaladas no tienen`} foto de portada.`,
+              repeated > 0 && `${repeated === 1 ? "Una plantilla repite" : `${repeated} plantillas repiten`} otra más completa (${plan.toRetire.map((t) => `“${t.title}”`).join(", ")}): se retirarán de las recomendadas, pero seguirán disponibles.`,
             ].filter(Boolean).join(" ")} No se borra ni se cambia el contenido de ninguna plantilla.
           </p>
           <InstallDefaultsButton />

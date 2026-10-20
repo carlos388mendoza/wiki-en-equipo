@@ -72,6 +72,26 @@ export async function trashPage(pageId: string): Promise<ActionResult> {
   return ok(undefined);
 }
 
+/* ---------- Anclar y archivar (menú ⋯ de la barra lateral) ---------- */
+
+/** Anclar es personal: lo puede hacer cualquiera que pueda ver la página. */
+export async function setPinned(pageId: string, pinned: boolean): Promise<ActionResult> {
+  const res = await backend(`/pages/${encodeURIComponent(pageId)}/pin`, { method: pinned ? "PUT" : "DELETE" });
+  if (!res.ok) return fail(res, "No tienes acceso a esta página.");
+  refreshAll();
+  return ok(undefined);
+}
+
+/** Archivar oculta la página de la barra lateral y de los listados, sin borrarla: su dueño o un administrador. */
+export async function setArchived(pageId: string, archived: boolean): Promise<ActionResult> {
+  const res = await backend(`/pages/${encodeURIComponent(pageId)}/${archived ? "archive" : "unarchive"}`, { method: "POST" });
+  if (!res.ok) return fail(res, `Solo quien creó la página (o un administrador) puede ${archived ? "archivarla" : "desarchivarla"}.`);
+  refreshAll();
+  revalidatePath(`/paginas/${pageId}`);
+  revalidatePath("/papelera");
+  return ok(undefined);
+}
+
 export async function restorePage(pageId: string): Promise<ActionResult> {
   const res = await backend(`/pages/${encodeURIComponent(pageId)}/restore`, { method: "POST" });
   if (!res.ok) return fail(res, "Solo quien creó la página (o un administrador) puede restaurarla.");

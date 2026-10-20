@@ -21,9 +21,11 @@ export async function bootstrapAdmin(input: { name: string; email: string; passw
     const department = await tx.department.create({ data: { name: input.departmentName.trim(), slug } });
     const name = input.name.trim();
     const user = await tx.user.create({ data: { name, searchName: foldText(name), email, passwordHash: await hashPassword(input.password), role: "ADMIN", departmentId: department.id }, include: { department: true } });
+    // Mismos títulos que las plantillas de Grupo Comidas del frontend (lib/default-templates.ts): su instalador las
+    // reconoce, les pone la foto de portada y no crea otras casi iguales.
     const defaults = [
       {
-        title: "Documentación de proceso", description: "Estructura clara para documentar un proceso de trabajo.", icon: "3d:documentacion", scope: "COMPANY", isDefault: true,
+        title: "Documentación general", description: "Estructura clara para documentar un proceso de trabajo.", icon: "3d:documentacion", scope: "COMPANY", isDefault: true,
         contentJson: JSON.stringify([
           { id: "purpose", type: "heading", data: { level: 1, text: "Propósito y alcance" } },
           { id: "summary", type: "paragraph", data: { text: "Explica qué resuelve este proceso, a quién aplica y cuándo debe utilizarse." } },
@@ -36,7 +38,7 @@ export async function bootstrapAdmin(input: { name: string; email: string; passw
         ]), backgroundJson: JSON.stringify({ type: "gradient", value: "linear-gradient(135deg, #e8f0fa 0%, #fde9eb 100%)" }), ownerId: user.id,
       },
       {
-        title: "Bienvenida al departamento", description: "Guía de bienvenida con contactos, herramientas y primeros pasos.", icon: "3d:bienvenida", scope: "COMPANY", isDefault: true,
+        title: "Bienvenido al departamento", description: "Guía de bienvenida con contactos, herramientas y primeros pasos.", icon: "3d:bienvenida", scope: "COMPANY", isDefault: true,
         contentJson: JSON.stringify([
           { id: "welcome", type: "heading", data: { level: 1, text: "¡Bienvenido/a al equipo!" } },
           { id: "intro", type: "paragraph", data: { text: "Presenta qué hace el departamento y cómo su trabajo apoya a Grupo Comidas." } },
@@ -49,7 +51,7 @@ export async function bootstrapAdmin(input: { name: string; email: string; passw
         ]), backgroundJson: JSON.stringify({ type: "gradient", value: "linear-gradient(135deg, #e8f0fa 0%, #fff6c7 100%)" }), ownerId: user.id,
       },
       {
-        title: "Inicio del departamento", description: "Base para crear el muro con prioridades, enlaces y páginas destacadas.", icon: "3d:inicio-departamento", scope: "COMPANY", isDefault: true,
+        title: "Página de inicio de departamento", description: "Base para crear el muro con prioridades, enlaces y páginas destacadas.", icon: "3d:inicio-departamento", scope: "COMPANY", isDefault: true,
         contentJson: JSON.stringify([
           { id: "overview", type: "heading", data: { level: 1, text: "Departamento: visión general" } },
           { id: "mission", type: "callout", data: { title: "Nuestra misión", text: "Resume en una o dos frases el propósito del departamento." } },

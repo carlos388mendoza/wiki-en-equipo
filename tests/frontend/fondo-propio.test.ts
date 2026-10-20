@@ -36,7 +36,7 @@ describe("fondo con imagen propia", () => {
   });
 
   it("la ventana permite subir, cambiar y quitar la imagen, ligada a la página", () => {
-    expect(picker).toMatch(/uploadToWiki\(file, uploadTarget, true\)/);
+    expect(picker).toMatch(/uploadToWiki\(file, uploadTarget, true, setProgress\)/);
     expect(picker).toMatch(/Elegir imagen/);
     expect(picker).toMatch(/Cambiar imagen/);
     expect(picker).toMatch(/onDrop=/);

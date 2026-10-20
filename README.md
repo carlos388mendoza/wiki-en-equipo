@@ -107,7 +107,7 @@ Todo con planes gratis y **sin tarjeta**: frontend y backend en Vercel, y base d
 - **Frontend:** Vercel, proyecto `wiki-grupo-comidas` con la carpeta raíz `frontend`. Dirección: https://wiki-grupo-comidas.vercel.app.
 - **Backend:** Vercel, proyecto `wiki-en-equipo-backend` con la carpeta raíz `backend` (funciones de Vercel, `framework: express`). Dirección: https://wiki-en-equipo-backend.vercel.app.
 - **Base de datos:** Turso, que es SQLite en la nube, también gratis. El backend usa el mismo esquema y las mismas migraciones que en local.
-- **Archivos subidos:** dentro de la base de datos (`FILE_STORAGE=database`), porque las funciones de Vercel no conservan disco. Límite de 4 MB por archivo.
+- **Archivos subidos:** dentro de la base de datos (`FILE_STORAGE=database`), porque las funciones de Vercel no conservan disco. Límite de **20 MB por archivo**: Vercel no acepta cuerpos de más de 4,5 MB por petición, así que los archivos de más de 3 MB se suben **en partes de 3 MB** y se guardan y entregan por partes.
 
 > **Estado (20/10/2026):** todo publicado y funcionando de punta a punta; los 4 usuarios están creados.
 
@@ -178,7 +178,7 @@ Si algo falla no se pierde nada: todo vive en Turso. La edición en vivo se reco
 | `CRON_SECRET` | Vercel lo envía en `Authorization: Bearer` al Cron de la papelera |
 | `FILE_STORAGE` | `database` (las funciones no conservan disco) |
 | `TRUST_PROXY` | `false` (Vercel reescribe `X-Forwarded-For`; la IP real llega por `X-Wiki-Client-Ip` con `PROXY_SECRET`) |
-| `MAX_UPLOAD_BYTES` | `4194304` (4 MB) |
+| `MAX_UPLOAD_BYTES` | `20971520` (20 MB; los archivos de más de 3 MB se suben en partes) |
 | `TRASH_RETENTION_DAYS` | `30` |
 
 Para generar cada texto aleatorio:
@@ -219,7 +219,7 @@ En *Settings → Environment Variables*, en **Production**, define estas variabl
 
 - `BACKEND_URL=https://wiki-en-equipo-backend.vercel.app` (solo la usa el servidor de Next; el navegador nunca llama directo al backend)
 - `NEXT_PUBLIC_COLLAB_URL=https://wiki-en-equipo-backend.vercel.app/api/collab` (edición en vivo por consultas periódicas por HTTP)
-- `NEXT_PUBLIC_MAX_UPLOAD_MB=4`: las subidas pasan por el servidor de Next, y en Vercel una función no acepta más de 4,5 MB.
+- `NEXT_PUBLIC_MAX_UPLOAD_MB=20`: las subidas pasan por el servidor de Next; los archivos de más de 3 MB se parten en el navegador y se reenvían al backend en partes de 3 MB (una función de Vercel no acepta más de 4,5 MB por petición).
 - `PROXY_SECRET`: el mismo valor que en el backend; el servidor de Next firma con él la IP real del login.
 
 `NEXT_PUBLIC_REALTIME_URL` **ya no hace falta** en producción: el canal de avisos por WebSocket `/realtime` es para local. Si `NEXT_PUBLIC_COLLAB_URL` usa `https://…`, la edición en vivo va por HTTP y no se abre ningún WebSocket.

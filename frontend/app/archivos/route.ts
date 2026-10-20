@@ -10,8 +10,9 @@ export async function POST(request: Request) {
   if (!token) return Response.json({ message: "Tu sesión terminó. Vuelve a iniciar sesión." }, { status: 401 });
 
   // Se revisa el tamaño antes de leer el cuerpo: Next corta peticiones grandes y el error sería confuso.
+  // Por aquí solo llegan archivos de hasta 3 MB; los más grandes van en partes (app/archivos/subidas).
   const length = Number(request.headers.get("content-length") ?? 0);
-  if (length > MAX_UPLOAD_BYTES + 64 * 1024) {
+  if (length > Math.min(MAX_UPLOAD_BYTES, 4 * 1024 * 1024) + 64 * 1024) {
     return Response.json({ message: `El archivo supera el límite de ${MAX_UPLOAD_MB} MB.` }, { status: 413 });
   }
 

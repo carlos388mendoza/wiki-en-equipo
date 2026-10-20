@@ -1,4 +1,4 @@
-import { Router, type Request } from "express";
+import express, { Router, type Request } from "express";
 import { ipKeyGenerator, rateLimit } from "express-rate-limit";
 import { z } from "zod";
 import { requireAuth, requireRole } from "../auth/middleware.js";
@@ -144,6 +144,11 @@ router.patch("/users/:userId", requireRole("ADMIN"), async (req, res) => {
 
 router.get("/pages/popular", async (req, res) => res.json({ pages: await pages.getMostVisited(actor(req), typeof req.query.departmentId === "string" ? req.query.departmentId : undefined) }));
 router.get("/pages/trash", async (req, res) => res.json({ pages: await pages.listTrash(actor(req)) }));
+router.get("/pages/pinned", async (req, res) => res.json({ pages: await pages.listPinnedPages(actor(req)) }));
+router.put("/pages/:pageId/pin", async (req, res) => res.json(await pages.pinPage(actor(req), param(req, "pageId"))));
+router.delete("/pages/:pageId/pin", async (req, res) => res.json(await pages.unpinPage(actor(req), param(req, "pageId"))));
+router.post("/pages/:pageId/archive", async (req, res) => res.json(await pages.archivePage(actor(req), param(req, "pageId"))));
+router.post("/pages/:pageId/unarchive", async (req, res) => res.json(await pages.unarchivePage(actor(req), param(req, "pageId"))));
 router.delete("/pages/trash", async (req, res) => res.json(await pages.emptyTrash(actor(req))));
 router.delete("/pages/:pageId/permanent", async (req, res) => { await pages.deletePagePermanently(actor(req), param(req, "pageId")); res.status(204).end(); });
 router.post("/pages/:pageId/restore", async (req, res) => res.json({ page: await pages.restorePage(actor(req), param(req, "pageId")) }));
@@ -163,7 +168,8 @@ router.get("/pages", async (req, res) => {
   }
   const cursor = typeof req.query.cursor === "string" ? id.parse(req.query.cursor) : undefined;
   const limit = z.coerce.number().int().min(1).max(100).catch(100).parse(req.query.limit ?? 100);
-  res.json(await pages.listAccessiblePages(actor(req), { q, tag, departmentId, parentId, cursor, limit }));
+  const archived = req.query.archived === "1";
+  res.json(await pages.listAccessiblePages(actor(req), { q, tag, departmentId, parentId, cursor, limit, archived }));
 });
 router.post("/pages", async (req, res) => {
   const body = objectBody(z.object({ title, icon, content: z.unknown().optional(), background: z.unknown().optional(), visibility: visibility.optional(), parentId: id.nullable().optional(), tags }), req);
@@ -269,14 +275,32 @@ router.post("/files", (req, res, next) => uploadSingleFile.single("file")(req, r
   const file = await files.saveUploadedFile(actor(req), req.file, { pageId, templateId });
   res.status(201).json({ file, url: `/api/files/${file.id}/content` });
 });
+// Archivos de más de 3 MB, en partes: una función de Vercel no acepta cuerpos de más de 4,5 MB.
+router.post("/files/uploads", async (req, res) => {
+  const body = objectBody(z.object({ name: z.string().trim().min(1).max(255), mimeType: z.string().min(1).max(200), size: z.number().int().positive(), pageId: id.optional(), templateId: id.optional() }), req);
+  res.status(201).json(await files.startUpload(actor(req), body));
+});
+router.put("/files/uploads/:uploadId/parts/:part", express.raw({ type: "application/octet-stream", limit: "4mb" }), async (req, res) => {
+  if (!Buffer.isBuffer(req.body)) throw badRequest("Envía la parte como application/octet-stream.");
+  res.json(await files.saveUploadPart(actor(req), param(req, "uploadId"), Number(param(req, "part")), req.body));
+});
+router.post("/files/uploads/:uploadId/complete", async (req, res) => {
+  const file = await files.completeUpload(actor(req), param(req, "uploadId"));
+  res.status(201).json({ file, url: `/api/files/${file.id}/content` });
+});
 router.get("/pages/:pageId/files", async (req, res) => res.json({ files: await files.listPageFiles(actor(req), param(req, "pageId")) }));
 router.get("/files/:fileId/content", async (req, res) => {
-  // Primero los permisos; después los bytes (de la base o del disco, según dónde se guardó).
-  const { asset: file, data } = await files.readFileContent(actor(req), param(req, "fileId"));
+  // Primero los permisos; después los bytes (de la base o del disco, según dónde se guardó), de a pedazos:
+  // una respuesta en streaming no tiene el límite de 4,5 MB de Vercel.
+  const { asset: file, first, rest } = await files.readFileContent(actor(req), param(req, "fileId"));
   res.setHeader("Content-Type", file.mimeType);
-  res.setHeader("Content-Length", String(data.length));
+  res.setHeader("Content-Length", String(file.sizeBytes));
   res.setHeader("Content-Disposition", `${isInlineSafeImage(file.mimeType) ? "inline" : "attachment"}; filename*=UTF-8''${encodeURIComponent(file.originalName)}`);
-  res.end(data);
+  res.write(first);
+  try {
+    for await (const chunk of rest) if (!res.write(chunk)) await new Promise((resolve) => res.once("drain", resolve));
+  } catch (error) { console.error(error); res.destroy(); return; }
+  res.end();
 });
 router.delete("/files/:fileId", async (req, res) => { await files.deleteFile(actor(req), param(req, "fileId")); res.status(204).end(); });
 

@@ -64,7 +64,7 @@ describe("archivos guardados en la base de datos", () => {
     expect(await prisma.fileBlob.count()).toBe(blobs);
   });
 
-  it("mantiene los tipos permitidos y el límite de 4 MB", async () => {
+  it("mantiene los tipos permitidos y el límite de 4 MB por petición (lo demás va en partes)", async () => {
     const blobs = await prisma.fileBlob.count();
     expect((await upload(duena, new Blob(["<script>"], { type: "text/html" }), "pagina.html")).status).toBe(415);
     const big = await upload(duena, new Blob([new Uint8Array(4 * 1024 * 1024 + 1)], { type: "application/pdf" }), "grande.pdf");

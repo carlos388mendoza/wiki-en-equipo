@@ -63,7 +63,7 @@ export default async function DepartmentWall({ params }: { params: Promise<{ slu
         </section>
       ) : editable ? (
         <p className="mb-10 rounded-xl border border-dashed border-line px-4 py-6 text-muted">
-          Este muro todavía no tiene una página de inicio. Usa <strong>Editar muro</strong> para elegir una o crearla desde la plantilla “Inicio del departamento”.
+          Este muro todavía no tiene una página de inicio. Usa <strong>Editar muro</strong> para elegir una o crearla desde la plantilla “Página de inicio de departamento”.
         </p>
       ) : null}
 

@@ -73,6 +73,7 @@ export interface Page {
   createdAt: string;
   updatedAt: string;
   deletedAt: string | null;
+  archivedAt: string | null;
   children: PageSummary[];
   /** Páginas superiores que la persona puede leer, de la raíz a la página padre. */
   ancestors: { id: string; title: string; icon: string | null }[];
@@ -95,12 +96,16 @@ export interface PageSummary extends Pick<SharedPageSummary, "id" | "title" | "v
   myPermission?: MyPermission;
   views?: number;
   deletedAt?: string | null;
+  /** Archivada: no sale en la barra lateral ni en los listados. */
+  archivedAt?: string | null;
+  /** Página de un muro (no se archiva ni se elimina desde la barra lateral). */
+  isWall?: boolean;
   /** Solo en búsquedas: fragmento del contenido con la palabra encontrada. */
   excerpt?: string | null;
 }
 
 /** Secciones de la barra lateral. */
-export type SidebarSections = { empresa: PageSummary[]; departamento: PageSummary[]; compartidas: PageSummary[]; privadas: PageSummary[] };
+export type SidebarSections = { ancladas: PageSummary[]; empresa: PageSummary[]; departamento: PageSummary[]; compartidas: PageSummary[]; privadas: PageSummary[] };
 
 export interface TemplateSummary {
   id: string;
