@@ -1,0 +1,30 @@
+# Vercel publica la wiki desde la copia carlos388mendoza/wiki-en-equipo (la app de GitHub de Vercel está
+# instalada en esa cuenta, no en la del repo principal). Este flujo adelanta el `main` de la copia hasta el
+# `main` del repo principal cada 5 minutos; cada avance hace que Vercel publique el frontend y el backend.
+# En el repo principal no hace nada (ver el `if`). Solo avanza sin forzar: si la copia se separa, falla y avisa.
+name: Sincronizar la copia que publica Vercel
+
+on:
+  schedule:
+    - cron: "*/5 * * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: sincronizar-copia
+  cancel-in-progress: false
+
+jobs:
+  sincronizar:
+    if: github.repository == 'carlos388mendoza/wiki-en-equipo'
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Traer main del repo principal
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        # Es el botón "Sync fork" de GitHub. Si el cambio toca archivos de .github/workflows, GitHub no deja que
+        # este flujo lo traiga: hay que presionar "Sync fork" en la copia a mano (ver CLAUDE.md).
+        run: gh api --method POST "repos/${{ github.repository }}/merge-upstream" -f branch=main

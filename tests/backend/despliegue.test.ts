@@ -3,7 +3,7 @@ import { describe, expect, it } from "vitest";
 
 const path = (file: string) => new URL(`../../${file}`, import.meta.url);
 const read = (file: string) => readFileSync(path(file), "utf8").replace(/\r\n/g, "\n");
-const vercel = JSON.parse(read("backend/vercel.json")) as { framework?: string; buildCommand?: string; regions?: string[]; crons?: { path: string; schedule: string }[] };
+const vercel = JSON.parse(read("backend/vercel.json")) as { framework?: string; buildCommand?: string; regions?: string[]; crons?: { path: string; schedule: string }[]; git?: { deploymentEnabled?: Record<string, boolean> } };
 const scripts = (JSON.parse(read("backend/package.json")) as { scripts: Record<string, string> }).scripts;
 
 describe("backend en Vercel (Express) + Turso", () => {
@@ -26,8 +26,23 @@ describe("backend en Vercel (Express) + Turso", () => {
     expect(vercel.regions).toEqual(["iad1"]);
   });
 
+  it("con Git conectado solo publica main: una rama sin unir nunca aplica migraciones a Turso", () => {
+    // Las vistas previas tienen las mismas variables de Turso que producción.
+    expect(vercel.git?.deploymentEnabled).toEqual({ "**": false, main: true });
+    const frontend = JSON.parse(read("frontend/vercel.json")) as { git?: { deploymentEnabled?: Record<string, boolean> } };
+    expect(frontend.git?.deploymentEnabled).toEqual({ "**": false, main: true });
+  });
+
+  it("la copia que publica Vercel se adelanta sola con main, sin forzar y solo en la copia", () => {
+    const flujo = read(".github/workflows/sincronizar-copia.yml");
+    expect(flujo).toContain(`cron: "*/5 * * * *"`);
+    expect(flujo).toContain("if: github.repository == 'carlos388mendoza/wiki-en-equipo'");
+    expect(flujo).toMatch(/merge-upstream" -f branch=main/);
+    expect(flujo).not.toMatch(/--force|push -f/);
+  });
+
   it("no hay secretos en la configuración", () => {
-    const config = read("backend/vercel.json") + read("frontend/.env.example") + read("backend/.env.example");
+    const config = read("backend/vercel.json") + read("frontend/vercel.json") + read(".github/workflows/sincronizar-copia.yml") + read("frontend/.env.example") + read("backend/.env.example");
     expect(config).not.toMatch(/eyJ[A-Za-z0-9_-]{20,}/); // tokens JWT (Turso)
     expect(config).not.toMatch(/libsql:\/\/[a-z0-9-]+-[a-z0-9-]+\.turso\.io/i);
   });
