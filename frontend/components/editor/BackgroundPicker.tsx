@@ -44,6 +44,7 @@ export function BackgroundPicker({ open, onClose, value, onChange, uploadTarget 
 }) {
   const [tab, setTab] = useState<Tab>(value?.type === "gradient" ? "degradados" : value?.type === "color" ? "colores" : value?.type === "pattern" || value?.type === "shapes" ? "patrones" : "imagenes");
   const [busy, setBusy] = useState(false);
+  const [progress, setProgress] = useState(0);
   const [error, setError] = useState("");
   const [uploadError, setUploadError] = useState("");
   const [dragging, setDragging] = useState(false);
@@ -52,14 +53,16 @@ export function BackgroundPicker({ open, onClose, value, onChange, uploadTarget 
   const [patternColor, setPatternColor] = useState(value?.type === "pattern" || value?.type === "shapes" ? value.color : PATTERN_COLORS[0]);
   const fileRef = useRef<HTMLInputElement>(null);
   const own = isUploadedBackground(value) && value?.type === "image" ? value.url : null;
+  // Los archivos grandes se suben en partes: se muestra cuánto va (solo si ya avanzó y aún no termina).
+  const uploadingLabel = progress > 0 && progress < 1 ? `Subiendo… ${Math.round(progress * 100)} %` : "Subiendo…";
 
   const pick = (bg: Background | null) => { onChange(bg); setError(""); setUploadError(""); };
   const isSelected = (bg: Background) => JSON.stringify(bg) === JSON.stringify(value);
 
   async function upload(file: File) {
-    setBusy(true); setError(""); setUploadError("");
+    setBusy(true); setProgress(0); setError(""); setUploadError("");
     try {
-      const up = await uploadToWiki(file, uploadTarget, true);
+      const up = await uploadToWiki(file, uploadTarget, true, setProgress);
       pick({ type: "image", url: up.url });
     } catch (e) {
       setUploadError(e instanceof Error ? e.message : "No se pudo subir la imagen. Intenta de nuevo.");
@@ -102,7 +105,7 @@ export function BackgroundPicker({ open, onClose, value, onChange, uploadTarget 
                     <p className="mt-0.5 text-xs text-muted">Es el fondo de esta página. Solo la ven quienes tienen acceso a la página.</p>
                     <div className="mt-2 flex flex-wrap gap-2">
                       <button type="button" onClick={() => fileRef.current?.click()} disabled={busy} className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-line bg-surface px-3 text-sm font-medium hover:border-brand disabled:opacity-60">
-                        {busy ? <LoaderCircle size={15} className="animate-spin" aria-hidden /> : <RefreshCw size={15} aria-hidden />} {busy ? "Subiendo…" : "Cambiar imagen"}
+                        {busy ? <LoaderCircle size={15} className="animate-spin" aria-hidden /> : <RefreshCw size={15} aria-hidden />} {busy ? uploadingLabel : "Cambiar imagen"}
                       </button>
                       <button type="button" onClick={() => pick(null)} disabled={busy} className="inline-flex h-9 items-center gap-1.5 rounded-lg px-3 text-sm font-medium text-muted hover:bg-surface hover:text-danger disabled:opacity-60">
                         <Trash2 size={15} aria-hidden /> Quitar
@@ -115,10 +118,10 @@ export function BackgroundPicker({ open, onClose, value, onChange, uploadTarget 
                   <span className="grid h-10 w-10 place-items-center rounded-full bg-surface text-brand-strong shadow-sm" aria-hidden><Upload size={18} /></span>
                   <h3 id="fondo-propio" className="text-sm font-semibold">Sube una imagen desde tu equipo</h3>
                   <p className="text-xs text-muted">
-                    JPG, PNG, WEBP o GIF, de hasta {MAX_UPLOAD_MB} MB.<span className="hidden [@media(hover:hover)]:inline"> También puedes arrastrarla aquí.</span>
+                    JPG, PNG, WEBP o GIF, de hasta {MAX_UPLOAD_MB} MB.<span className="hidden [@media(any-hover:hover)]:inline"> También puedes arrastrarla aquí.</span>
                   </p>
                   <button type="button" onClick={() => fileRef.current?.click()} disabled={busy} className="mt-1 inline-flex h-10 items-center gap-2 rounded-lg bg-ink px-4 text-sm font-medium text-white hover:bg-brand disabled:opacity-60">
-                    {busy ? <LoaderCircle size={16} className="animate-spin" aria-hidden /> : <ImagePlus size={16} aria-hidden />} {busy ? "Subiendo…" : "Elegir imagen"}
+                    {busy ? <LoaderCircle size={16} className="animate-spin" aria-hidden /> : <ImagePlus size={16} aria-hidden />} {busy ? uploadingLabel : "Elegir imagen"}
                   </button>
                 </div>
               )}

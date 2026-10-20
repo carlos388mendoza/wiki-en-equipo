@@ -48,6 +48,8 @@ export function toSummary(p: RawListPage): PageSummary {
     ...(p.myPermission !== undefined && { myPermission: p.myPermission }),
     ...(p.excerpt !== undefined && { excerpt: p.excerpt }),
     ...(p.deletedAt !== undefined && { deletedAt: p.deletedAt }),
+    ...(p.archivedAt !== undefined && { archivedAt: p.archivedAt }),
+    ...((p.isWall !== undefined || p.isCompanyWall !== undefined) && { isWall: Boolean(p.isWall || p.isCompanyWall) }),
     tags: p.tags?.map((t) => t.name) ?? [],
     ...appearance(p.icon, p.backgroundJson),
   };
@@ -72,6 +74,7 @@ export function toPage(raw: PageDetail & { deletedAt?: string | null }): Page {
     createdAt: raw.createdAt,
     updatedAt: raw.updatedAt,
     deletedAt: raw.deletedAt ?? null,
+    archivedAt: raw.archivedAt ?? null,
     children: (raw.children ?? []).map((c) => toSummary({ ...c, parentId: raw.id })),
     ancestors: (raw.ancestors ?? []).map((a) => ({ ...a, icon: parseAppearance({ icon: a.icon }).icon })),
     views: raw.visitCount ?? null,
@@ -172,10 +175,12 @@ const sharedWithMe = (permission: MyPermission | undefined) => permission === "E
 
 /** Lo que aparece en la barra lateral, agrupado por sección. */
 export async function getSidebar(viewer: User): Promise<SidebarSections> {
-  const res = await accessiblePages();
+  const [res, pinned] = await Promise.all([accessiblePages(), backend<{ pages: RawListPage[] }>("/pages/pinned")]);
   const visible = res.ok ? res.data : [];
   const mine = (p: PageSummary) => p.ownerId === viewer.id;
   return {
+    // Personales: cada persona ancla las suyas (en el orden en que las ancló).
+    ancladas: pinned.ok ? pinned.data.pages.map(toSummary) : [],
     empresa: visible.filter((p) => p.visibility === "COMPANY"),
     departamento: visible.filter((p) => p.visibility === "DEPARTMENT" && p.departmentId === viewer.departmentId),
     // El backend indica si la página se compartió con la persona (también para administradores).
@@ -260,6 +265,13 @@ export async function listTags(_viewer: User): Promise<string[]> {
   const res = await accessiblePages();
   if (!res.ok) return [];
   return [...new Set(res.data.flatMap((p) => p.tags))].sort((a, b) => a.localeCompare(b, "es"));
+}
+
+/** Páginas archivadas que la persona puede desarchivar (las suyas; un ADMIN, todas). */
+export async function listArchived(_viewer: User): Promise<ApiResult<PageSummary[]>> {
+  const res = await backend<{ pages: RawListPage[] }>("/pages?archived=1");
+  if (!res.ok) return res;
+  return { ok: true, data: res.data.pages.map(toSummary) };
 }
 
 export async function listTrash(_viewer: User): Promise<ApiResult<PageSummary[]>> {

@@ -48,6 +48,7 @@ model User {
   shareLinks     PageShareLink[] @relation("PageShareLinkCreator")
   templateShares TemplateShare[]
   templateShareLinks TemplateShareLink[] @relation("TemplateShareLinkCreator")
+  pins           PagePin[]
 }
 
 model Page {
@@ -74,6 +75,8 @@ model Page {
   createdAt       DateTime @default(now())
   updatedAt       DateTime @updatedAt
   deletedAt       DateTime?
+  /// Archivada: no sale en la barra lateral ni en los listados, pero no se borra (la archiva su dueño o un ADMIN).
+  archivedAt      DateTime?
   shares          PageShare[]
   shareLinks      PageShareLink[]
   history         PageHistory[]
@@ -86,6 +89,7 @@ model Page {
   collabDoc       CollabDoc?
   collabUpdates   CollabUpdate[]
   collabPresence  CollabPresence[]
+  pins            PagePin[]
 
   @@index([departmentId, visibility, deletedAt])
   @@index([ownerId, deletedAt])
@@ -208,6 +212,8 @@ model FileAsset {
   createdAt   DateTime @default(now())
   /// Contenido en la base (FILE_STORAGE=database, producción sin disco permanente); en disco no tiene fila.
   blob        FileBlob?
+  /// Contenido en partes de hasta 3 MB (archivos subidos en partes; las funciones de Vercel aceptan 4,5 MB por petición).
+  blobParts   FileBlobPart[]
   @@index([ownerId, createdAt])
   @@index([templateId])
 }
@@ -217,6 +223,54 @@ model FileBlob {
   storageName String    @id
   data        Bytes
   asset       FileAsset @relation(fields: [storageName], references: [storageName], onDelete: Cascade)
+}
+
+model FileBlobPart {
+  storageName String
+  part        Int
+  data        Bytes
+  asset       FileAsset @relation(fields: [storageName], references: [storageName], onDelete: Cascade)
+
+  @@id([storageName, part])
+}
+
+/// Subida en partes en curso (archivos de más de 3 MB). Al completarse se convierte en FileAsset; las que quedan
+/// a medias se borran al día siguiente (Cron de la papelera).
+model FileUpload {
+  id           String   @id @default(cuid())
+  ownerId      String
+  originalName String
+  mimeType     String
+  sizeBytes    Int
+  partCount    Int
+  pageId       String?
+  templateId   String?
+  createdAt    DateTime @default(now())
+  parts        FileUploadPart[]
+
+  @@index([ownerId])
+  @@index([createdAt])
+}
+
+model FileUploadPart {
+  uploadId String
+  part     Int
+  data     Bytes
+  upload   FileUpload @relation(fields: [uploadId], references: [id], onDelete: Cascade)
+
+  @@id([uploadId, part])
+}
+
+/// Páginas ancladas por cada persona (sección "Ancladas" de la barra lateral).
+model PagePin {
+  userId    String
+  pageId    String
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  page      Page     @relation(fields: [pageId], references: [id], onDelete: Cascade)
+
+  @@id([userId, pageId])
+  @@index([pageId])
 }
 
 model SyncOperation {

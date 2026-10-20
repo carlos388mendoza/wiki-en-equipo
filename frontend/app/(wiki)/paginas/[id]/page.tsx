@@ -1,7 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { BookOpen, ChevronRight, History, Pencil, Trash2 } from "lucide-react";
-import { trashPage } from "@/app/actions/admin";
+import { Archive, ArchiveRestore, BookOpen, ChevronRight, History, Pencil, Trash2 } from "lucide-react";
+import { setArchived, trashPage } from "@/app/actions/admin";
 import { ActionButton } from "@/components/ui/ActionButton";
 import { BlockRenderer } from "@/components/page/BlockRenderer";
 import { PageBackground } from "@/components/page/PageBackground";
@@ -46,6 +46,17 @@ export default async function PageView({ params }: { params: Promise<{ id: strin
 
   return (
     <article>
+      {page.archivedAt && (
+        <p role="status" className="flex flex-wrap items-center gap-x-3 gap-y-2 border-b border-line bg-paper px-4 py-2.5 text-sm text-muted sm:px-8">
+          <Archive size={15} aria-hidden className="shrink-0" />
+          <span className="min-w-0 flex-1">Esta página está archivada: no sale en la barra lateral ni en los listados, pero se puede abrir con su enlace.</span>
+          {canDelete(user, page) && (
+            <ActionButton action={setArchived.bind(null, page.id, false)} className="inline-flex items-center gap-1.5 rounded-lg border border-line bg-surface px-3 py-1.5 text-sm font-medium text-ink hover:border-brand disabled:opacity-60">
+              <ArchiveRestore size={14} aria-hidden /> Desarchivar
+            </ActionButton>
+          )}
+        </p>
+      )}
       <PageBackground background={page.background} seed={page.id} className="h-44 sm:h-56" priority />
 
       <div className="mx-auto max-w-3xl px-4 sm:px-8">

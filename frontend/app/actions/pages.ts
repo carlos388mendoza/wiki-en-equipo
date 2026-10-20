@@ -132,14 +132,14 @@ export async function deleteTemplate(id: string): Promise<ActionResult> {
  * la foto de portada a las por defecto ya instaladas que no la tienen (ver lib/default-templates-plan.ts). No borra
  * ni cambia el contenido de ninguna plantilla.
  */
-export async function installDefaultTemplates(): Promise<ActionResult<{ created: number; updated: number }>> {
+export async function installDefaultTemplates(): Promise<ActionResult<{ created: number; updated: number; retired: number }>> {
   const user = await requireUser();
   if (user.role !== "ADMIN") return { ok: false, message: "Solo un administrador puede instalar las plantillas de Grupo Comidas." };
   const { DEFAULT_TEMPLATES } = await import("@/lib/default-templates");
   const { defaultTemplatesPlan } = await import("@/lib/default-templates-plan");
   const existing = await listTemplates(user);
   if (!existing.ok) return { ok: false, message: existing.message };
-  const { toCreate, toUpdateCover } = defaultTemplatesPlan(existing.data, DEFAULT_TEMPLATES);
+  const { toCreate, toUpdateCover, toRetire } = defaultTemplatesPlan(existing.data, DEFAULT_TEMPLATES);
   let created = 0;
   for (const t of toCreate) {
     const { background, icon } = splitAppearance(t.background);
@@ -156,6 +156,13 @@ export async function installDefaultTemplates(): Promise<ActionResult<{ created:
     if (!res.ok) return { ok: false, message: res.message };
     updated++;
   }
+  // Las repetidas solo dejan de recomendarse ("Retirar"): no se borran ni se cambia su contenido.
+  let retired = 0;
+  for (const { id } of toRetire) {
+    const res = await backend(`/templates/${id}`, { method: "PATCH", body: { isDefault: false } });
+    if (!res.ok) return { ok: false, message: res.message };
+    retired++;
+  }
   revalidatePath("/plantillas");
-  return { ok: true, data: { created, updated } };
+  return { ok: true, data: { created, updated, retired } };
 }

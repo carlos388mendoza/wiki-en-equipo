@@ -49,7 +49,7 @@ export default defineConfig(({ mode }) => {
       TRUST_PROXY: "loopback",
       TRASH_RETENTION_DAYS: "0",
       // El mismo límite que en producción (las subidas pasan por Vercel, que no acepta más de 4,5 MB).
-      MAX_UPLOAD_BYTES: String(4 * 1024 * 1024),
+      MAX_UPLOAD_BYTES: String(20 * 1024 * 1024),
       // Archivos en disco en las dos modalidades; archivos-en-la-base.test.ts prueba el modo base.
       FILE_STORAGE: "disk",
       // Nunca una base de Turso real: vacía en el modo normal, el archivo de pruebas en --mode turso.

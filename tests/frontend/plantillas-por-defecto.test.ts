@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { DEFAULT_TEMPLATES } from "../../frontend/lib/default-templates";
-import { defaultTemplatesPlan } from "../../frontend/lib/default-templates-plan";
+import { defaultTemplatesPlan, RETIRED_DEFAULTS } from "../../frontend/lib/default-templates-plan";
 import { parseIcon } from "../../frontend/lib/icons";
 
 describe("plantillas por defecto de Grupo Comidas", () => {
@@ -59,5 +59,25 @@ describe("instalador de plantillas de Grupo Comidas", () => {
     // Una privada con el mismo título no cuenta como instalada: la de la empresa se crea.
     expect(plan.toCreate.map((t) => t.title)).toContain("Manual de puesto");
     expect(plan.toCreate.map((t) => t.title)).not.toContain("Acta de reunión");
+  });
+
+  it("retira de las por defecto las repetidas (sin borrarlas) y nunca las vuelve a crear", () => {
+    const plan = defaultTemplatesPlan([
+      { ...base, id: "r1", title: "Bienvenida al departamento", background: null },
+      { ...base, id: "r2", title: "Documentación de proceso", background: null },
+      { ...base, id: "r3", title: "Inicio del departamento", background: null },
+      { ...base, id: "r4", title: "Inicio del departamento", isDefault: false, background: null },
+    ], DEFAULT_TEMPLATES);
+    expect(plan.toRetire).toEqual([{ id: "r1", title: "Bienvenida al departamento" }, { id: "r2", title: "Documentación de proceso" }, { id: "r3", title: "Inicio del departamento" }]);
+    expect(plan.toUpdateCover).toEqual([]);
+    for (const title of Object.keys(RETIRED_DEFAULTS)) expect(plan.toCreate.map((t) => t.title)).not.toContain(title);
+  });
+
+  it("de cada par repetido se queda la plantilla de Grupo Comidas, que sí está entre las por defecto", () => {
+    const titles = DEFAULT_TEMPLATES.map((t) => t.title);
+    for (const [retired, kept] of Object.entries(RETIRED_DEFAULTS)) {
+      expect(titles).not.toContain(retired);
+      expect(titles).toContain(kept);
+    }
   });
 });

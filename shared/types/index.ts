@@ -51,6 +51,11 @@ export interface PageListItem extends PageSummary {
   owner: { id: string; name: string };
   tags: { name: string }[];
   myPermission: MyPermission;
+  /** Archivada (fecha) o `null`. Las archivadas solo salen con `?archived=1` o `?ids=`. */
+  archivedAt: string | null;
+  /** Página de un muro: no se archiva ni se manda a la papelera desde los menús. */
+  isWall: boolean;
+  isCompanyWall: boolean;
   /** Solo al buscar (`?q=`): dónde coincidió y un fragmento del contenido con la palabra encontrada. */
   match?: "title" | "content";
   excerpt?: string | null;
@@ -76,6 +81,8 @@ export interface PageDetail extends PageSummary {
   backgroundJson: string | null;
   isWall: boolean;
   isCompanyWall: boolean;
+  /** Archivada (fecha) o `null`: se puede abrir por enlace, pero no sale en los listados. */
+  archivedAt: string | null;
   createdAt: string;
   owner: { id: string; name: string };
   tags: { name: string }[];
@@ -158,6 +165,28 @@ export interface TemplateDetail extends TemplateListItem {
  * Respuesta de `POST /api/pages/:id/visit` (solo la vista de lectura la llama). Cuenta una vez cada
  * 30 minutos por persona y solo en páginas publicadas; en las privadas `visits` es `null`.
  */
+/** `PUT`/`DELETE /api/pages/:id/pin`: anclar es personal; lo hace cualquiera que pueda ver la página. */
+export interface PinResult {
+  pageId: string;
+  pinned: boolean;
+}
+
+/** `POST /api/pages/:id/archive` y `/unarchive` (dueño o ADMIN). */
+export interface ArchiveResult {
+  id: string;
+  archivedAt: string | null;
+}
+
+/**
+ * `POST /api/files/uploads`: empieza una subida en partes (archivos de más de 3 MB). Después, cada parte con
+ * `PUT /api/files/uploads/:uploadId/parts/:part` (application/octet-stream) y al final `POST …/complete`.
+ */
+export interface UploadStart {
+  uploadId: string;
+  partSize: number;
+  partCount: number;
+}
+
 export interface VisitResult {
   counted: boolean;
   visits: number | null;
