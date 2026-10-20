@@ -104,12 +104,38 @@ Todo con planes gratis y **sin tarjeta**: frontend y backend en Vercel, y base d
 
 ### Dónde corre cada parte
 
-- **Frontend:** Vercel, con la carpeta raíz `frontend`. Dirección: https://wiki-en-equipo.vercel.app. Cada PR genera su propia vista previa.
-- **Backend:** Vercel, un proyecto aparte con la carpeta raíz `backend` (funciones de Vercel, `framework: express`). Dirección: https://wiki-en-equipo-backend.vercel.app.
+- **Frontend:** Vercel, proyecto `wiki-grupo-comidas` con la carpeta raíz `frontend`. Dirección: https://wiki-grupo-comidas.vercel.app.
+- **Backend:** Vercel, proyecto `wiki-en-equipo-backend` con la carpeta raíz `backend` (funciones de Vercel, `framework: express`). Dirección: https://wiki-en-equipo-backend.vercel.app.
 - **Base de datos:** Turso, que es SQLite en la nube, también gratis. El backend usa el mismo esquema y las mismas migraciones que en local.
 - **Archivos subidos:** dentro de la base de datos (`FILE_STORAGE=database`), porque las funciones de Vercel no conservan disco. Límite de 4 MB por archivo.
 
-> **Estado (19/10/2026):** el backend y la base ya están publicados y funcionando, y los 4 usuarios están creados. Solo falta **conectar el frontend**: definirle `BACKEND_URL`, `NEXT_PUBLIC_COLLAB_URL`, `NEXT_PUBLIC_MAX_UPLOAD_MB` y `PROXY_SECRET` (sección 3) y volver a desplegar.
+> **Estado (20/10/2026):** todo publicado y funcionando de punta a punta; los 4 usuarios están creados.
+
+### Cómo se publica (solo, al unir a `main`)
+
+Los dos proyectos de Vercel están en la cuenta `carlosmendozazelaya2009-7802` y conectados por Git a la **copia**
+[`carlos388mendoza/wiki-en-equipo`](https://github.com/carlos388mendoza/wiki-en-equipo), no a este repositorio: la app
+de GitHub de Vercel solo puede instalarla el dueño de cada cuenta, y está instalada en la de la copia.
+
+1. Se une un PR a `main` de este repositorio.
+2. En la copia, el flujo [`.github/workflows/sincronizar-copia.yml`](.github/workflows/sincronizar-copia.yml) corre cada
+   5 minutos y adelanta su `main` (el botón "Sync fork" de GitHub; nunca fuerza). En este repositorio el flujo no hace nada.
+3. Ese avance hace que Vercel publique **el frontend y el backend** en producción. En total, entre 5 y 15 minutos
+   después de unir (GitHub a veces retrasa los flujos programados).
+
+Detalles:
+- Solo `main` publica: `git.deploymentEnabled` en `frontend/vercel.json` y `backend/vercel.json`. Las vistas previas
+  del backend tienen las variables de Turso, y una rama sin unir no debe aplicar migraciones a producción.
+- El backend aplica las migraciones de Turso **al compilar** (`pnpm run vercel-build`), igual que antes.
+- Las variables de entorno siguen en cada proyecto de Vercel; conectar Git no las cambia.
+- **Si un PR cambia algo de `.github/workflows/`**, GitHub no deja que el flujo lo copie: abre la copia en GitHub y
+  presiona **Sync fork → Update branch**.
+- **No subas nada directo a la copia:** si su `main` se separa del de este repositorio, el flujo falla (y GitHub avisa
+  por correo). Para arreglarlo, en la copia: **Sync fork → Discard commits**.
+- Para publicar sin esperar: en la copia, **Actions → Sincronizar la copia que publica Vercel → Run workflow**, o en
+  Vercel, **Deployments → … → Redeploy**.
+- GitHub apaga los flujos programados tras 60 días sin actividad en el repositorio: si pasa, vuelve a activarlo en
+  **Actions** de la copia.
 
 ### Por qué Vercel para el backend
 
@@ -145,7 +171,7 @@ Si algo falla no se pierde nada: todo vive en Turso. La edición en vivo se reco
 |---|---|
 | `TURSO_DATABASE_URL` | la URL `libsql://…` de Turso |
 | `TURSO_AUTH_TOKEN` | el token de Turso (lectura y escritura, sin vencimiento) |
-| `FRONTEND_ORIGIN` | `https://wiki-en-equipo.vercel.app` |
+| `FRONTEND_ORIGIN` | `https://wiki-grupo-comidas.vercel.app` |
 | `JWT_SECRET` | texto aleatorio de 32+ caracteres |
 | `BOOTSTRAP_SECRET` | otro texto aleatorio, distinto (solo para crear el primer administrador) |
 | `PROXY_SECRET` | el mismo valor que en el frontend: el servidor de Next firma con él la IP real del login |
@@ -183,7 +209,7 @@ Esos dos valores van en Vercel, nunca en el repositorio. Las tablas las crea el 
 4. **Deploy**. En los registros del build deben aparecer las migraciones aplicadas; en los *Runtime Logs*, `Wiki en equipo API escuchando…`.
 5. Abre `/health` en la dirección del proyecto (`https://wiki-en-equipo-backend.vercel.app/health`). Debe responder `{"status":"ok"}`.
 
-> **Nota (cuenta usada):** el proyecto está en la cuenta de Vercel `carlosmendozazelaya2009-7802`, y **sin conexión Git** (la app de GitHub de Vercel no está instalada ahí). Por eso se despliega a mano desde `backend/`: `vercel --prod`. Para que se despliegue solo con cada `git push`, hay que instalar la app de GitHub de Vercel en esa cuenta desde su panel.
+> **Nota (cuenta usada):** el proyecto está en la cuenta de Vercel `carlosmendozazelaya2009-7802`, conectado a la copia `carlos388mendoza/wiki-en-equipo` (ver "Cómo se publica").
 >
 > **Deployment Protection** debe quedar **desactivada** en este proyecto (`Settings → Deployment Protection`): si está activa, el frontend no puede llamar al backend.
 
