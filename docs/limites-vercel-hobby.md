@@ -64,8 +64,11 @@ al escribir no cambia; lo que tarda 5 s como mucho es ver lo que escriben los de
 - **Migraciones:** se aplican **al compilar** (`pnpm run vercel-build` llama a `models/deploy-turso.ts`), no en
   cada petición. Si el despliegue se repite, no hace nada: cada migración queda registrada en
   `_prisma_migrations` y se aplica en una transacción.
-- **Archivos:** `FILE_STORAGE=database` porque las funciones no conservan disco. Límite de 4 MB por archivo,
-  por debajo de los 4,5 MB que acepta Vercel como cuerpo de una función.
+- **Archivos:** `FILE_STORAGE=database` porque las funciones no conservan disco. Vercel no acepta cuerpos de más de
+  4,5 MB por petición, así que los archivos de **más de 3 MB se suben en partes de 3 MB** (`POST /api/files/uploads`,
+  `PUT …/parts/:part` y `POST …/complete`) y se guardan en `FileBlobPart`; la entrega va por streaming. El límite por
+  archivo es `MAX_UPLOAD_BYTES` = **20 MB**. En Turso (9 GB gratis) caben de sobra; las subidas a medias se borran en
+  el Cron diario de la papelera.
 - **WebSockets:** descartados en producción. Vercel los admite (beta), pero cada petición puede caer en una
   instancia distinta y no comparten memoria; el servidor Yjs del backend no podría sincronizar entre ellas.
   En local se mantienen.
