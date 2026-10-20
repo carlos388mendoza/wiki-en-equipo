@@ -50,7 +50,7 @@ type LiveProvider = {
 };
 
 /** La edición en vivo va por HTTP (consultas periódicas) en lugar de WebSocket. */
-export const isHttpCollab = (url: string) => /^https?:///.test(url);
+export const isHttpCollab = (url: string) => /^https?:\/\//.test(url);
 
 /** Códigos con los que el backend cierra la conexión en vivo (por HTTP, los mismos para 409 y 403). */
 const ACCESS_REVOKED = 4403;

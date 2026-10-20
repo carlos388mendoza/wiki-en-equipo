@@ -1,13 +1,13 @@
 "use client";
 
 import Image from "next/image";
-import { useEffect, useRef, useState } from "react";
-import { Check, ImagePlus, LoaderCircle, Search, Upload } from "lucide-react";
+import { useRef, useState } from "react";
+import { Check, ImagePlus, LoaderCircle, RefreshCw, Trash2, Upload } from "lucide-react";
 import { COLORS, GRADIENTS, PATTERN_COLORS, PATTERN_EMOJIS, PHOTO_GALLERY } from "@/lib/backgrounds";
 import { safeHref } from "@/lib/blocks";
 import { isOptimizableImage } from "@/lib/images";
 import type { Background, ShapePattern } from "@/lib/types";
-import { MAX_UPLOAD_MB, uploadToWiki, type UploadTarget } from "@/lib/uploads";
+import { IMAGE_TYPES, MAX_UPLOAD_MB, uploadToWiki, type UploadTarget } from "@/lib/uploads";
 import { backgroundStyle } from "../page/PageBackground";
 import { Modal } from "../ui/Modal";
 
@@ -26,7 +26,8 @@ const tabs: { id: Tab; label: string }[] = [
   { id: "patrones", label: "Patrones" },
 ];
 
-type SearchResult = { id: string; url: string; thumb: string; alt: string; credit: string; creditUrl: string; downloadLocation: string };
+/** `true` si el fondo es una imagen subida a la wiki (la ven solo quienes pueden leer la página o plantilla). */
+export const isUploadedBackground = (bg: Background | null) => bg?.type === "image" && bg.url.startsWith("/archivos/");
 
 function Swatch({ selected, onClick, label, style, children }: { selected: boolean; onClick: () => void; label: string; style?: React.CSSProperties; children?: React.ReactNode }) {
   return (
@@ -42,50 +43,31 @@ export function BackgroundPicker({ open, onClose, value, onChange, uploadTarget 
   open: boolean; onClose: () => void; value: Background | null; onChange: (bg: Background | null) => void; uploadTarget?: UploadTarget;
 }) {
   const [tab, setTab] = useState<Tab>(value?.type === "gradient" ? "degradados" : value?.type === "color" ? "colores" : value?.type === "pattern" || value?.type === "shapes" ? "patrones" : "imagenes");
-  const [query, setQuery] = useState("");
-  const [results, setResults] = useState<SearchResult[] | null>(null);
-  const [searchEnabled, setSearchEnabled] = useState<boolean | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
+  const [uploadError, setUploadError] = useState("");
+  const [dragging, setDragging] = useState(false);
   const [link, setLink] = useState("");
   const [patternEmoji, setPatternEmoji] = useState(value?.type === "pattern" ? value.emoji : "🍽️");
   const [patternColor, setPatternColor] = useState(value?.type === "pattern" || value?.type === "shapes" ? value.color : PATTERN_COLORS[0]);
   const fileRef = useRef<HTMLInputElement>(null);
+  const own = isUploadedBackground(value) && value?.type === "image" ? value.url : null;
 
-  useEffect(() => {
-    if (!open || searchEnabled !== null) return;
-    fetch("/fondos/buscar").then((r) => r.json()).then((j) => setSearchEnabled(Boolean(j.enabled))).catch(() => setSearchEnabled(false));
-  }, [open, searchEnabled]);
-
-  const pick = (bg: Background | null) => { onChange(bg); setError(""); };
+  const pick = (bg: Background | null) => { onChange(bg); setError(""); setUploadError(""); };
   const isSelected = (bg: Background) => JSON.stringify(bg) === JSON.stringify(value);
 
-  async function search(e: React.FormEvent) {
-    e.preventDefault();
-    if (!query.trim()) return;
-    setBusy(true); setError("");
-    try {
-      const res = await fetch(`/fondos/buscar?q=${encodeURIComponent(query)}`);
-      const json = await res.json();
-      setResults(json.results ?? []);
-      if (json.message) setError(json.message);
-    } catch {
-      setError("No pudimos buscar en Unsplash. Usa la galería.");
-    } finally { setBusy(false); }
-  }
-
   async function upload(file: File) {
-    setBusy(true); setError("");
+    setBusy(true); setError(""); setUploadError("");
     try {
       const up = await uploadToWiki(file, uploadTarget, true);
       pick({ type: "image", url: up.url });
     } catch (e) {
-      setError(e instanceof Error ? e.message : "No se pudo subir la imagen.");
+      setUploadError(e instanceof Error ? e.message : "No se pudo subir la imagen. Intenta de nuevo.");
     } finally { setBusy(false); }
   }
 
   return (
-    <Modal open={open} onClose={onClose} title="Fondo de la página" description="Elige una imagen, un degradado, un color o un patrón." size="xl">
+    <Modal open={open} onClose={onClose} title="Fondo de la página" description="Sube una imagen o elige una de la galería, un degradado, un color o un patrón." size="xl">
       <div className="flex flex-col gap-4">
         <div className="flex flex-wrap items-center gap-2">
           <div role="tablist" aria-label="Tipo de fondo" className="flex flex-wrap gap-1 rounded-lg bg-paper p-1">
@@ -103,51 +85,52 @@ export function BackgroundPicker({ open, onClose, value, onChange, uploadTarget 
 
         {tab === "imagenes" && (
           <div className="flex flex-col gap-5">
-            <div className="flex flex-col gap-2 sm:flex-row">
-              {searchEnabled && (
-                <form onSubmit={search} className="flex flex-1 items-center gap-2 rounded-lg border border-line px-3 focus-within:border-brand">
-                  <Search size={16} className="text-muted" aria-hidden />
-                  <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Buscar en Unsplash (ej. café, cocina, equipo)" aria-label="Buscar en Unsplash" className="h-10 flex-1 bg-transparent text-sm outline-none" />
-                  {busy && <LoaderCircle size={16} className="animate-spin text-muted" aria-hidden />}
-                </form>
-              )}
-              <button type="button" onClick={() => fileRef.current?.click()} disabled={busy} className="inline-flex h-10 items-center justify-center gap-2 rounded-lg border border-line px-3 text-sm font-medium hover:border-brand disabled:opacity-60">
-                <Upload size={16} aria-hidden /> Subir imagen
-              </button>
-              <input ref={fileRef} type="file" accept="image/jpeg,image/png,image/webp,image/gif" className="hidden" onChange={(e) => { const f = e.target.files?.[0]; if (f) void upload(f); e.target.value = ""; }} />
-            </div>
-
-            <p className="-mt-3 text-xs text-muted">Puedes subir imágenes JPG, PNG, WEBP o GIF de hasta {MAX_UPLOAD_MB} MB.</p>
-
-            {results && (
-              <section aria-label="Resultados de Unsplash">
-                <h3 className="mb-2 text-sm font-semibold">Resultados</h3>
-                {results.length === 0 ? <p className="text-sm text-muted">Sin resultados. Prueba otra palabra.</p> : (
-                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-                    {results.map((r) => {
-                      const bg: Background = { type: "image", url: r.url, credit: r.credit, creditUrl: r.creditUrl };
-                      return (
-                        <figure key={r.id} className="flex flex-col gap-1">
-                          <Swatch selected={value?.type === "image" && value.url === r.url} label={r.alt} onClick={() => { pick(bg); void fetch("/fondos/buscar", { method: "POST", body: JSON.stringify({ downloadLocation: r.downloadLocation }) }); }}>
-                            <Image src={r.thumb} alt="" fill sizes="200px" className="object-cover" />
-                          </Swatch>
-                          <figcaption className="truncate text-[11px] text-muted">
-                            Foto de <a href={r.creditUrl} target="_blank" rel="noopener noreferrer" className="underline">{r.credit}</a> en Unsplash
-                          </figcaption>
-                        </figure>
-                      );
-                    })}
+            <section aria-labelledby="fondo-propio" aria-busy={busy}
+              onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+              onDragLeave={() => setDragging(false)}
+              onDrop={(e) => { e.preventDefault(); setDragging(false); const f = e.dataTransfer.files?.[0]; if (f && !busy) void upload(f); }}
+              className={`rounded-xl border-2 border-dashed p-4 transition-colors ${dragging ? "border-brand bg-brand-soft" : "border-line bg-paper"}`}>
+              <input ref={fileRef} type="file" accept={IMAGE_TYPES.join(",")} className="hidden" aria-label="Elegir una imagen de tu equipo"
+                onChange={(e) => { const f = e.target.files?.[0]; if (f) void upload(f); e.target.value = ""; }} />
+              {own ? (
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+                  <div className="relative h-28 w-full shrink-0 overflow-hidden rounded-lg border border-line bg-line sm:h-24 sm:w-44">
+                    <Image src={own} alt="Tu imagen de fondo" fill sizes="(min-width: 640px) 176px, 100vw" unoptimized className="object-cover" />
                   </div>
-                )}
-              </section>
-            )}
+                  <div className="min-w-0 flex-1">
+                    <h3 id="fondo-propio" className="text-sm font-semibold">Tu imagen</h3>
+                    <p className="mt-0.5 text-xs text-muted">Es el fondo de esta página. Solo la ven quienes tienen acceso a la página.</p>
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      <button type="button" onClick={() => fileRef.current?.click()} disabled={busy} className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-line bg-surface px-3 text-sm font-medium hover:border-brand disabled:opacity-60">
+                        {busy ? <LoaderCircle size={15} className="animate-spin" aria-hidden /> : <RefreshCw size={15} aria-hidden />} {busy ? "Subiendo…" : "Cambiar imagen"}
+                      </button>
+                      <button type="button" onClick={() => pick(null)} disabled={busy} className="inline-flex h-9 items-center gap-1.5 rounded-lg px-3 text-sm font-medium text-muted hover:bg-surface hover:text-danger disabled:opacity-60">
+                        <Trash2 size={15} aria-hidden /> Quitar
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center gap-2 py-2 text-center">
+                  <span className="grid h-10 w-10 place-items-center rounded-full bg-surface text-brand-strong shadow-sm" aria-hidden><Upload size={18} /></span>
+                  <h3 id="fondo-propio" className="text-sm font-semibold">Sube una imagen desde tu equipo</h3>
+                  <p className="text-xs text-muted">
+                    JPG, PNG, WEBP o GIF, de hasta {MAX_UPLOAD_MB} MB.<span className="hidden [@media(hover:hover)]:inline"> También puedes arrastrarla aquí.</span>
+                  </p>
+                  <button type="button" onClick={() => fileRef.current?.click()} disabled={busy} className="mt-1 inline-flex h-10 items-center gap-2 rounded-lg bg-ink px-4 text-sm font-medium text-white hover:bg-brand disabled:opacity-60">
+                    {busy ? <LoaderCircle size={16} className="animate-spin" aria-hidden /> : <ImagePlus size={16} aria-hidden />} {busy ? "Subiendo…" : "Elegir imagen"}
+                  </button>
+                </div>
+              )}
+              {uploadError && <p role="alert" className="mt-3 rounded-lg bg-danger-soft px-3 py-2 text-sm text-danger">{uploadError}</p>}
+            </section>
 
             {PHOTO_GALLERY.map((g) => (
               <section key={g.group} aria-label={g.group}>
                 <h3 className="mb-2 text-sm font-semibold">{g.group}</h3>
                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-6">
                   {g.photos.map((p) => (
-                    <Swatch key={p.url} selected={value?.type === "image" && value.url === p.url} label={p.alt} onClick={() => pick({ type: "image", url: p.url, credit: "Unsplash", creditUrl: "https://unsplash.com/?utm_source=wiki_grupo_comidas&utm_medium=referral" })}>
+                    <Swatch key={p.url} selected={value?.type === "image" && value.url === p.url} label={p.alt} onClick={() => pick({ type: "image", url: p.url })}>
                       <Image src={`${p.url}?w=400&q=60`} alt="" fill sizes="200px" className="object-cover" />
                     </Swatch>
                   ))}
@@ -172,11 +155,12 @@ export function BackgroundPicker({ open, onClose, value, onChange, uploadTarget 
               </label>
               <button type="submit" className="h-10 rounded-lg bg-ink px-3 text-sm font-medium text-white hover:bg-brand">Usar enlace</button>
             </form>
-            {value?.type === "image" && !isOptimizableImage(value.url) && !value.url.startsWith("/archivos/") && (
+            {value?.type === "image" && !isOptimizableImage(value.url) && !own && (
               <p className="text-xs text-muted">Las imágenes de otros sitios se muestran tal cual, sin optimizar. Si el sitio la quita, el fondo desaparecerá.</p>
             )}
           </div>
         )}
+
 
         {tab === "degradados" && (
           <div className="grid grid-cols-2 gap-2 sm:grid-cols-5">

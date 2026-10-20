@@ -13,11 +13,14 @@ export const ALLOWED_UPLOADS: Record<string, string> = {
   "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet": "Excel (XLSX)",
 };
 
+/** Imágenes que se pueden subir (fondos y bloques de imagen). */
+export const IMAGE_TYPES = ["image/jpeg", "image/png", "image/webp", "image/gif"];
+
 export const allowedList = () => [...new Set(Object.values(ALLOWED_UPLOADS))].join(", ");
 
 /** Revisa el archivo antes de subirlo. Devuelve el mensaje de error o `null`. */
 export function checkUpload(file: { size: number; type: string; name: string }, onlyImages = false): string | null {
-  if (onlyImages && !file.type.startsWith("image/")) return "Elige una imagen (JPG, PNG, WEBP o GIF).";
+  if (onlyImages && !IMAGE_TYPES.includes(file.type)) return `“${file.name}” no se puede usar como imagen. Elige una imagen JPG, PNG, WEBP o GIF.`;
   if (!ALLOWED_UPLOADS[file.type]) return `“${file.name}” no se puede subir. Tipos permitidos: ${allowedList()}.`;
   if (file.size > MAX_UPLOAD_BYTES) return `“${file.name}” pesa ${(file.size / 1024 / 1024).toFixed(1)} MB. El máximo es ${MAX_UPLOAD_MB} MB.`;
   return null;

@@ -70,15 +70,8 @@ export function PageBackground({ background, seed, className = "", sizes = "100v
           unoptimized={!isOptimizableImage(background.url)}
           className="object-cover"
         />
-        {background.credit && (
-          <span className="absolute bottom-1 right-2 rounded bg-ink/50 px-1.5 py-0.5 text-[10px] text-white">
-            {background.creditUrl ? (
-              <a href={background.creditUrl} target="_blank" rel="noopener noreferrer" className="hover:underline">Foto: {background.credit}</a>
-            ) : (
-              <>Foto: {background.credit}</>
-            )}
-          </span>
-        )}
+        {/* Sin crédito: las fotos de la galería son una lista fija (sin API de búsqueda) y su licencia no lo exige.
+            Los fondos viejos pueden traer `credit`; se conserva en los datos pero no se muestra. */}
       </div>
     );
   }
