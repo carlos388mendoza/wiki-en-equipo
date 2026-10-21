@@ -105,7 +105,9 @@ export interface PageSummary extends Pick<SharedPageSummary, "id" | "title" | "v
 }
 
 /** Secciones de la barra lateral. */
-export type SidebarSections = { ancladas: PageSummary[]; empresa: PageSummary[]; departamento: PageSummary[]; compartidas: PageSummary[]; privadas: PageSummary[] };
+/** `departamentos`: todos para un administrador; para los demás, solo el suyo (lo decide el backend). */
+export type SidebarDepartment = { id: string; slug: string; name: string; icon: string | null; pages: PageSummary[] };
+export type SidebarSections = { ancladas: PageSummary[]; empresa: PageSummary[]; departamento: PageSummary[]; departamentos: SidebarDepartment[]; compartidas: PageSummary[]; privadas: PageSummary[] };
 
 export interface TemplateSummary {
   id: string;

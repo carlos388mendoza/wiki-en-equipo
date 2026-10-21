@@ -1,8 +1,8 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { CloudOff, LoaderCircle, LogOut, UserRoundCog } from "lucide-react";
-import { signOut } from "@/app/actions/session";
+import { CloudOff, DoorOpen, LoaderCircle, LogOut } from "lucide-react";
+import { signOut, signOutAll } from "@/app/actions/session";
 import { clearLocalData, findUnsynced, type Unsynced } from "@/lib/collab/local-data";
 import { Modal } from "../ui/Modal";
 
@@ -11,15 +11,17 @@ import { Modal } from "../ui/Modal";
  * trabajar sin conexión, borradores y páginas en caché). Siempre pide confirmar;
  * si hay cambios sin subir, el aviso los lista.
  */
-export function LogoutButton({ userId, variant = "icon", mode = "salir" }: {
+export function LogoutButton({ userId, variant = "icon", mode = "salir", otherUserIds = [] }: {
   userId: string;
-  /** `icon`: botón pequeño de la barra lateral; `menu`: opción con texto (menú Cuenta del celular). */
+  /** `icon`: botón pequeño; `menu`: opción con texto (ventana de cuentas). */
   variant?: "icon" | "menu";
-  /** `cambiar`: «Cambiar de cuenta» (cierra la sesión y lleva al inicio de sesión para entrar con otra). */
-  mode?: "salir" | "cambiar";
+  /** `todas`: «Cerrar sesión en todas» las cuentas de este dispositivo (`otherUserIds`: las demás guardadas). */
+  mode?: "salir" | "todas";
+  otherUserIds?: string[];
 }) {
-  const label = mode === "cambiar" ? "Cambiar de cuenta" : "Cerrar sesión";
-  const Icon = mode === "cambiar" ? UserRoundCog : LogOut;
+  const label = mode === "todas" ? "Cerrar sesión en todas" : "Cerrar sesión";
+  const Icon = mode === "todas" ? DoorOpen : LogOut;
+  const ids = mode === "todas" ? [userId, ...otherUserIds] : [userId];
   const [pending, start] = useTransition();
   const [unsynced, setUnsynced] = useState<Unsynced[] | null>(null);
   // null: cerrado; [] : confirmación simple; con elementos: aviso de cambios sin subir.
@@ -27,8 +29,8 @@ export function LogoutButton({ userId, variant = "icon", mode = "salir" }: {
   const close = () => setUnsynced(null);
 
   const finish = () => start(async () => {
-    await clearLocalData(userId).catch(() => {});
-    await signOut();
+    for (const id of ids) await clearLocalData(id).catch(() => {});
+    await (mode === "todas" ? signOutAll() : signOut());
   });
 
   return (
@@ -38,16 +40,15 @@ export function LogoutButton({ userId, variant = "icon", mode = "salir" }: {
         disabled={pending}
         aria-label={variant === "icon" ? label : undefined}
         title={variant === "icon" ? label : undefined}
-        role={variant === "menu" ? "menuitem" : undefined}
-        onClick={() => start(async () => setUnsynced(await findUnsynced(userId).catch(() => [])))}
+                onClick={() => start(async () => setUnsynced((await Promise.all(ids.map((id) => findUnsynced(id).catch(() => [])))).flat()))}
         className={variant === "icon" ? "grid h-8 w-8 place-items-center rounded-md text-muted hover:bg-line/60 hover:text-ink disabled:opacity-60" : "flex w-full items-center gap-2.5 rounded-md px-3 py-2.5 text-left text-sm hover:bg-paper disabled:opacity-60"}
       >
         {pending ? <LoaderCircle size={16} className="animate-spin" /> : <Icon size={16} aria-hidden />}
         {variant === "menu" && label}
       </button>
 
-      <Modal open={open && unsynced.length === 0} onClose={close} title={mode === "cambiar" ? "¿Cambiar de cuenta?" : "¿Cerrar sesión?"}
-        description={`${mode === "cambiar" ? "Se cerrará tu sesión para que entres con otra cuenta. " : ""}Se borrará lo que la wiki guardó en este dispositivo para trabajar sin conexión. Tus páginas siguen guardadas en la wiki.`}>
+      <Modal open={open && unsynced.length === 0} onClose={close} title={mode === "todas" ? "¿Cerrar sesión en todas las cuentas?" : "¿Cerrar sesión?"}
+        description={`${mode === "todas" ? "Se cerrarán todas las cuentas de este dispositivo. " : ""}Se borrará lo que la wiki guardó en este dispositivo para trabajar sin conexión. Tus páginas siguen guardadas en la wiki.`}>
         <div className="flex flex-wrap justify-end gap-2 text-sm">
           <button type="button" onClick={close} className="rounded-lg px-3 py-2 font-medium hover:bg-paper">Cancelar</button>
           <button type="button" disabled={pending} onClick={finish} className="inline-flex items-center gap-2 rounded-lg bg-ink px-3 py-2 font-medium text-white hover:bg-brand disabled:opacity-60">

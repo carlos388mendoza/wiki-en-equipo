@@ -175,16 +175,20 @@ const sharedWithMe = (permission: MyPermission | undefined) => permission === "E
 
 /** Lo que aparece en la barra lateral, agrupado por sección. */
 export async function getSidebar(viewer: User): Promise<SidebarSections> {
-  const [res, pinned] = await Promise.all([accessiblePages(), backend<{ pages: RawListPage[] }>("/pages/pinned")]);
+  const [res, pinned, departments] = await Promise.all([accessiblePages(), backend<{ pages: RawListPage[] }>("/pages/pinned"), listDepartments()]);
   const visible = res.ok ? res.data : [];
   const mine = (p: PageSummary) => p.ownerId === viewer.id;
+  // El backend da todos los departamentos a un administrador y a los demás solo el suyo; el propio va primero.
+  const shownDepartments = [...departments.filter((d) => d.id === viewer.departmentId), ...departments.filter((d) => d.id !== viewer.departmentId)];
+  const inDepartment = (p: PageSummary) => p.visibility === "DEPARTMENT" && shownDepartments.some((d) => d.id === p.departmentId);
   return {
+    departamentos: shownDepartments.map((d) => ({ id: d.id, slug: d.slug, name: d.name, icon: d.icon, pages: visible.filter((p) => p.visibility === "DEPARTMENT" && p.departmentId === d.id) })),
     // Personales: cada persona ancla las suyas (en el orden en que las ancló).
     ancladas: pinned.ok ? pinned.data.pages.map(toSummary) : [],
     empresa: visible.filter((p) => p.visibility === "COMPANY"),
     departamento: visible.filter((p) => p.visibility === "DEPARTMENT" && p.departmentId === viewer.departmentId),
     // El backend indica si la página se compartió con la persona (también para administradores).
-    compartidas: visible.filter((p) => sharedWithMe(p.myPermission) && !(p.visibility === "COMPANY" || (p.visibility === "DEPARTMENT" && p.departmentId === viewer.departmentId))),
+    compartidas: visible.filter((p) => sharedWithMe(p.myPermission) && !(p.visibility === "COMPANY" || (p.visibility === "DEPARTMENT" && p.departmentId === viewer.departmentId) || inDepartment(p))),
     privadas: visible.filter((p) => mine(p) && p.visibility === "PRIVATE"),
   };
 }
