@@ -1,3 +1,6 @@
+"use client";
+
+import { useState } from "react";
 import Image from "next/image";
 import { flagCode, flagSrc } from "@/lib/flags";
 import { ICON_TONES, parseIcon } from "@/lib/icons";
@@ -10,11 +13,15 @@ export function PageIcon({ icon, fallback = "📄", size = 20, className = "" }:
   icon: string | null | undefined; fallback?: string; size?: number; className?: string;
 }) {
   const parsed = parseIcon(icon) ?? parseIcon(fallback);
+  const [animKey, setAnimKey] = useState(0);
   if (parsed?.kind === "brand" && parsed.wide) {
-    // El logo animado es rectangular (600 × 200): entero, sobre una tesela negra.
+    // El logo animado es rectangular (600 × 200): entero, sobre fondo transparente.
+    // Al pasar el ratón se reinicia la animación.
     return (
-      <span aria-hidden className={`relative inline-block shrink-0 overflow-hidden ${className}`} style={{ width: size, height: size, borderRadius: size * 0.22 }}>
-        <Image src={parsed.src} alt="" fill sizes={`${size}px`} unoptimized className="object-contain" />
+      <span aria-hidden className={`relative inline-block shrink-0 overflow-hidden ${className}`}
+        style={{ width: size * 2, height: size, borderRadius: size * 0.12 }}
+        onMouseEnter={() => setAnimKey((k) => k + 1)}>
+        <Image key={animKey} src={parsed.src} alt="" fill sizes={`${size * 2}px`} unoptimized className="object-contain" />
       </span>
     );
   }
