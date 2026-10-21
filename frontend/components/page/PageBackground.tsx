@@ -68,7 +68,7 @@ export function PageBackground({ background, seed, className = "", sizes = "100v
 }) {
   if (background?.type === "image") {
     return (
-      <div className={`relative overflow-hidden bg-line ${className}`}>
+      <div className={`group/portada relative overflow-hidden bg-line ${className}`}>
         <Image
           src={background.url}
           alt=""
@@ -78,8 +78,14 @@ export function PageBackground({ background, seed, className = "", sizes = "100v
           unoptimized={!isOptimizableImage(background.url)}
           className="object-cover"
         />
-        {/* Sin crédito: las fotos de la galería son una lista fija (sin API de búsqueda) y su licencia no lo exige.
-            Los fondos viejos pueden traer `credit`; se conserva en los datos pero no se muestra. */}
+        {/* Crédito de las fotos elegidas con la búsqueda de Unsplash (#44; lo piden sus reglas): pequeño y solo al pasar
+            el ratón (en pantallas táctiles, tenue). Las de la galería fija no lo llevan (su licencia no lo exige). */}
+        {background.credit && background.creditUrl && background.credit !== "Unsplash" && (
+          <span className="absolute bottom-1.5 left-2 z-10 max-w-[70%] truncate rounded bg-ink/55 px-1.5 py-0.5 text-[10px] text-white opacity-0 transition-opacity group-hover/portada:opacity-100 focus-within:opacity-100 [@media(any-hover:none)]:opacity-70">
+            Foto: <a href={background.creditUrl} target="_blank" rel="noopener noreferrer" className="hover:underline">{background.credit}</a>
+            {" · "}<a href="https://unsplash.com/?utm_source=wiki_grupo_comidas&utm_medium=referral" target="_blank" rel="noopener noreferrer" className="hover:underline">Unsplash</a>
+          </span>
+        )}
       </div>
     );
   }

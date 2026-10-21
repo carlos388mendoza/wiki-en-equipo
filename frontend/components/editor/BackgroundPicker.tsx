@@ -9,6 +9,7 @@ import { safeHref } from "@/lib/blocks";
 import { isOptimizableImage } from "@/lib/images";
 import type { Background, ShapePattern } from "@/lib/types";
 import { IMAGE_TYPES, MAX_UPLOAD_MB, uploadToWiki, type UploadTarget } from "@/lib/uploads";
+import { registerUnsplashDownload, useUnsplashSearch, type RemotePhoto } from "@/lib/unsplash-search";
 import { backgroundStyle } from "../page/PageBackground";
 import { Modal } from "../ui/Modal";
 import { IconBrowser } from "./IconBrowser";
@@ -53,6 +54,8 @@ export function BackgroundPicker({ open, onClose, value, onChange, uploadTarget 
   const [link, setLink] = useState("");
   const [photoQuery, setPhotoQuery] = useState("");
   const photoResults = searchPhotos(photoQuery);
+  // Con clave de Unsplash (en el servidor) se busca en toda su colección; sin ella, solo en la galería fija (#44).
+  const remote = useUnsplashSearch(photoQuery);
   const [patternEmoji, setPatternEmoji] = useState(value?.type === "pattern" ? value.emoji : "🍽️");
   const patternParsed = parseIcon(patternEmoji);
   const [patternTone, setPatternTone] = useState<IconTone>(patternParsed?.kind === "lucide" ? patternParsed.tone : "rojo");
@@ -64,6 +67,19 @@ export function BackgroundPicker({ open, onClose, value, onChange, uploadTarget 
 
   const pick = (bg: Background | null) => { onChange(bg); setError(""); setUploadError(""); };
   const isSelected = (bg: Background) => JSON.stringify(bg) === JSON.stringify(value);
+
+  // Crédito al fotógrafo y a Unsplash (lo piden sus reglas), pequeño y solo al pasar el ratón.
+  const remoteSwatch = (p: RemotePhoto) => (
+    <div key={p.id} className="group/foto relative" title={`Foto de ${p.credit} en Unsplash`}>
+      <Swatch selected={value?.type === "image" && value.url === p.url} label={`${p.alt}. Foto de ${p.credit}`}
+        onClick={() => { pick({ type: "image", url: p.url, credit: p.credit, creditUrl: p.creditUrl }); registerUnsplashDownload(p); }}>
+        <Image src={p.thumb} alt="" fill sizes="200px" unoptimized className="object-cover" />
+      </Swatch>
+      <span aria-hidden className="pointer-events-none absolute inset-x-px bottom-px truncate rounded-b-lg bg-ink/60 px-1.5 py-0.5 text-[10px] text-white opacity-0 transition-opacity group-hover/foto:opacity-100 [@media(any-hover:none)]:opacity-90">
+        {p.credit} · Unsplash
+      </span>
+    </div>
+  );
 
   const photoSwatch = (p: GalleryPhoto) => (
     <Swatch key={p.url} selected={value?.type === "image" && value.url === p.url} label={p.alt} onClick={() => pick({ type: "image", url: p.url })}>
@@ -149,11 +165,27 @@ export function BackgroundPicker({ open, onClose, value, onChange, uploadTarget 
             </label>
 
             {photoQuery.trim() ? (
-              <section aria-label="Resultados de la búsqueda">
-                <h3 className="mb-2 text-sm font-semibold">{photoResults.length ? `${photoResults.length} ${photoResults.length === 1 ? "foto" : "fotos"}` : "Sin resultados"}</h3>
-                {photoResults.length ? (
-                  <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-6">{photoResults.map(photoSwatch)}</div>
-                ) : <p className="text-sm text-muted">No encontramos fotos con “{photoQuery.trim()}”. Prueba con comida, cocina, oficina, equipo o naturaleza, o sube tu propia imagen.</p>}
+              <section aria-label="Resultados de la búsqueda" className="flex flex-col gap-4">
+                {remote.status === "loading" && remote.results.length === 0 && (
+                  <p className="flex items-center gap-2 text-sm text-muted"><LoaderCircle size={14} className="animate-spin" aria-hidden /> Buscando fotos…</p>
+                )}
+                {remote.results.length > 0 && (
+                  <div>
+                    <h3 className="mb-2 text-sm font-semibold">Fotos</h3>
+                    <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-6">{remote.results.map(remoteSwatch)}</div>
+                    {remote.hasMore && (
+                      <button type="button" onClick={remote.loadMore} className="mt-2 rounded-lg border border-line px-3 py-1.5 text-sm font-medium hover:border-brand">Más fotos</button>
+                    )}
+                  </div>
+                )}
+                {(photoResults.length > 0 || remote.results.length === 0) && (
+                  <div>
+                    <h3 className="mb-2 text-sm font-semibold">{remote.results.length ? "En la galería" : photoResults.length ? `${photoResults.length} ${photoResults.length === 1 ? "foto" : "fotos"}` : remote.status === "loading" ? "En la galería" : "Sin resultados"}</h3>
+                    {photoResults.length ? (
+                      <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-6">{photoResults.map(photoSwatch)}</div>
+                    ) : remote.status !== "loading" && <p className="text-sm text-muted">No encontramos fotos con “{photoQuery.trim()}”. Prueba con comida, cocina, oficina, equipo o naturaleza, o sube tu propia imagen.</p>}
+                  </div>
+                )}
               </section>
             ) : PHOTO_GALLERY.map((g) => (
               <section key={g.group} aria-label={g.group}>
