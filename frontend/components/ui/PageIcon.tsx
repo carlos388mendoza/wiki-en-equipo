@@ -13,7 +13,7 @@ export function PageIcon({ icon, fallback = "📄", size = 20, className = "" }:
   if (parsed?.kind === "brand" && parsed.wide) {
     // El logo animado es rectangular (600 × 200): entero, sobre una tesela negra.
     return (
-      <span aria-hidden className={`relative inline-block shrink-0 overflow-hidden bg-ink ${className}`} style={{ width: size, height: size, borderRadius: size * 0.22 }}>
+      <span aria-hidden className={`relative inline-block shrink-0 overflow-hidden ${className}`} style={{ width: size, height: size, borderRadius: size * 0.22 }}>
         <Image src={parsed.src} alt="" fill sizes={`${size}px`} unoptimized className="object-contain" />
       </span>
     );

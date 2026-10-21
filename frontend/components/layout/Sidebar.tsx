@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { createContext, useContext, useEffect, useState } from "react";
-import { Building2, ChevronRight, ChevronsUpDown, Home, LayoutTemplate, Shield, Menu, Search, Trash2, UserRound } from "lucide-react";
+import { Building2, Calculator, ChevronRight, ChevronsUpDown, Cpu, Home, LayoutTemplate, Menu, Package, Search, ShoppingCart, Shield, Trash2, UserRound } from "lucide-react";
 import type { SavedAccount } from "@/lib/accounts";
 import { canManageUsers, roleLabel } from "@/lib/permissions";
 import type { PageSummary, SidebarSections, User } from "@/lib/types";
@@ -16,6 +16,17 @@ import { Modal } from "../ui/Modal";
 import { PageIcon } from "../ui/PageIcon";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "../ui/sheet";
 import { PageMenu } from "./PageMenu";
+
+/** Icono para cada departamento según su nombre (cuando no tiene uno propio). */
+function departmentIcon(name: string) {
+  const n = name.toLowerCase();
+  if (n.includes("tecnolog")) return Cpu;
+  if (n.includes("compra")) return ShoppingCart;
+  if (n.includes("contabilidad") || n.includes("finanz")) return Calculator;
+  if (n.includes("recursos") || n.includes("rrhh") || n.includes("humanos")) return UserRound;
+  if (n.includes("logistic") || n.includes("almacen") || n.includes("bodega")) return Package;
+  return Building2;
+}
 
 /** Quién mira la barra y qué páginas ancló (para el menú ⋯ de cada página). */
 const MenuContext = createContext<{ user: User; pinned: Set<string> } | null>(null);
@@ -126,7 +137,7 @@ export function Sidebar({ user, sections, accounts }: { user: User; sections: Si
 
       <nav className="flex flex-col gap-0.5" aria-label="Principal">
         {navItem("/", "Inicio de la empresa", Home)}
-        {departments.length <= 1 && departments.map((d) => navItem(`/departamentos/${d.slug}`, d.name, Building2))}
+        {departments.length <= 1 && departments.map((d) => navItem(`/departamentos/${d.slug}`, d.name, departmentIcon(d.name)))}
         {navItem("/buscar", "Buscar", Search)}
         {navItem("/plantillas", "Plantillas", LayoutTemplate)}
         {canManageUsers(user) && navItem("/admin", "Administración", Shield)}
@@ -137,7 +148,7 @@ export function Sidebar({ user, sections, accounts }: { user: User; sections: Si
           <h2 className="px-2 text-xs font-semibold text-muted">Departamentos</h2>
           <ul className="flex flex-col gap-0.5">
             {departments.map((d) => (
-              <li key={d.id}>{navItem(`/departamentos/${d.slug}`, d.name, Building2)}</li>
+              <li key={d.id}>{navItem(`/departamentos/${d.slug}`, d.name, departmentIcon(d.name))}</li>
             ))}
           </ul>
         </section>
