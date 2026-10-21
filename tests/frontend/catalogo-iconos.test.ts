@@ -52,3 +52,10 @@ describe("catálogo de iconos", () => {
     expect(existsSync(repo("frontend/lib/icon-catalog.ts"))).toBe(true);
   });
 });
+
+describe("lista de nombres de Lucide", () => {
+  it("coincide con las etiquetas guardadas (validar lucide:<nombre> sin cargar el índice)", async () => {
+    const { LUCIDE_NAMES } = await import("../../frontend/lib/lucide-names");
+    expect([...LUCIDE_NAMES].sort()).toEqual(Object.keys(lucide.etiquetas).sort());
+  });
+});

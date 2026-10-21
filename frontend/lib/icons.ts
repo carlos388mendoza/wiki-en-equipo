@@ -39,6 +39,7 @@ const PATTERN = /^lucide:([a-z0-9-]{1,30}):([a-z]{2,10})$/;
  * los archivos viven en assets/templates/3dicons y se sirven en /iconos/3d/<nombre>.webp.
  */
 import { THREE_D_ICONS } from "./icons-3d";
+import { LUCIDE_NAMES } from "./lucide-names";
 export { THREE_D_ICONS };
 
 /** Logo oficial de Grupo Comidas como icono de página (muros, bienvenida, anuncios del grupo). */
@@ -62,7 +63,7 @@ export function parseIcon(icon: string | null | undefined): ParsedIcon | null {
   const m = icon.match(PATTERN);
   if (m) {
     // Cualquier icono de Lucide (#46): los más usados vienen en la app; el resto, como imagen generada al compilar.
-    if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(m[1])) return null;
+    if (!Object.hasOwn(LUCIDE_ICONS, m[1]) && !LUCIDE_NAMES.has(m[1])) return null;
     const Icon = Object.hasOwn(LUCIDE_ICONS, m[1]) ? LUCIDE_ICONS[m[1]] : null;
     const tone = (Object.hasOwn(ICON_TONES, m[2]) ? m[2] : "rojo") as IconTone;
     return { kind: "lucide", Icon, name: m[1], tone };
