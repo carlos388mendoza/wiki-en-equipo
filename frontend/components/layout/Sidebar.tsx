@@ -93,6 +93,17 @@ export function Sidebar({ user, sections }: { user: User; sections: SidebarSecti
     );
   };
 
+  const bottomItem = (href: string, label: string, Icon: typeof Home) => {
+    const active = pathname === href || (href !== "/" && pathname.startsWith(`${href}/`));
+    return (
+      <Link href={href} aria-current={active ? "page" : undefined}
+        className={`flex flex-col items-center justify-center gap-0.5 py-1.5 text-[11px] font-medium ${active ? "text-brand-strong" : "text-muted hover:text-ink"}`}>
+        <span className={`grid h-8 w-12 place-items-center rounded-full ${active ? "bg-brand-soft" : ""}`}><Icon size={19} aria-hidden /></span>
+        {label}
+      </Link>
+    );
+  };
+
   const panel = (
     <div className="flex h-full flex-col gap-5 overflow-y-auto px-3 py-4">
       <Link href="/" className="flex items-center gap-2.5 px-2" aria-label="Wiki Grupo Comidas: inicio">
@@ -142,6 +153,18 @@ export function Sidebar({ user, sections }: { user: User; sections: SidebarSecti
           <span className="truncate font-display font-bold">Wiki Grupo Comidas</span>
         </Link>
       </header>
+
+      {/* Celular y tableta: barra de navegación abajo (#47), además del menú lateral */}
+      <nav aria-label="Navegación rápida" className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-line bg-paper/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden">
+        {bottomItem("/", "Inicio", Home)}
+        {bottomItem("/buscar", "Buscar", Search)}
+        <NewPageButton variant="nav" label="Nueva" />
+        {bottomItem("/plantillas", "Plantillas", LayoutTemplate)}
+        <button type="button" onClick={() => setMobileOpen(true)} aria-label="Abrir menú y perfil" className="flex flex-col items-center justify-center gap-0.5 py-1.5 text-[11px] font-medium text-muted hover:text-ink">
+          <span className="scale-90"><Avatar name={user.name} /></span>
+          Menú
+        </button>
+      </nav>
 
       {/* Escritorio */}
       <aside className="sticky top-0 hidden h-dvh w-72 shrink-0 border-r border-line bg-paper lg:block">{panel}</aside>

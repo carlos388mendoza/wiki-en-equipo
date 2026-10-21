@@ -2,7 +2,15 @@ import Image from "next/image";
 import { isOptimizableImage } from "@/lib/images";
 import type { Background, ShapePattern } from "@/lib/types";
 
+/**
+ * Fondo de patrón: con un emoji, el SVG va en la misma URL; con un icono de Lucide o 3D (`lucide:<nombre>:<tono>`
+ * o `3d:<nombre>`, #45), lo arma la ruta /patrones.
+ */
 export function patternUrl(emoji: string) {
+  const lucide = emoji.match(/^lucide:([a-z0-9-]+):([a-z]+)$/);
+  if (lucide) return `url("/patrones/lucide/${lucide[1]}.svg?tono=${lucide[2]}")`;
+  const threeD = emoji.match(/^3d:([a-z0-9-]+)$/);
+  if (threeD) return `url("/patrones/3d/${threeD[1]}.svg")`;
   const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64'><text x='8' y='28' font-size='20'>${emoji}</text><text x='40' y='60' font-size='20'>${emoji}</text></svg>`;
   return `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
 }
@@ -60,7 +68,7 @@ export function PageBackground({ background, seed, className = "", sizes = "100v
 }) {
   if (background?.type === "image") {
     return (
-      <div className={`relative overflow-hidden bg-line ${className}`}>
+      <div className={`group/portada relative overflow-hidden bg-line ${className}`}>
         <Image
           src={background.url}
           alt=""
@@ -70,8 +78,14 @@ export function PageBackground({ background, seed, className = "", sizes = "100v
           unoptimized={!isOptimizableImage(background.url)}
           className="object-cover"
         />
-        {/* Sin crédito: las fotos de la galería son una lista fija (sin API de búsqueda) y su licencia no lo exige.
-            Los fondos viejos pueden traer `credit`; se conserva en los datos pero no se muestra. */}
+        {/* Crédito de las fotos elegidas con la búsqueda de Unsplash (#44; lo piden sus reglas): pequeño y solo al pasar
+            el ratón (en pantallas táctiles, tenue). Las de la galería fija no lo llevan (su licencia no lo exige). */}
+        {background.credit && background.creditUrl && background.credit !== "Unsplash" && (
+          <span className="absolute bottom-1.5 left-2 z-10 max-w-[70%] truncate rounded bg-ink/55 px-1.5 py-0.5 text-[10px] text-white opacity-0 transition-opacity group-hover/portada:opacity-100 focus-within:opacity-100 [@media(any-hover:none)]:opacity-70">
+            Foto: <a href={background.creditUrl} target="_blank" rel="noopener noreferrer" className="hover:underline">{background.credit}</a>
+            {" · "}<a href="https://unsplash.com/?utm_source=wiki_grupo_comidas&utm_medium=referral" target="_blank" rel="noopener noreferrer" className="hover:underline">Unsplash</a>
+          </span>
+        )}
       </div>
     );
   }

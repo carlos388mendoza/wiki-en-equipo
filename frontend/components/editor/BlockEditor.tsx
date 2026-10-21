@@ -17,6 +17,7 @@ import { FilePlus2, FileText, LayoutTemplate, Link2, Megaphone, PlayCircle } fro
 import type { WikiBlock } from "@/lib/blocks";
 import { deleteWholeBlocksOnKey, removeLeftoverAfterCut } from "@/lib/editor/block-selection";
 import { blockNoteToWiki, trimTrailingEmpty, wikiToBlockNote, type BNBlock } from "@/lib/editor/convert";
+import { formatShortcut } from "@/lib/shortcuts";
 import type { PageSummary } from "@/lib/types";
 import { wikiSchema, type WikiEditor } from "./schema";
 
@@ -140,7 +141,9 @@ export default function BlockEditor({ initialBlocks, onChange, pages, uploadFile
         triggerCharacter="/"
         getItems={async (query) =>
           filterSuggestionItems(
-            [...getDefaultReactSlashMenuItems(editor).filter((i) => !HIDDEN_ITEMS.has((i as { key?: string }).key ?? "")), ...customItems()],
+            [...getDefaultReactSlashMenuItems(editor).filter((i) => !HIDDEN_ITEMS.has((i as { key?: string }).key ?? "")), ...customItems()]
+              // Atajos con las teclas del sistema: en Mac "⌘⌥1" en lugar de "⌘-Alt-1" (#43).
+              .map((item) => (item.badge ? { ...item, badge: formatShortcut(item.badge) } : item)),
             query,
           )}
       />

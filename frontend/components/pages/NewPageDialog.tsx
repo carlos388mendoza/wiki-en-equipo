@@ -10,7 +10,7 @@ import { Modal } from "../ui/Modal";
 
 /** Botón + diálogo para crear una página (o subpágina) en blanco o desde una plantilla. */
 export function NewPageButton({ parentId, parentTitle, variant = "primary", initialTemplateId, label }: {
-  parentId?: string; parentTitle?: string; variant?: "primary" | "secondary" | "small"; initialTemplateId?: string; label?: string;
+  parentId?: string; parentTitle?: string; variant?: "primary" | "secondary" | "small" | "nav"; initialTemplateId?: string; label?: string;
 }) {
   const [open, setOpen] = useState(false);
   const router = useRouter();
@@ -18,11 +18,14 @@ export function NewPageButton({ parentId, parentTitle, variant = "primary", init
     primary: "flex w-full items-center justify-center gap-2 rounded-lg bg-ink px-3 py-2 text-sm font-medium text-white hover:bg-brand",
     secondary: "inline-flex items-center gap-2 rounded-lg border border-line bg-surface px-3 py-2 text-sm font-medium hover:border-brand",
     small: "inline-flex items-center gap-1 rounded-md bg-ink px-2 py-1 text-xs font-medium text-white hover:bg-brand",
+    // Barra de navegación del celular: el botón central, redondo y destacado.
+    nav: "flex flex-col items-center justify-center gap-0.5 py-1.5 text-[11px] font-medium text-ink",
   }[variant];
   return (
     <>
       <button type="button" onClick={() => (navigator.onLine ? setOpen(true) : router.push("/sin-conexion?nuevo=1"))} className={cls}>
-        {parentId ? <FilePlus2 size={14} aria-hidden /> : <Plus size={variant === "small" ? 13 : 16} aria-hidden />} {label ?? (parentId ? "Subpágina" : "Nueva página")}
+        {variant === "nav" ? <span className="grid h-8 w-8 place-items-center rounded-full bg-ink text-white" aria-hidden><Plus size={18} /></span>
+          : parentId ? <FilePlus2 size={14} aria-hidden /> : <Plus size={variant === "small" ? 13 : 16} aria-hidden />} {label ?? (parentId ? "Subpágina" : "Nueva página")}
       </button>
       <Modal open={open} onClose={() => setOpen(false)} size="xl"
         title={parentId ? "Nueva subpágina" : "Nueva página"}

@@ -36,7 +36,9 @@ export function PageIcon({ icon, fallback = "📄", size = 20, className = "" }:
     >
       {/* Brillo superior */}
       <span className="pointer-events-none absolute inset-x-0 top-0 h-1/2" style={{ background: "linear-gradient(180deg, rgb(255 255 255 / 0.28), transparent)" }} />
-      <Icon size={size * 0.56} color="white" strokeWidth={size >= 32 ? 2 : 2.4} className="relative drop-shadow-sm" />
+      {Icon ? <Icon size={size * 0.56} color="white" strokeWidth={size >= 32 ? 2 : 2.4} className="relative drop-shadow-sm" />
+        // Los demás iconos de Lucide (#46): su SVG generado al compilar, en blanco con una máscara (no carga código).
+        : <span className="relative drop-shadow-sm" style={{ width: size * 0.56, height: size * 0.56, backgroundColor: "white", WebkitMask: `url(/iconos/lucide/${parsed.name}.svg) center / contain no-repeat`, mask: `url(/iconos/lucide/${parsed.name}.svg) center / contain no-repeat` }} />}
     </span>
   );
 }

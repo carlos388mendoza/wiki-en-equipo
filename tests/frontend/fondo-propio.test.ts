@@ -44,14 +44,14 @@ describe("fondo con imagen propia", () => {
   });
 });
 
-describe("sin la palabra Unsplash en la interfaz", () => {
-  it("no aparece en pantallas ni componentes", () => {
-    const found = [...sources(join(frontend, "app")), ...sources(join(frontend, "components"))].filter((f) => /unsplash/i.test(readFileSync(f, "utf8")));
-    expect(found).toEqual([]);
+describe("la palabra Unsplash solo en el crédito de las fotos de su API (#37, #44)", () => {
+  it("solo aparece en el crédito de la portada, el de la ventana de fondos y la ruta del servidor", () => {
+    const found = [...sources(join(frontend, "app")), ...sources(join(frontend, "components"))].filter((f) => /unsplash/i.test(readFileSync(f, "utf8"))).map((f) => f.split(/[\\/]frontend[\\/]/).pop()!.replace(/\\/g, "/")).sort();
+    expect(found).toEqual(["app/fondos/buscar/route.ts", "components/editor/BackgroundPicker.tsx", "components/page/PageBackground.tsx"]);
   });
 
-  it("la galería ya no guarda el crédito ni busca con la API", () => {
-    expect(picker).not.toMatch(/credit/);
-    expect(picker).not.toMatch(/fondos\/buscar/);
+  it("las fotos de la galería fija no guardan crédito; las de la API sí, y se registra la descarga", () => {
+    expect(picker).toContain('pick({ type: "image", url: p.url })');
+    expect(picker).toContain('pick({ type: "image", url: p.url, credit: p.credit, creditUrl: p.creditUrl }); registerUnsplashDownload(p);');
   });
 });
