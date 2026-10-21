@@ -22,6 +22,9 @@
   --color-danger-soft: #fbe8e4;
 
   --font-display: var(--font-bricolage), ui-sans-serif, system-ui, sans-serif;
+  /* Emojis (#54): "Apple Color Emoji" se carga desde /fonts/apple-emoji (trozos WOFF2 con unicode-range).
+     Si el navegador no la descarga, cae en el emoji del sistema. */
+  --font-emoji: "Apple Color Emoji", "Noto Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", sans-serif;
   --font-sans: var(--font-figtree), var(--font-emoji), ui-sans-serif, system-ui, sans-serif;
 }
 

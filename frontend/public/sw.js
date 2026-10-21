@@ -82,7 +82,7 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(cacheFirst(request));
   } else if (isBrandAsset(url.pathname)) {
     event.respondWith(cacheFirst(request, true));
-  } else if (url.pathname.startsWith("/iconos/") || url.pathname.startsWith("/patrones/") || url.pathname.startsWith("/brand/")) {
+  } else if (url.pathname.startsWith("/iconos/") || url.pathname.startsWith("/patrones/") || url.pathname.startsWith("/brand/") || url.pathname.startsWith("/fonts/")) {
     event.respondWith(cacheFirst(request));
   } else if (request.mode === "navigate") {
     event.respondWith(networkFirst(request, PAGES, OFFLINE_URL));
