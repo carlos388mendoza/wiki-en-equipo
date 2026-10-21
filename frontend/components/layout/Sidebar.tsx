@@ -126,11 +126,22 @@ export function Sidebar({ user, sections, accounts }: { user: User; sections: Si
 
       <nav className="flex flex-col gap-0.5" aria-label="Principal">
         {navItem("/", "Inicio de la empresa", Home)}
-        {departments.map((d) => navItem(`/departamentos/${d.slug}`, d.name, Building2))}
+        {departments.length <= 1 && departments.map((d) => navItem(`/departamentos/${d.slug}`, d.name, Building2))}
         {navItem("/buscar", "Buscar", Search)}
         {navItem("/plantillas", "Plantillas", LayoutTemplate)}
         {canManageUsers(user) && navItem("/admin", "Administración", Shield)}
       </nav>
+
+      {departments.length > 1 && (
+        <section className="flex flex-col gap-1" aria-label="Departamentos">
+          <h2 className="px-2 text-xs font-semibold text-muted">Departamentos</h2>
+          <ul className="flex flex-col gap-0.5">
+            {departments.map((d) => (
+              <li key={d.id}>{navItem(`/departamentos/${d.slug}`, d.name, Building2)}</li>
+            ))}
+          </ul>
+        </section>
+      )}
 
       <Section title="Ancladas" pages={sections.ancladas} />
       <Section title="Empresa" pages={sections.empresa} />

@@ -7,7 +7,6 @@ import { COLORS, GRADIENTS, PATTERN_COLORS, PHOTO_GALLERY, searchPhotos, type Ga
 import { parseIcon, type IconTone } from "@/lib/icons";
 import { safeHref } from "@/lib/blocks";
 import { isOptimizableImage } from "@/lib/images";
-import { BRAND_BANNER_SRC } from "@/lib/icons";
 import type { Background, ShapePattern } from "@/lib/types";
 import { IMAGE_TYPES, MAX_UPLOAD_MB, uploadToWiki, type UploadTarget } from "@/lib/uploads";
 import { registerUnsplashDownload, useUnsplashSearch, type RemotePhoto } from "@/lib/unsplash-search";
@@ -190,24 +189,12 @@ export function BackgroundPicker({ open, onClose, value, onChange, uploadTarget 
                   </div>
                 )}
               </section>
-            ) : <>
-              {/* Logo animado de Grupo Comidas: rectangular, como portada (sobre negro, sin recortarlo). */}
-              <section aria-label="Grupo Comidas">
-                <h3 className="mb-2 text-sm font-semibold">Grupo Comidas</h3>
-                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-6">
-                  <Swatch selected={value?.type === "image" && value.url === BRAND_BANNER_SRC} label="Logo animado de Grupo Comidas" onClick={() => pick({ type: "image", url: BRAND_BANNER_SRC })}>
-                    <span className="absolute inset-0 bg-ink" aria-hidden />
-                    <Image src={BRAND_BANNER_SRC} alt="" fill sizes="200px" unoptimized className="object-contain" />
-                  </Swatch>
-                </div>
-              </section>
-              {PHOTO_GALLERY.map((g) => (
+            ) : PHOTO_GALLERY.map((g) => (
               <section key={g.group} aria-label={g.group}>
                 <h3 className="mb-2 text-sm font-semibold">{g.group}</h3>
                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-6">{g.photos.map(photoSwatch)}</div>
               </section>
-              ))}
-            </>}
+            ))}
 
             <form
               className="flex flex-col gap-2 sm:flex-row"
