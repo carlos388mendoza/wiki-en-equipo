@@ -549,11 +549,11 @@ export function PageEditor({ mode, id, initial, pages, tagSuggestions, viewer, b
             />
           )}
         </div>
-        <p className="mt-6 text-xs text-muted">
+        <div className="mt-6 text-xs text-muted">
           Presiona “/” para insertar bloques y “@” para enlazar páginas. Archivos de hasta {MAX_UPLOAD_MB} MB: {allowedList()}.
           {isPage && " Los cambios también se guardan en este dispositivo, así puedes seguir sin conexión."}{" "}
           <ShortcutsHelp />
-        </p>
+        </div>
         <div className="h-32" />
       </div>
 

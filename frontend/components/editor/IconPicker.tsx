@@ -35,7 +35,7 @@ export function IconPicker({ value, onChange }: { value: string | null; onChange
       </button>
       {open && (
         <div className="absolute left-0 top-full z-30 mt-2 w-[min(22rem,calc(100vw-2rem))] rounded-xl border border-line bg-surface p-3 shadow-xl">
-          <IconBrowser value={value} onPick={pick} autoFocus showBrand
+          <IconBrowser value={value} onPick={pick} autoFocus
             initialTab={value?.startsWith("lucide:") ? "iconos" : value?.startsWith("3d:") ? "3d" : value && !value.startsWith("marca:") ? "emojis" : "iconos"}
             tone={tone} onToneChange={(t) => { setTone(t); if (current?.kind === "lucide") onChange(lucideIcon(current.name, t)); }} />
           <form className="mt-2 flex gap-2" onSubmit={(e) => { e.preventDefault(); const v = custom.trim(); if (v) { pick([...v].slice(0, 2).join("")); setCustom(""); } }}>

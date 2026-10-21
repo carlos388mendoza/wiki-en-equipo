@@ -42,13 +42,16 @@ describe("catálogo de iconos", () => {
     expect(pageIcon).toContain("url(/iconos/lucide/${parsed.name}.svg)");
   });
 
-  it("los índices se generan al compilar y el selector los pide al abrirse, de a partes", () => {
+  it("los índices se generan al compilar y el selector dibuja solo las filas a la vista", () => {
     const script = readFileSync(repo("frontend/scripts/copy-assets.mjs"), "utf8");
     expect(script).toContain('join(lucideTo, "indice.json")');
     expect(script).toContain('"emojis-es.json"');
     const browser = readFileSync(repo("frontend/components/editor/IconBrowser.tsx"), "utf8");
-    expect(browser).toMatch(/const PAGE = \d+;/);
-    expect(browser).toContain("new IntersectionObserver");
+    expect(browser).toContain('from "@tanstack/react-virtual"');
+    expect(browser).toContain("virtual.getVirtualItems()");
+    // Sin el botón suelto del logo: está en la pestaña "Grupo Comidas".
+    expect(browser).not.toContain("showBrand");
+    expect(browser).toContain('marca: "Grupo Comidas"');
     expect(existsSync(repo("frontend/lib/icon-catalog.ts"))).toBe(true);
   });
 });
@@ -84,5 +87,30 @@ describe("todos los 3D, banderas y tonos de piel", async () => {
     expect(parseCdnThreeD("3d:1acc3d-heart:iso:clay")?.src).toBe("https://bvconuycpdvgzbvbkijl.supabase.co/storage/v1/object/public/sizes/1acc3d-heart/iso/200/clay.webp");
     expect(parseCdnThreeD("3d:000000-no-existe:iso:clay")).toBeNull();
     expect(sanitizeIcon("3d:1acc3d-heart:front:premium")).toBe("3d:1acc3d-heart:front:premium");
+  });
+});
+
+describe("iconos que no se dibujaban y repetidos", () => {
+  it("los nombres largos de Lucide (más de 30 letras) se aceptan en vez de salir con el de respaldo", async () => {
+    const { parseIcon } = await import("../../frontend/lib/icons");
+    expect(parseIcon("lucide:align-horizontal-distribute-center:rojo")).toMatchObject({ kind: "lucide", name: "align-horizontal-distribute-center" });
+  });
+
+  it("el índice del selector no repite dibujos (clock y clock-4) pero todos los SVG existen", () => {
+    const index = JSON.parse(readFileSync(repo("frontend/public/iconos/lucide/indice.json"), "utf8"));
+    expect(index).toHaveProperty("clock");
+    expect(index).not.toHaveProperty("clock-4");
+    expect(existsSync(repo("frontend/public/iconos/lucide/clock-4.svg"))).toBe(true);
+  });
+
+  it("los logos de Grupo Comidas y sus franquicias son iconos válidos", async () => {
+    const { BRANDS, parseIcon, sanitizeIcon } = await import("../../frontend/lib/icons");
+    expect(Object.keys(BRANDS)).toEqual(["grupo-comidas", "grupo-comidas-animado", "pizza-hut", "kfc", "dennys", "china-wok"]);
+    for (const [id, b] of Object.entries(BRANDS)) {
+      expect(sanitizeIcon(`marca:${id}`)).toBe(`marca:${id}`);
+      expect(existsSync(repo(`frontend/public${b.src}`))).toBe(true);
+    }
+    expect(parseIcon("marca:grupo-comidas-animado")).toMatchObject({ kind: "brand", wide: true });
+    expect(parseIcon("marca:otra")).toBeNull();
   });
 });

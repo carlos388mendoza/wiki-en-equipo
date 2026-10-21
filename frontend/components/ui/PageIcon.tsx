@@ -10,6 +10,14 @@ export function PageIcon({ icon, fallback = "📄", size = 20, className = "" }:
   icon: string | null | undefined; fallback?: string; size?: number; className?: string;
 }) {
   const parsed = parseIcon(icon) ?? parseIcon(fallback);
+  if (parsed?.kind === "brand" && parsed.wide) {
+    // El logo animado es rectangular (600 × 200): entero, sobre una tesela negra.
+    return (
+      <span aria-hidden className={`relative inline-block shrink-0 overflow-hidden bg-ink ${className}`} style={{ width: size, height: size, borderRadius: size * 0.22 }}>
+        <Image src={parsed.src} alt="" fill sizes={`${size}px`} unoptimized className="object-contain" />
+      </span>
+    );
+  }
   if (parsed?.kind === "3d" || parsed?.kind === "brand") {
     // Imagen local (public/iconos/3d o public/brand): se optimiza con next/image.
     return <Image src={parsed.src} alt="" aria-hidden width={size} height={size} className={`inline-block shrink-0 object-contain ${className}`} style={{ width: size, height: size }} />;

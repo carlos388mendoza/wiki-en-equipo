@@ -1,40 +1,48 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
+import { useVirtualizer } from "@tanstack/react-virtual";
 import { LoaderCircle, Search, X } from "lucide-react";
 import { buildCatalog, loadIconCatalog, searchCatalog, type CatalogItem, type IconCatalog } from "@/lib/icon-catalog";
-import { BRAND_ICON, ICON_TONES, lucideIcon, type IconTone } from "@/lib/icons";
+import { fold } from "@/lib/icon-search";
+import { BRANDS, ICON_TONES, lucideIcon, type IconTone } from "@/lib/icons";
 import { THREE_D_ANGLES, THREE_D_STYLES, threeDValue, type ThreeDAngle, type ThreeDStyle } from "@/lib/icons-3d";
 import { PageIcon } from "../ui/PageIcon";
 
-export type IconTab = "iconos" | "3d" | "emojis";
+export type IconTab = "iconos" | "3d" | "emojis" | "marca";
 const toneLabel: Record<IconTone, string> = { rojo: "Rojo", albahaca: "Albahaca", azafran: "Azafrán", tomate: "Tomate", cielo: "Cielo", uva: "Uva", carbon: "Carbón" };
-/** Cuántos iconos se dibujan de una vez; al bajar se muestran más (#46: miles de iconos sin trabar la ventana). */
-const PAGE = 84;
+const TAB_LABEL: Record<IconTab, string> = { iconos: "Iconos", "3d": "3D", emojis: "Emojis", marca: "Grupo Comidas" };
+/** Columnas y alto de cada fila (h-10 más el espacio entre filas): solo se dibujan las filas a la vista. */
+const COLUMNS = 7;
+const ROW = 46;
 
 /** Lo que hay mientras llegan los índices completos: los iconos básicos que trae la app. */
 const basic = buildCatalog({}, null);
 
+const words = (text: string) => fold(text).split(/[^a-z0-9ñ]+/).filter(Boolean);
+type BrowserItem = CatalogItem | { kind: "brand"; id: string; label: string; words: string[] };
+/** Pestaña "Grupo Comidas": el logo (también el animado) y los de las franquicias. */
+const brandItems: BrowserItem[] = Object.entries(BRANDS).map(([id, b]) => ({ kind: "brand", id, label: b.label, words: words(`${b.label} logo marca grupo comidas franquicia restaurante`) }));
+
 /**
- * Explorador de iconos: Lucide (con tono), 3D y emojis, con buscador en español y carga por partes. Lo usan el
- * selector de icono de la página y los patrones del fondo (#45, #46).
+ * Explorador de iconos: Lucide (con tono), 3D, emojis y los logos de Grupo Comidas, con buscador en español. Solo se
+ * dibujan las filas a la vista (TanStack Virtual), así miles de iconos no traban la ventana. Lo usan el selector de
+ * icono de la página y los patrones del fondo (#45, #46).
  */
-export function IconBrowser({ value, onPick, initialTab, tone, onToneChange, showBrand = false, autoFocus = false, height = "max-h-64" }: {
+export function IconBrowser({ value, onPick, initialTab, tone, onToneChange, autoFocus = false, height = "max-h-64" }: {
   value: string | null; onPick: (icon: string) => void; initialTab?: IconTab; tone: IconTone; onToneChange: (tone: IconTone) => void;
-  showBrand?: boolean; autoFocus?: boolean; height?: string;
+  autoFocus?: boolean; height?: string;
 }) {
   const [tab, setTab] = useState<IconTab>(initialTab ?? "iconos");
   const [query, setQuery] = useState("");
   const [catalog, setCatalog] = useState<IconCatalog>(basic);
   const [loading, setLoading] = useState(true);
-  const [shown, setShown] = useState(PAGE);
   // Estilo y ángulo de los iconos 3D (#46): 4 estilos × 3 ángulos de cada icono de 3dicons.
   const [style3d, setStyle3d] = useState<ThreeDStyle>("color");
   const [angle3d, setAngle3d] = useState<ThreeDAngle>("dynamic");
   // Tono de piel de los emojis que lo tienen (0: el amarillo de siempre; 1-5: de claro a oscuro).
   const [skin, setSkin] = useState(0);
   const listRef = useRef<HTMLDivElement>(null);
-  const sentinelRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     let alive = true;
@@ -42,25 +50,22 @@ export function IconBrowser({ value, onPick, initialTab, tone, onToneChange, sho
     return () => { alive = false; };
   }, []);
 
-  const items = useMemo<CatalogItem[]>(() => {
-    if (query.trim()) return searchCatalog(catalog, query);
-    return tab === "iconos" ? catalog.lucide : tab === "3d" ? catalog.threeD : catalog.emojis;
+  const items = useMemo<BrowserItem[]>(() => {
+    if (query.trim()) {
+      const q = words(query);
+      return [...brandItems.filter((b) => q.every((t) => b.words.some((w) => w.startsWith(t)))), ...searchCatalog(catalog, query)];
+    }
+    return tab === "marca" ? brandItems : tab === "iconos" ? catalog.lucide : tab === "3d" ? catalog.threeD : catalog.emojis;
   }, [catalog, query, tab]);
 
-  // Al cambiar de pestaña o de búsqueda se vuelve a la primera parte.
-  useEffect(() => { setShown(PAGE); listRef.current?.scrollTo({ top: 0 }); }, [query, tab]);
+  const virtual = useVirtualizer({ count: Math.ceil(items.length / COLUMNS), getScrollElement: () => listRef.current, estimateSize: () => ROW, overscan: 4 });
 
-  // Más iconos al llegar al final de la lista.
-  useEffect(() => {
-    const sentinel = sentinelRef.current;
-    if (!sentinel || shown >= items.length) return;
-    const observer = new IntersectionObserver((entries) => { if (entries.some((e) => e.isIntersecting)) setShown((n) => n + PAGE); }, { root: listRef.current, rootMargin: "200px" });
-    observer.observe(sentinel);
-    return () => observer.disconnect();
-  }, [shown, items.length]);
+  // Al cambiar de pestaña o de búsqueda se vuelve arriba.
+  useEffect(() => { listRef.current?.scrollTo({ top: 0 }); }, [query, tab]);
 
-  const valueOf = (item: CatalogItem) => item.kind === "lucide" ? lucideIcon(item.name, tone) : item.kind === "3d" ? (item.cdnId ? threeDValue(item.cdnId, angle3d, style3d) : `3d:${item.name}`) : (skin && item.skins ? item.skins[skin - 1] : item.value);
-  const titleOf = (item: CatalogItem) => item.kind === "emoji" ? item.label : item.name;
+  const valueOf = (item: BrowserItem) => item.kind === "brand" ? `marca:${item.id}` : item.kind === "lucide" ? lucideIcon(item.name, tone) : item.kind === "3d" ? (item.cdnId ? threeDValue(item.cdnId, angle3d, style3d) : `3d:${item.name}`) : (skin && item.skins ? item.skins[skin - 1] : item.value);
+  const titleOf = (item: BrowserItem) => item.kind === "emoji" || item.kind === "brand" ? item.label : item.name;
+  const labelOf = (item: BrowserItem) => item.kind === "emoji" ? item.value : item.kind === "brand" ? `logo de ${item.label}` : `icono ${item.name}`;
   const searching = Boolean(query.trim());
 
   return (
@@ -75,13 +80,16 @@ export function IconBrowser({ value, onPick, initialTab, tone, onToneChange, sho
       </label>
 
       {!searching && (
-        <div role="tablist" aria-label="Tipo de icono" className="flex gap-1 rounded-lg bg-paper p-1">
-          {(["iconos", "3d", "emojis"] as const).map((t) => (
-            <button key={t} role="tab" type="button" aria-selected={tab === t} onClick={() => setTab(t)}
-              className={`flex-1 rounded-md px-3 py-1 text-sm font-medium ${tab === t ? "bg-surface shadow-sm" : "text-muted hover:text-ink"}`}>
-              {t === "iconos" ? `Iconos${loading ? "" : ` (${catalog.lucide.length})`}` : t === "3d" ? `3D (${catalog.threeD.length})` : `Emojis${loading ? "" : ` (${catalog.emojis.length})`}`}
-            </button>
-          ))}
+        <div role="tablist" aria-label="Tipo de icono" className="flex gap-1 overflow-x-auto rounded-lg bg-paper p-1">
+          {(["iconos", "3d", "emojis", "marca"] as const).map((t) => {
+            const count = t === "iconos" ? (loading ? null : catalog.lucide.length) : t === "3d" ? catalog.threeD.length : t === "emojis" ? (loading ? null : catalog.emojis.length) : null;
+            return (
+              <button key={t} role="tab" type="button" aria-selected={tab === t} onClick={() => setTab(t)}
+                className={`flex-1 whitespace-nowrap rounded-md px-2 py-1 text-sm font-medium ${tab === t ? "bg-surface shadow-sm" : "text-muted hover:text-ink"}`}>
+                {TAB_LABEL[t]}{count !== null && <span className="max-sm:hidden"> ({count})</span>}
+              </button>
+            );
+          })}
         </div>
       )}
 
@@ -116,30 +124,29 @@ export function IconBrowser({ value, onPick, initialTab, tone, onToneChange, sho
         </div>
       )}
 
+      {!searching && tab === "marca" && <p className="text-xs text-muted">El logo animado también se puede usar como portada: Fondo → Imágenes → Grupo Comidas.</p>}
+
       <div ref={listRef} className={`${height} overflow-y-auto p-0.5`} aria-label={searching ? "Resultados de la búsqueda" : undefined}>
         {items.length === 0 ? (
           <p className="py-4 text-center text-sm text-muted">{searching ? `No encontramos iconos con “${query.trim()}”. Prueba otra palabra.` : "Cargando…"}</p>
         ) : (
-          <div className="grid grid-cols-7 gap-1.5">
-            {items.slice(0, shown).map((item) => {
-              const icon = valueOf(item);
-              return (
-                <button key={`${item.kind}:${icon}`} type="button" onClick={() => onPick(icon)} aria-label={`Usar ${item.kind === "emoji" ? item.value : `icono ${item.name}`}`} title={titleOf(item)}
-                  className={`grid h-10 place-items-center rounded-lg p-1 text-xl hover:bg-paper ${value === icon ? "bg-brand-soft" : ""}`}>
-                  <PageIcon icon={icon} size={item.kind === "3d" ? 34 : 28} />
-                </button>
-              );
-            })}
+          <div className="relative" style={{ height: virtual.getTotalSize() }}>
+            {virtual.getVirtualItems().map((row) => (
+              <div key={row.key} className="absolute inset-x-0 grid grid-cols-7 gap-1.5" style={{ top: row.start, height: ROW - 6 }}>
+                {items.slice(row.index * COLUMNS, row.index * COLUMNS + COLUMNS).map((item) => {
+                  const icon = valueOf(item);
+                  return (
+                    <button key={`${item.kind}:${icon}`} type="button" onClick={() => onPick(icon)} aria-label={`Usar ${labelOf(item)}`} title={titleOf(item)}
+                      className={`grid h-10 place-items-center rounded-lg p-1 text-xl hover:bg-paper ${value === icon ? "bg-brand-soft" : ""}`}>
+                      <PageIcon icon={icon} size={item.kind === "3d" || item.kind === "brand" ? 34 : 28} />
+                    </button>
+                  );
+                })}
+              </div>
+            ))}
           </div>
         )}
-        {shown < items.length && <div ref={sentinelRef} className="h-6" aria-hidden />}
       </div>
-      {showBrand && (!searching || /^(log|marc|grup|comid|empres)/.test(query.trim().toLowerCase())) && (
-        <button type="button" onClick={() => onPick(BRAND_ICON)} aria-label="Usar el logo de Grupo Comidas"
-          className={`flex w-full items-center gap-2 rounded-lg border border-line px-2 py-1.5 text-left text-sm hover:border-brand ${value === BRAND_ICON ? "bg-brand-soft" : ""}`}>
-          <PageIcon icon={BRAND_ICON} size={28} /> Logo de Grupo Comidas
-        </button>
-      )}
     </div>
   );
 }

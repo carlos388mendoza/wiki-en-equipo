@@ -7,6 +7,7 @@ import { COLORS, GRADIENTS, PATTERN_COLORS, PHOTO_GALLERY, searchPhotos, type Ga
 import { parseIcon, type IconTone } from "@/lib/icons";
 import { safeHref } from "@/lib/blocks";
 import { isOptimizableImage } from "@/lib/images";
+import { BRAND_BANNER_SRC } from "@/lib/icons";
 import type { Background, ShapePattern } from "@/lib/types";
 import { IMAGE_TYPES, MAX_UPLOAD_MB, uploadToWiki, type UploadTarget } from "@/lib/uploads";
 import { registerUnsplashDownload, useUnsplashSearch, type RemotePhoto } from "@/lib/unsplash-search";
@@ -21,6 +22,7 @@ const SHAPES: { id: ShapePattern; label: string }[] = [
 ];
 /** Color de las figuras: rojo del logo semitransparente, combina con cualquier fondo claro. */
 const SHAPE_INK = "#e2001a2e";
+const UNSPLASH_URL = "https://unsplash.com/?utm_source=wiki_grupo_comidas&utm_medium=referral";
 
 const tabs: { id: Tab; label: string }[] = [
   { id: "imagenes", label: "Imágenes" },
@@ -35,7 +37,7 @@ export const isUploadedBackground = (bg: Background | null) => bg?.type === "ima
 function Swatch({ selected, onClick, label, style, children }: { selected: boolean; onClick: () => void; label: string; style?: React.CSSProperties; children?: React.ReactNode }) {
   return (
     <button type="button" onClick={onClick} aria-label={label} aria-pressed={selected} title={label} style={style}
-      className={`relative grid h-16 place-items-center overflow-hidden rounded-lg border text-2xl ${selected ? "border-brand ring-2 ring-brand" : "border-line hover:border-brand"}`}>
+      className={`relative grid h-16 w-full place-items-center overflow-hidden rounded-lg border text-2xl ${selected ? "border-brand ring-2 ring-brand" : "border-line hover:border-brand"}`}>
       {children}
       {selected && <Check size={16} className="absolute right-1 top-1 rounded-full bg-surface text-brand-strong" aria-hidden />}
     </button>
@@ -75,8 +77,9 @@ export function BackgroundPicker({ open, onClose, value, onChange, uploadTarget 
         onClick={() => { pick({ type: "image", url: p.url, credit: p.credit, creditUrl: p.creditUrl }); registerUnsplashDownload(p); }}>
         <Image src={p.thumb} alt="" fill sizes="200px" unoptimized className="object-cover" />
       </Swatch>
-      <span aria-hidden className="pointer-events-none absolute inset-x-px bottom-px truncate rounded-b-lg bg-ink/60 px-1.5 py-0.5 text-[10px] text-white opacity-0 transition-opacity group-hover/foto:opacity-100 [@media(any-hover:none)]:opacity-90">
-        {p.credit} · Unsplash
+      <span className="absolute inset-x-px bottom-px truncate rounded-b-lg bg-ink/60 px-1.5 py-0.5 text-[10px] text-white opacity-0 transition-opacity focus-within:opacity-100 group-hover/foto:opacity-100 [@media(any-hover:none)]:opacity-90">
+        <a href={p.creditUrl} target="_blank" rel="noopener noreferrer" className="hover:underline">{p.credit}</a>
+        {" · "}<a href={UNSPLASH_URL} target="_blank" rel="noopener noreferrer" className="hover:underline">Unsplash</a>
       </span>
     </div>
   );
@@ -187,12 +190,24 @@ export function BackgroundPicker({ open, onClose, value, onChange, uploadTarget 
                   </div>
                 )}
               </section>
-            ) : PHOTO_GALLERY.map((g) => (
+            ) : <>
+              {/* Logo animado de Grupo Comidas: rectangular, como portada (sobre negro, sin recortarlo). */}
+              <section aria-label="Grupo Comidas">
+                <h3 className="mb-2 text-sm font-semibold">Grupo Comidas</h3>
+                <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-6">
+                  <Swatch selected={value?.type === "image" && value.url === BRAND_BANNER_SRC} label="Logo animado de Grupo Comidas" onClick={() => pick({ type: "image", url: BRAND_BANNER_SRC })}>
+                    <span className="absolute inset-0 bg-ink" aria-hidden />
+                    <Image src={BRAND_BANNER_SRC} alt="" fill sizes="200px" unoptimized className="object-contain" />
+                  </Swatch>
+                </div>
+              </section>
+              {PHOTO_GALLERY.map((g) => (
               <section key={g.group} aria-label={g.group}>
                 <h3 className="mb-2 text-sm font-semibold">{g.group}</h3>
                 <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 lg:grid-cols-6">{g.photos.map(photoSwatch)}</div>
               </section>
-            ))}
+              ))}
+            </>}
 
             <form
               className="flex flex-col gap-2 sm:flex-row"

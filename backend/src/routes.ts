@@ -38,7 +38,7 @@ const visibility = z.enum(["PRIVATE", "DEPARTMENT", "COMPANY"]);
 const permission = z.enum(["READ", "EDIT"]);
 const tags = z.array(z.string().trim().min(1).max(40)).max(30).optional();
 // Emoji, `lucide:<nombre>:<tono>` o `3d:<nombre>` (lo valida el frontend al mostrarlo); null lo quita.
-const icon = z.string().trim().min(1).max(48).nullable().optional();
+const icon = z.string().trim().min(1).max(80).nullable().optional();
 const objectBody = <T extends z.ZodType>(schema: T, req: Request) => schema.parse(req.body) as z.infer<T>;
 const actor = (req: Request): Actor => ({ id: req.auth!.sub, role: req.auth!.role, departmentId: req.auth!.departmentId });
 const currentUserId = (req: Request) => req.auth?.sub as string;

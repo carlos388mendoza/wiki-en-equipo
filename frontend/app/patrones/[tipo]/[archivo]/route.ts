@@ -1,4 +1,4 @@
-import { ICON_TONES, type IconTone } from "@/lib/icons";
+import { BRANDS, ICON_TONES, type IconTone } from "@/lib/icons";
 import { parseCdnThreeD, THREE_D_ICONS } from "@/lib/icons-3d";
 
 /**
@@ -14,7 +14,7 @@ const headers = { "Content-Type": "image/svg+xml; charset=utf-8", "Cache-Control
 export async function GET(request: Request, { params }: { params: Promise<{ tipo: string; archivo: string }> }) {
   const { tipo, archivo } = await params;
   const name = archivo.replace(/\.svg$/, "");
-  if (!NAME.test(name) || (tipo !== "lucide" && tipo !== "3d" && tipo !== "bandera")) return new Response("No existe.", { status: 404 });
+  if (!NAME.test(name) || !["lucide", "3d", "bandera", "marca"].includes(tipo)) return new Response("No existe.", { status: 404 });
 
   if (tipo === "bandera") {
     const res = await fetch(new URL(`/iconos/banderas/${name}.svg`, request.url)).catch(() => null);
@@ -22,6 +22,16 @@ export async function GET(request: Request, { params }: { params: Promise<{ tipo
     const data = `data:image/svg+xml;base64,${Buffer.from(await res.arrayBuffer()).toString("base64")}`;
     const image = (x: number, y: number) => `<image href="${data}" x="${x}" y="${y}" width="24" height="18" preserveAspectRatio="none"/>`;
     return new Response(`<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">${image(4, 7)}${image(36, 39)}</svg>`, { headers });
+  }
+
+  if (tipo === "marca") {
+    // Logos de Grupo Comidas y sus franquicias (el animado, como imagen fija: un fondo no se anima).
+    const brand = Object.hasOwn(BRANDS, name) ? BRANDS[name] : null;
+    const res = brand ? await fetch(new URL(brand.src, request.url)).catch(() => null) : null;
+    if (!brand || !res?.ok) return new Response("No existe.", { status: 404 });
+    const data = `data:${brand.src.endsWith(".png") ? "image/png" : "image/webp"};base64,${Buffer.from(await res.arrayBuffer()).toString("base64")}`;
+    const image = (x: number, y: number) => `<image href="${data}" x="${x}" y="${y}" width="24" height="24" preserveAspectRatio="xMidYMid meet"/>`;
+    return new Response(`<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">${image(4, 4)}${image(36, 36)}</svg>`, { headers });
   }
 
   if (tipo === "lucide") {

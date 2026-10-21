@@ -1,6 +1,7 @@
 import Image from "next/image";
 import { flagCode } from "@/lib/flags";
 import { isOptimizableImage } from "@/lib/images";
+import { isBrandImage } from "@/lib/icons";
 import type { Background, ShapePattern } from "@/lib/types";
 
 /**
@@ -14,6 +15,8 @@ export function patternUrl(emoji: string) {
   if (cdn) return `url("/patrones/3d/${cdn[1]}.svg?angulo=${cdn[2]}&estilo=${cdn[3]}")`;
   const threeD = emoji.match(/^3d:([a-z0-9-]+)$/);
   if (threeD) return `url("/patrones/3d/${threeD[1]}.svg")`;
+  const brand = emoji.match(/^marca:([a-z0-9-]+)$/);
+  if (brand) return `url("/patrones/marca/${brand[1]}.svg")`;
   const flag = flagCode(emoji);
   if (flag) return `url("/patrones/bandera/${flag}.svg")`;
   const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64'><text x='8' y='28' font-size='20'>${emoji}</text><text x='40' y='60' font-size='20'>${emoji}</text></svg>`;
@@ -73,7 +76,8 @@ export function PageBackground({ background, seed, className = "", sizes = "100v
 }) {
   if (background?.type === "image") {
     return (
-      <div className={`group/portada relative overflow-hidden bg-line ${className}`}>
+      // Los logos de la marca (el animado de Grupo Comidas es rectangular) van enteros sobre negro, sin recortarse.
+      <div className={`group/portada relative overflow-hidden ${isBrandImage(background.url) ? "bg-ink" : "bg-line"} ${className}`}>
         <Image
           src={background.url}
           alt=""

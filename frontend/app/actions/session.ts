@@ -1,11 +1,14 @@
 "use server";
 
 import { cookies } from "next/headers";
+import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { backend, getToken, SESSION_COOKIE } from "@/lib/api/client";
 import { isInternalPath } from "@/lib/blocks";
-import { SESSION_MAX_AGE } from "@/lib/session";
+import { accountToken, forgetAccount, forgetAllAccounts, rememberAccount, savedAccounts, setSessionCookie } from "@/lib/accounts";
+import { getSession, SESSION_MAX_AGE } from "@/lib/session";
+import type { User } from "@/lib/types";
 
 export type LoginState = { error?: string; email?: string };
 
@@ -40,6 +43,12 @@ export async function login(_prev: LoginState, form: FormData): Promise<LoginSta
     return { error: message, email };
   }
 
+  // "Agregar otra cuenta": la sesión que ya estaba abierta también queda guardada (por si se abrió antes de existir
+  // las cuentas del dispositivo), así se puede volver a ella.
+  const previous = await getToken();
+  const previousUser = previous && previous !== res.data.token ? await userFor(previous) : null;
+  if (previous && previousUser) await rememberAccount(previousUser, previous);
+
   (await cookies()).set(SESSION_COOKIE, res.data.token, {
     httpOnly: true,
     sameSite: "lax",
@@ -47,12 +56,60 @@ export async function login(_prev: LoginState, form: FormData): Promise<LoginSta
     path: "/",
     maxAge: SESSION_MAX_AGE,
   });
+  // Se guarda en las cuentas de este dispositivo (cifrada), para volver a ella sin contraseña.
+  const me = await userFor(res.data.token);
+  if (me) await rememberAccount(me, res.data.token);
   redirect(safeNext(form.get("next")));
 }
 
+/** Persona de un token, validada por el backend; `null` si el token ya no sirve. */
+async function userFor(token: string): Promise<User | null> {
+  const res = await backend<{ user: User & { department?: { name: string; slug: string } | null } }>("/auth/me", { token });
+  if (!res.ok) return null;
+  const { id, name, email, role, departmentId, department } = res.data.user;
+  return { id, name, email, role, departmentId, department: department ?? null };
+}
+
+/**
+ * Cierra la sesión actual. Si hay otras cuentas guardadas en el dispositivo, sigue con la primera que siga vigente
+ * (como en Google); si no, va al inicio de sesión.
+ */
 export async function signOut() {
+  const current = await getSession();
+  if (current.ok) await forgetAccount(current.data.id);
+  (await cookies()).delete(SESSION_COOKIE);
+  for (const account of await savedAccounts()) {
+    const token = await accountToken(account.id);
+    if (token && (await userFor(token))) { await setSessionCookie(token); redirect("/"); }
+    await forgetAccount(account.id);
+  }
+  redirect("/login");
+}
+
+/** Cierra todas las sesiones de este dispositivo. */
+export async function signOutAll() {
+  await forgetAllAccounts();
   (await cookies()).delete(SESSION_COOKIE);
   redirect("/login");
+}
+
+/** Cierra la sesión de otra cuenta guardada (no la actual). */
+export async function signOutAccount(id: string) {
+  await forgetAccount(id);
+  revalidatePath("/", "layout");
+}
+
+/** Cambia a otra cuenta guardada sin pedir la contraseña. Si su sesión venció, pide entrar de nuevo con ella. */
+export async function switchAccount(id: string) {
+  const token = await accountToken(id);
+  const user = token ? await userFor(token) : null;
+  if (!token || !user) {
+    await forgetAccount(id);
+    redirect("/login?agregar=1&vencida=1");
+  }
+  await setSessionCookie(token);
+  await rememberAccount(user, token);
+  redirect("/");
 }
 
 /**
@@ -71,7 +128,9 @@ export async function changePassword(_prev: PasswordState, form: FormData): Prom
   if (newPassword.length < 8) return { error: "La nueva contraseña debe tener al menos 8 caracteres." };
   const res = await backend("/auth/password", { method: "POST", body: { currentPassword, newPassword } });
   if (!res.ok) return { error: res.error === "no_autenticado" ? "La contraseña actual no es correcta." : res.message };
-  // El backend invalida todas las sesiones al cambiar la contraseña.
+  // El backend invalida todas las sesiones al cambiar la contraseña (también la guardada en este dispositivo).
+  const current = await getSession();
+  if (current.ok) await forgetAccount(current.data.id);
   (await cookies()).delete(SESSION_COOKIE);
   redirect("/login?clave=actualizada");
 }

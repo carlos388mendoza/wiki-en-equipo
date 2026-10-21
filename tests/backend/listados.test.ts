@@ -104,7 +104,7 @@ describe("campo de icono", () => {
     expect((await api.as(luis).get(`/pages/${page.id}`)).body.page.icon).toBe("3d:acta");
     const quitado = await api.as(luis).patch(`/pages/${page.id}`, { icon: null, expectedVersion: page.version });
     expect(quitado.body.page.icon).toBeNull();
-    expect((await api.as(luis).patch(`/pages/${page.id}`, { icon: "x".repeat(49), expectedVersion: quitado.body.page.version })).status).toBe(400);
+    expect((await api.as(luis).patch(`/pages/${page.id}`, { icon: "x".repeat(81), expectedVersion: quitado.body.page.version })).status).toBe(400);
   });
 
   it("un conflicto al sincronizar sin conexión devuelve el icono actual", async () => {

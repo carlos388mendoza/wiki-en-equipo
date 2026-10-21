@@ -9,7 +9,7 @@ export default function wikiImageLoader({ src, width, quality }: { src: string; 
   let url: URL;
   try { url = new URL(src); } catch { return src; } // ruta de la wiki: se sirve tal cual
   if (url.protocol !== "https:") return src;
-  if (url.hostname === "images.unsplash.com") {
+  if (url.hostname === "images.unsplash.com" || url.hostname === "plus.unsplash.com") {
     url.searchParams.set("w", String(width));
     url.searchParams.set("q", String(quality ?? 70));
     url.searchParams.set("auto", "format");
