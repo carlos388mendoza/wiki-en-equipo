@@ -180,8 +180,9 @@ export function Sidebar({ user, sections, accounts }: { user: User; sections: Si
 
       {/* Celular y tableta: barra abajo con Inicio, Plantillas y Cuenta (#47). Buscar, Nueva página, los
           departamentos y las páginas siguen en el menú lateral (botón de arriba). Cuenta solo abre su ventana. */}
-      <nav aria-label="Navegación rápida" className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-3 border-t border-line bg-paper/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden">
+<nav aria-label="Navegación rápida" className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t border-line bg-paper/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden">
         {bottomItem("/", "Inicio", Home)}
+        <NewPageButton variant="nav" label="Nuevo" />
         {bottomItem("/plantillas", "Plantillas", LayoutTemplate)}
         <button type="button" onClick={() => { setMobileOpen(false); setAccountOpen(true); }} aria-haspopup="dialog" aria-expanded={accountOpen}
           className={`flex flex-col items-center justify-center gap-0.5 py-1.5 text-[11px] font-medium ${accountOpen || pathname === "/cuenta" ? "text-brand-strong" : "text-muted hover:text-ink"}`}>
