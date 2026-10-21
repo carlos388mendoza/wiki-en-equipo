@@ -21,7 +21,7 @@ export function PageIcon({ icon, fallback = "📄", size = 20, className = "" }:
       <span aria-hidden className={`relative inline-block shrink-0 overflow-hidden ${className}`}
         style={{ width: size * 2, height: size, borderRadius: size * 0.12 }}
         onMouseEnter={() => setAnimKey((k) => k + 1)}>
-        <Image key={animKey} src={parsed.src} alt="" fill sizes={`${size * 2}px`} unoptimized className="object-contain" />
+        <Image key={animKey} src={`${parsed.src}?v=${animKey}`} alt="" fill sizes={`${size * 2}px`} unoptimized className="object-contain" />
       </span>
     );
   }
