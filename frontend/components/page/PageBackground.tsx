@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { flagCode } from "@/lib/flags";
 import { isOptimizableImage } from "@/lib/images";
 import type { Background, ShapePattern } from "@/lib/types";
 
@@ -9,8 +10,12 @@ import type { Background, ShapePattern } from "@/lib/types";
 export function patternUrl(emoji: string) {
   const lucide = emoji.match(/^lucide:([a-z0-9-]+):([a-z]+)$/);
   if (lucide) return `url("/patrones/lucide/${lucide[1]}.svg?tono=${lucide[2]}")`;
+  const cdn = emoji.match(/^3d:([0-9a-f]{6}-[a-z0-9-]+):([a-z]+):([a-z]+)$/);
+  if (cdn) return `url("/patrones/3d/${cdn[1]}.svg?angulo=${cdn[2]}&estilo=${cdn[3]}")`;
   const threeD = emoji.match(/^3d:([a-z0-9-]+)$/);
   if (threeD) return `url("/patrones/3d/${threeD[1]}.svg")`;
+  const flag = flagCode(emoji);
+  if (flag) return `url("/patrones/bandera/${flag}.svg")`;
   const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64'><text x='8' y='28' font-size='20'>${emoji}</text><text x='40' y='60' font-size='20'>${emoji}</text></svg>`;
   return `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
 }

@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { LoaderCircle, Search, X } from "lucide-react";
 import { buildCatalog, loadIconCatalog, searchCatalog, type CatalogItem, type IconCatalog } from "@/lib/icon-catalog";
 import { BRAND_ICON, ICON_TONES, lucideIcon, type IconTone } from "@/lib/icons";
+import { THREE_D_ANGLES, THREE_D_STYLES, threeDValue, type ThreeDAngle, type ThreeDStyle } from "@/lib/icons-3d";
 import { PageIcon } from "../ui/PageIcon";
 
 export type IconTab = "iconos" | "3d" | "emojis";
@@ -27,6 +28,11 @@ export function IconBrowser({ value, onPick, initialTab, tone, onToneChange, sho
   const [catalog, setCatalog] = useState<IconCatalog>(basic);
   const [loading, setLoading] = useState(true);
   const [shown, setShown] = useState(PAGE);
+  // Estilo y ángulo de los iconos 3D (#46): 4 estilos × 3 ángulos de cada icono de 3dicons.
+  const [style3d, setStyle3d] = useState<ThreeDStyle>("color");
+  const [angle3d, setAngle3d] = useState<ThreeDAngle>("dynamic");
+  // Tono de piel de los emojis que lo tienen (0: el amarillo de siempre; 1-5: de claro a oscuro).
+  const [skin, setSkin] = useState(0);
   const listRef = useRef<HTMLDivElement>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
 
@@ -53,7 +59,7 @@ export function IconBrowser({ value, onPick, initialTab, tone, onToneChange, sho
     return () => observer.disconnect();
   }, [shown, items.length]);
 
-  const valueOf = (item: CatalogItem) => item.kind === "lucide" ? lucideIcon(item.name, tone) : item.kind === "3d" ? `3d:${item.name}` : item.value;
+  const valueOf = (item: CatalogItem) => item.kind === "lucide" ? lucideIcon(item.name, tone) : item.kind === "3d" ? (item.cdnId ? threeDValue(item.cdnId, angle3d, style3d) : `3d:${item.name}`) : (skin && item.skins ? item.skins[skin - 1] : item.value);
   const titleOf = (item: CatalogItem) => item.kind === "emoji" ? item.label : item.name;
   const searching = Boolean(query.trim());
 
@@ -85,6 +91,27 @@ export function IconBrowser({ value, onPick, initialTab, tone, onToneChange, sho
             <button key={t} type="button" role="radio" aria-checked={tone === t} aria-label={toneLabel[t]} title={toneLabel[t]} onClick={() => onToneChange(t)}
               className={`h-6 w-6 rounded-full ${tone === t ? "ring-2 ring-brand ring-offset-2" : ""}`}
               style={{ backgroundImage: `linear-gradient(145deg, ${ICON_TONES[t][0]}, ${ICON_TONES[t][1]})` }} />
+          ))}
+        </div>
+      )}
+
+      {(searching || tab === "3d") && (
+        <div className="flex flex-wrap gap-1.5 text-xs" aria-label="Estilo y ángulo de los iconos 3D">
+          <select value={style3d} onChange={(e) => setStyle3d(e.target.value as ThreeDStyle)} aria-label="Estilo de los iconos 3D" className="h-7 rounded-md border border-line bg-surface px-1.5 outline-none focus:border-brand">
+            {(Object.keys(THREE_D_STYLES) as ThreeDStyle[]).map((s) => <option key={s} value={s}>{THREE_D_STYLES[s]}</option>)}
+          </select>
+          <select value={angle3d} onChange={(e) => setAngle3d(e.target.value as ThreeDAngle)} aria-label="Ángulo de los iconos 3D" className="h-7 rounded-md border border-line bg-surface px-1.5 outline-none focus:border-brand">
+            {(Object.keys(THREE_D_ANGLES) as ThreeDAngle[]).map((a) => <option key={a} value={a}>{THREE_D_ANGLES[a]}</option>)}
+          </select>
+        </div>
+      )}
+
+      {(searching || tab === "emojis") && (
+        <div className="flex flex-wrap items-center gap-1" role="radiogroup" aria-label="Tono de piel">
+          {["✋", "✋🏻", "✋🏼", "✋🏽", "✋🏾", "✋🏿"].map((hand, i) => (
+            <button key={hand} type="button" role="radio" aria-checked={skin === i} onClick={() => setSkin(i)}
+              aria-label={i === 0 ? "Tono de piel predeterminado" : `Tono de piel ${i}`} title={i === 0 ? "Predeterminado" : `Tono ${i}`}
+              className={`grid h-7 w-7 place-items-center rounded-md text-base ${skin === i ? "bg-brand-soft ring-2 ring-brand" : "hover:bg-paper"}`}>{hand}</button>
           ))}
         </div>
       )}

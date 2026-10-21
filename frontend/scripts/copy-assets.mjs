@@ -64,3 +64,16 @@ if (existsSync(emojisFrom)) {
   console.error("Emojis: falta assets/emojis/es.json.");
   process.exit(1);
 }
+
+/* Banderas como imagen (#46): en Windows los emojis de bandera se ven como letras. flag-icons (MIT), 4:3. */
+const flagsFrom = join(root, "node_modules", "flag-icons", "flags", "4x3");
+const flagsTo = join(root, "public", "iconos", "banderas");
+if (existsSync(flagsFrom)) {
+  mkdirSync(flagsTo, { recursive: true });
+  const flags = readdirSync(flagsFrom).filter((f) => f.endsWith(".svg"));
+  for (const f of flags) copyFileSync(join(flagsFrom, f), join(flagsTo, f));
+  console.log(`Banderas: ${flags.length} copiadas a public/iconos/banderas.`);
+} else if (!existsSync(flagsTo)) {
+  console.error("Banderas: falta flag-icons (npm install).");
+  process.exit(1);
+}

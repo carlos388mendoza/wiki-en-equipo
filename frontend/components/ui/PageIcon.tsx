@@ -1,4 +1,5 @@
 import Image from "next/image";
+import { flagCode, flagSrc } from "@/lib/flags";
 import { ICON_TONES, parseIcon } from "@/lib/icons";
 
 /**
@@ -14,6 +15,9 @@ export function PageIcon({ icon, fallback = "📄", size = 20, className = "" }:
     return <Image src={parsed.src} alt="" aria-hidden width={size} height={size} className={`inline-block shrink-0 object-contain ${className}`} style={{ width: size, height: size }} />;
   }
   if (!parsed || parsed.kind === "emoji") {
+    // Banderas de países como imagen: en Windows el emoji se ve como dos letras (#46).
+    const flag = flagCode(parsed?.value ?? fallback);
+    if (flag) return <Image src={flagSrc(flag)} alt="" aria-hidden width={Math.round(size * 4 / 3)} height={size} className={`inline-block shrink-0 rounded-[3px] object-cover shadow-sm ${className}`} style={{ width: Math.round(size * 0.9 * 4 / 3), height: Math.round(size * 0.9) }} />;
     return (
       <span aria-hidden className={`inline-block leading-none ${className}`} style={{ fontSize: size }}>
         {parsed?.value ?? fallback}

@@ -128,3 +128,42 @@ export const THREE_D_KEYWORDS = {
 
 export type ThreeDIcon = keyof typeof THREE_D_KEYWORDS;
 export const THREE_D_ICONS = Object.keys(THREE_D_KEYWORDS) as ThreeDIcon[];
+
+/* ---------- Todos los de 3dicons, desde su CDN (#46) ---------- */
+
+import { THREE_D_CDN_IDS } from "./icons-3d-cdn-ids";
+export { THREE_D_CDN_IDS };
+
+export const THREE_D_STYLES = { color: "Color", premium: "Premium", gradient: "Degradado", clay: "Arcilla" } as const;
+export const THREE_D_ANGLES = { dynamic: "Dinámico", front: "De frente", iso: "Isométrico" } as const;
+export type ThreeDStyle = keyof typeof THREE_D_STYLES;
+export type ThreeDAngle = keyof typeof THREE_D_ANGLES;
+
+/** Los 8 de las plantillas tienen nombre en español: su id en 3dicons. */
+const LOCAL_BY_ID: Record<string, ThreeDIcon> = {
+  "628100-notebook": "documentacion", "1acc3d-heart": "bienvenida", "e9828b-flag": "inicio-departamento", "1b714e-tick": "proceso",
+  "781f28-calendar": "acta", "abab3a-takeway-cup": "receta", "778c78-key": "apertura-cierre", "eec43d-chat-bubble": "preguntas",
+};
+
+/** El icono guardado en el repo para un id de 3dicons (solo existe en estilo color y ángulo dinámico). */
+export function localThreeD(id: string): ThreeDIcon | null {
+  if (LOCAL_BY_ID[id]) return LOCAL_BY_ID[id];
+  const name = id.replace(/^[0-9a-f]{6}-/, "");
+  return (THREE_D_ICONS as readonly string[]).includes(name) ? (name as ThreeDIcon) : null;
+}
+
+const CDN_PATTERN = /^3d:([0-9a-f]{6}-[a-z0-9-]+):(dynamic|front|iso):(color|premium|gradient|clay)$/;
+const CDN_SET = new Set(THREE_D_CDN_IDS);
+
+/** Valor que se guarda: el archivo local si existe en ese estilo; si no, `3d:<id>:<ángulo>:<estilo>` (CDN). */
+export function threeDValue(id: string, angle: ThreeDAngle, style: ThreeDStyle): string {
+  const local = angle === "dynamic" && style === "color" ? localThreeD(id) : null;
+  return local ? `3d:${local}` : `3d:${id}:${angle}:${style}`;
+}
+
+/** Un icono 3D del CDN guardado (`3d:<id>:<ángulo>:<estilo>`), o `null` si no es válido. */
+export function parseCdnThreeD(value: string): { id: string; angle: ThreeDAngle; style: ThreeDStyle; src: string } | null {
+  const m = value.match(CDN_PATTERN);
+  if (!m || !CDN_SET.has(m[1])) return null;
+  return { id: m[1], angle: m[2] as ThreeDAngle, style: m[3] as ThreeDStyle, src: `https://bvconuycpdvgzbvbkijl.supabase.co/storage/v1/object/public/sizes/${m[1]}/${m[2]}/200/${m[3]}.webp` };
+}
