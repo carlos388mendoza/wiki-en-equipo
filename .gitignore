@@ -38,6 +38,7 @@ frontend/public/sw-build.js
 frontend/public/iconos/3d/
 frontend/public/iconos/lucide/
 frontend/public/iconos/emojis-es.json
+frontend/public/iconos/banderas/
 
 # Vínculo local con proyectos de Vercel (vercel link)
 .vercel

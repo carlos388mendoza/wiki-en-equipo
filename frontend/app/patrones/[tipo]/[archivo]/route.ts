@@ -1,5 +1,5 @@
 import { ICON_TONES, type IconTone } from "@/lib/icons";
-import { THREE_D_ICONS } from "@/lib/icons-3d";
+import { parseCdnThreeD, THREE_D_ICONS } from "@/lib/icons-3d";
 
 /**
  * Tesela de 64 × 64 de un fondo de patrón con un icono de Lucide o 3D (#45), igual que la de emojis: dos iconos en
@@ -14,7 +14,15 @@ const headers = { "Content-Type": "image/svg+xml; charset=utf-8", "Cache-Control
 export async function GET(request: Request, { params }: { params: Promise<{ tipo: string; archivo: string }> }) {
   const { tipo, archivo } = await params;
   const name = archivo.replace(/\.svg$/, "");
-  if (!NAME.test(name) || (tipo !== "lucide" && tipo !== "3d")) return new Response("No existe.", { status: 404 });
+  if (!NAME.test(name) || (tipo !== "lucide" && tipo !== "3d" && tipo !== "bandera")) return new Response("No existe.", { status: 404 });
+
+  if (tipo === "bandera") {
+    const res = await fetch(new URL(`/iconos/banderas/${name}.svg`, request.url)).catch(() => null);
+    if (!res?.ok) return new Response("No existe.", { status: 404 });
+    const data = `data:image/svg+xml;base64,${Buffer.from(await res.arrayBuffer()).toString("base64")}`;
+    const image = (x: number, y: number) => `<image href="${data}" x="${x}" y="${y}" width="24" height="18" preserveAspectRatio="none"/>`;
+    return new Response(`<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64">${image(4, 7)}${image(36, 39)}</svg>`, { headers });
+  }
 
   if (tipo === "lucide") {
     const res = await fetch(new URL(`/iconos/lucide/${name}.svg`, request.url)).catch(() => null);
@@ -27,8 +35,11 @@ export async function GET(request: Request, { params }: { params: Promise<{ tipo
     return new Response(`<svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 64 64" fill="none" stroke="${color}" stroke-opacity="0.55" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${icon(6, 6)}${icon(38, 38)}</svg>`, { headers });
   }
 
-  if (!(THREE_D_ICONS as readonly string[]).includes(name)) return new Response("No existe.", { status: 404 });
-  const res = await fetch(new URL(`/iconos/3d/${name}.webp`, request.url)).catch(() => null);
+  // Uno de los guardados en el repo, o de todos los de 3dicons con su ángulo y estilo (?angulo=&estilo=).
+  const query = new URL(request.url).searchParams;
+  const cdn = parseCdnThreeD(`3d:${name}:${query.get("angulo") ?? ""}:${query.get("estilo") ?? ""}`);
+  if (!cdn && !(THREE_D_ICONS as readonly string[]).includes(name)) return new Response("No existe.", { status: 404 });
+  const res = await fetch(cdn ? cdn.src : new URL(`/iconos/3d/${name}.webp`, request.url)).catch(() => null);
   if (!res?.ok) return new Response("No existe.", { status: 404 });
   // Una imagen usada como fondo no carga archivos externos: el icono va dentro del SVG.
   const data = `data:image/webp;base64,${Buffer.from(await res.arrayBuffer()).toString("base64")}`;

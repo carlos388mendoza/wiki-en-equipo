@@ -1,5 +1,5 @@
 import { EMOJI_KEYWORDS, fold, LUCIDE_KEYWORDS } from "./icon-search";
-import { THREE_D_ICONS, THREE_D_KEYWORDS } from "./icons-3d";
+import { localThreeD, THREE_D_CDN_IDS, THREE_D_ICONS, THREE_D_KEYWORDS } from "./icons-3d";
 
 /**
  * Catálogo completo de iconos para el selector de icono y los patrones de fondo (#45, #46): los ~1.500 de Lucide,
@@ -9,8 +9,10 @@ import { THREE_D_ICONS, THREE_D_KEYWORDS } from "./icons-3d";
  */
 export type CatalogItem =
   | { kind: "lucide"; name: string; words: string[] }
-  | { kind: "3d"; name: string; words: string[] }
-  | { kind: "emoji"; value: string; label: string; group: number; words: string[] };
+  /** `cdnId`: uno de todos los de 3dicons (se elige estilo y ángulo); sin él, uno de los guardados en el repo. */
+  | { kind: "3d"; name: string; cdnId?: string; words: string[] }
+  /** `skins`: las 5 variantes de tono de piel (de claro a oscuro), si el emoji las tiene. */
+  | { kind: "emoji"; value: string; label: string; group: number; skins?: string[]; words: string[] };
 export type IconCatalog = { lucide: CatalogItem[]; threeD: CatalogItem[]; emojis: CatalogItem[]; emojiGroups: Record<number, string> };
 
 const words = (text: string) => fold(text).split(/[^a-z0-9ñ]+/).filter(Boolean);
@@ -60,19 +62,26 @@ export function loadIconCatalog(): Promise<IconCatalog> {
   loading ??= (async () => {
     const [lucideIndex, emojiIndex] = await Promise.all([
       fetch("/iconos/lucide/indice.json").then((r) => (r.ok ? r.json() as Promise<Record<string, string>> : {})).catch(() => ({} as Record<string, string>)),
-      fetch("/iconos/emojis-es.json").then((r) => (r.ok ? r.json() as Promise<{ grupos: Record<number, string>; emojis: [string, string, number][] }> : null)).catch(() => null),
+      fetch("/iconos/emojis-es.json").then((r) => (r.ok ? r.json() as Promise<{ grupos: Record<number, string>; emojis: [string, string, number, string[]?][] }> : null)).catch(() => null),
     ]);
     return buildCatalog(lucideIndex, emojiIndex);
   })();
   return loading;
 }
 
-export function buildCatalog(lucideIndex: Record<string, string>, emojiIndex: { grupos: Record<number, string>; emojis: [string, string, number][] } | null): IconCatalog {
+export function buildCatalog(lucideIndex: Record<string, string>, emojiIndex: { grupos: Record<number, string>; emojis: [string, string, number, string[]?][] } | null): IconCatalog {
   const lucideNames = Object.keys(lucideIndex).length ? Object.keys(lucideIndex) : Object.keys(LUCIDE_KEYWORDS);
   const lucide: CatalogItem[] = lucideNames.map((name) => ({ kind: "lucide", name, words: words(`${name} ${lucideIndex[name] ?? ""} ${LUCIDE_KEYWORDS[name] ?? ""}`) }));
-  const threeD: CatalogItem[] = THREE_D_ICONS.map((name) => ({ kind: "3d", name, words: words(`${name} ${THREE_D_KEYWORDS[name]}`) }));
+  // Todos los de 3dicons (#46); los guardados en el repo que no están en la lista, al final.
+  const fromCdn: CatalogItem[] = THREE_D_CDN_IDS.map((id) => {
+    const local = localThreeD(id);
+    const name = id.replace(/^[0-9a-f]{6}-/, "");
+    return { kind: "3d", name, cdnId: id, words: words(`${name} ${local ? `${local} ${THREE_D_KEYWORDS[local]}` : ""}`) };
+  });
+  const covered = new Set(THREE_D_CDN_IDS.map(localThreeD).filter(Boolean));
+  const threeD: CatalogItem[] = [...fromCdn, ...THREE_D_ICONS.filter((name) => !covered.has(name)).map((name): CatalogItem => ({ kind: "3d", name, words: words(`${name} ${THREE_D_KEYWORDS[name]}`) }))];
   const emojis: CatalogItem[] = emojiIndex
-    ? emojiIndex.emojis.map(([value, text, group]) => ({ kind: "emoji", value, label: text.split(" ").slice(0, 4).join(" "), group, words: words(`${text} ${EMOJI_KEYWORDS[value] ?? ""}`) }))
+    ? emojiIndex.emojis.map(([value, text, group, skins]) => ({ kind: "emoji", value, label: text.split(" ").slice(0, 4).join(" "), group, ...(skins && { skins }), words: words(`${text} ${EMOJI_KEYWORDS[value] ?? ""}`) }))
     : Object.entries(EMOJI_KEYWORDS).map(([value, text]) => ({ kind: "emoji", value, label: text, group: 0, words: words(text) }));
   return { lucide, threeD, emojis, emojiGroups: emojiIndex?.grupos ?? {} };
 }

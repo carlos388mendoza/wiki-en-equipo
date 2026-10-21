@@ -38,7 +38,7 @@ const PATTERN = /^lucide:([a-z0-9-]{1,30}):([a-z]{2,10})$/;
  * Iconos 3D (3dicons, CC0): los 120 de lib/icons-3d.ts. Se guardan como `3d:<nombre>`;
  * los archivos viven en assets/templates/3dicons y se sirven en /iconos/3d/<nombre>.webp.
  */
-import { THREE_D_ICONS } from "./icons-3d";
+import { parseCdnThreeD, THREE_D_ICONS } from "./icons-3d";
 import { LUCIDE_NAMES } from "./lucide-names";
 export { THREE_D_ICONS };
 
@@ -57,6 +57,9 @@ export function parseIcon(icon: string | null | undefined): ParsedIcon | null {
   if (!icon) return null;
   if (icon.startsWith("marca:")) return icon === BRAND_ICON ? { kind: "brand", src: BRAND_LOGO_SRC } : null;
   if (icon.startsWith("3d:")) {
+    // Del CDN de 3dicons (cualquier estilo y ángulo, #46) o de los 120 guardados en el repo.
+    const cdn = parseCdnThreeD(icon);
+    if (cdn) return { kind: "3d", name: icon.slice(3), src: cdn.src };
     const name = icon.slice(3);
     return (THREE_D_ICONS as readonly string[]).includes(name) ? { kind: "3d", name, src: `/iconos/3d/${name}.webp` } : null;
   }
