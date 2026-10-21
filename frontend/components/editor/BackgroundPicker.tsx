@@ -3,13 +3,15 @@
 import Image from "next/image";
 import { useRef, useState } from "react";
 import { Check, ImagePlus, LoaderCircle, RefreshCw, Search, Trash2, Upload, X } from "lucide-react";
-import { COLORS, GRADIENTS, PATTERN_COLORS, PATTERN_EMOJIS, PHOTO_GALLERY, searchPhotos, type GalleryPhoto } from "@/lib/backgrounds";
+import { COLORS, GRADIENTS, PATTERN_COLORS, PHOTO_GALLERY, searchPhotos, type GalleryPhoto } from "@/lib/backgrounds";
+import { parseIcon, type IconTone } from "@/lib/icons";
 import { safeHref } from "@/lib/blocks";
 import { isOptimizableImage } from "@/lib/images";
 import type { Background, ShapePattern } from "@/lib/types";
 import { IMAGE_TYPES, MAX_UPLOAD_MB, uploadToWiki, type UploadTarget } from "@/lib/uploads";
 import { backgroundStyle } from "../page/PageBackground";
 import { Modal } from "../ui/Modal";
+import { IconBrowser } from "./IconBrowser";
 
 type Tab = "imagenes" | "degradados" | "colores" | "patrones";
 const SHAPES: { id: ShapePattern; label: string }[] = [
@@ -52,6 +54,8 @@ export function BackgroundPicker({ open, onClose, value, onChange, uploadTarget 
   const [photoQuery, setPhotoQuery] = useState("");
   const photoResults = searchPhotos(photoQuery);
   const [patternEmoji, setPatternEmoji] = useState(value?.type === "pattern" ? value.emoji : "🍽️");
+  const patternParsed = parseIcon(patternEmoji);
+  const [patternTone, setPatternTone] = useState<IconTone>(patternParsed?.kind === "lucide" ? patternParsed.tone : "rojo");
   const [patternColor, setPatternColor] = useState(value?.type === "pattern" || value?.type === "shapes" ? value.color : PATTERN_COLORS[0]);
   const fileRef = useRef<HTMLInputElement>(null);
   const own = isUploadedBackground(value) && value?.type === "image" ? value.url : null;
@@ -209,13 +213,16 @@ export function BackgroundPicker({ open, onClose, value, onChange, uploadTarget 
         {tab === "patrones" && (
           <div className="flex flex-col gap-4">
             <div>
-              <h3 className="mb-2 text-sm font-semibold">Emojis</h3>
-              <div className="flex flex-wrap gap-1">
-                {PATTERN_EMOJIS.map((e) => (
-                  <button key={e} type="button" aria-pressed={value?.type === "pattern" && patternEmoji === e} onClick={() => { setPatternEmoji(e); pick({ type: "pattern", emoji: e, color: patternColor }); }}
-                    className={`grid h-10 w-10 place-items-center rounded-lg text-xl ${value?.type === "pattern" && patternEmoji === e ? "bg-brand-soft ring-2 ring-brand" : "hover:bg-paper"}`}>{e}</button>
-                ))}
-              </div>
+              {/* Todos los iconos, 3D y emojis, con el mismo buscador del icono de página (#45). */}
+              <h3 className="mb-2 text-sm font-semibold">Icono o emoji del patrón</h3>
+              <IconBrowser value={value?.type === "pattern" ? patternEmoji : null} height="max-h-48"
+                initialTab={patternEmoji.startsWith("lucide:") ? "iconos" : patternEmoji.startsWith("3d:") ? "3d" : "emojis"}
+                onPick={(icon) => { setPatternEmoji(icon); pick({ type: "pattern", emoji: icon, color: patternColor }); }}
+                tone={patternTone} onToneChange={(t) => {
+                  setPatternTone(t);
+                  const current = parseIcon(patternEmoji);
+                  if (current?.kind === "lucide") { const icon = `lucide:${current.name}:${t}`; setPatternEmoji(icon); if (value?.type === "pattern") pick({ type: "pattern", emoji: icon, color: patternColor }); }
+                }} />
             </div>
             <div>
               <h3 className="mb-2 text-sm font-semibold">Figuras</h3>

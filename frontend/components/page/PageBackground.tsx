@@ -2,7 +2,15 @@ import Image from "next/image";
 import { isOptimizableImage } from "@/lib/images";
 import type { Background, ShapePattern } from "@/lib/types";
 
+/**
+ * Fondo de patrón: con un emoji, el SVG va en la misma URL; con un icono de Lucide o 3D (`lucide:<nombre>:<tono>`
+ * o `3d:<nombre>`, #45), lo arma la ruta /patrones.
+ */
 export function patternUrl(emoji: string) {
+  const lucide = emoji.match(/^lucide:([a-z0-9-]+):([a-z]+)$/);
+  if (lucide) return `url("/patrones/lucide/${lucide[1]}.svg?tono=${lucide[2]}")`;
+  const threeD = emoji.match(/^3d:([a-z0-9-]+)$/);
+  if (threeD) return `url("/patrones/3d/${threeD[1]}.svg")`;
   const svg = `<svg xmlns='http://www.w3.org/2000/svg' width='64' height='64'><text x='8' y='28' font-size='20'>${emoji}</text><text x='40' y='60' font-size='20'>${emoji}</text></svg>`;
   return `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
 }

@@ -236,7 +236,7 @@ export function parseAppearance(value: unknown): { background: Background | null
   else if (v.type === "gradient" && typeof v.value === "string" && CSS_GRADIENT.test(v.value)) background = { type: "gradient", value: v.value };
   else if (v.type === "image" && safeHref(v.url)) background = { type: "image", url: safeHref(v.url)!, credit: optStr(v.credit), creditUrl: safeHref(v.creditUrl) };
   else if (v.type === "shapes" && SHAPES.includes(v.shape as ShapePattern) && typeof v.color === "string" && CSS_COLOR.test(v.color) && typeof v.ink === "string" && CSS_COLOR.test(v.ink)) background = { type: "shapes", shape: v.shape as ShapePattern, color: v.color, ink: v.ink };
-  else if (v.type === "pattern" && typeof v.emoji === "string" && typeof v.color === "string" && CSS_COLOR.test(v.color)) background = { type: "pattern", emoji: v.emoji.slice(0, 16), color: v.color };
+  else if (v.type === "pattern" && typeof v.emoji === "string" && typeof v.color === "string" && CSS_COLOR.test(v.color)) background = { type: "pattern", emoji: /^(lucide|3d):/.test(v.emoji) ? sanitizeIcon(v.emoji) ?? "🍽️" : v.emoji.slice(0, 16), color: v.color };
   return { background, icon };
 }
 
