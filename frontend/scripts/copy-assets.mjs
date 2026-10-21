@@ -38,6 +38,10 @@ if (existsSync(lucideFrom) && existsSync(tagsFile)) {
   mkdirSync(lucideTo, { recursive: true });
   const { etiquetas } = JSON.parse(readFileSync(tagsFile, "utf8"));
   let made = 0;
+  // El índice del selector lleva solo los que se pudieron dibujar y sin repetidos (mismo dibujo con otro nombre,
+  // como clock y clock-4); los SVG de todos se generan igual, para las páginas que ya los usan.
+  const indice = {};
+  const drawn = new Set();
   for (const name of Object.keys(etiquetas)) {
     const source = join(lucideFrom, `${name}.js`);
     if (!existsSync(source)) continue;
@@ -47,8 +51,9 @@ if (existsSync(lucideFrom) && existsSync(tagsFile)) {
     const body = nodes.map(([tag, attrs]) => `<${tag} ${Object.entries(attrs).filter(([k]) => k !== "key").map(([k, v]) => `${k}="${v}"`).join(" ")}/>`).join("");
     writeFileSync(join(lucideTo, `${name}.svg`), `<svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">${body}</svg>`);
     made++;
+    if (body && !drawn.has(body)) { drawn.add(body); indice[name] = etiquetas[name]; }
   }
-  writeFileSync(join(lucideTo, "indice.json"), JSON.stringify(etiquetas));
+  writeFileSync(join(lucideTo, "indice.json"), JSON.stringify(indice));
   console.log(`Iconos de Lucide: ${made} generados en public/iconos/lucide.`);
 } else if (!existsSync(join(lucideTo, "indice.json"))) {
   console.error("Iconos de Lucide: falta lucide-react o assets/lucide/etiquetas.json.");
