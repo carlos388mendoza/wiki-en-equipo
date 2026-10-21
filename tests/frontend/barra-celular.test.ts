@@ -8,10 +8,10 @@ const accountPanel = read("components/auth/AccountPanel.tsx");
 
 describe("barra de navegación del celular", () => {
   it("está fija abajo solo en pantallas chicas y tiene tres botones: Inicio, Plantillas y Cuenta", () => {
-    expect(sidebar).toMatch(/aria-label="Navegación rápida" className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-3[^"]*lg:hidden"/);
+    expect(sidebar).toMatch(/aria-label="Navegación rápida" className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4[^"]*lg:hidden"/);
     expect(sidebar).toContain(`bottomItem("/", "Inicio", Home)`);
     expect(sidebar).toContain(`bottomItem("/plantillas", "Plantillas", LayoutTemplate)`);
-    expect(sidebar).not.toContain(`<NewPageButton variant="nav"`);
+    expect(sidebar).toContain(`<NewPageButton variant="nav" label="Nuevo" />`);
   });
 
   it("el menú Cuenta trae nombre y rol, Mi cuenta, Agregar otra cuenta y Cerrar sesión (con su confirmación)", () => {
