@@ -11,7 +11,7 @@ describe("cerrar sesión", () => {
   });
 
   it("sin cambios pendientes pregunta «¿Cerrar sesión?»; con cambios, lista lo que se perdería", () => {
-    expect(button).toMatch(/open=\{open && unsynced\.length === 0\}[^>]*title="¿Cerrar sesión\?"/);
+    expect(button).toContain('open={open && unsynced.length === 0} onClose={close} title={mode === "cambiar" ? "¿Cambiar de cuenta?" : "¿Cerrar sesión?"}');
     expect(button).toMatch(/open=\{open && unsynced\.length > 0\}[^>]*title="Tienes cambios sin subir"/);
   });
 });

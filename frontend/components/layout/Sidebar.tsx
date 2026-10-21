@@ -2,8 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { createContext, useContext, useEffect, useState } from "react";
-import { Building2, ChevronRight, Home, LayoutTemplate, Shield, Menu, Search, Trash2, X } from "lucide-react";
+import { createContext, useContext, useEffect, useRef, useState } from "react";
+import { Building2, ChevronRight, Home, LayoutTemplate, Shield, Menu, Search, Trash2, UserRound, X } from "lucide-react";
 import { canManageUsers, roleLabel } from "@/lib/permissions";
 import type { PageSummary, SidebarSections, User } from "@/lib/types";
 import { LogoutButton } from "../auth/LogoutButton";
@@ -76,8 +76,22 @@ function Section({ title, pages, empty }: { title: string; pages: PageSummary[];
 export function Sidebar({ user, sections }: { user: User; sections: SidebarSections }) {
   const department = user.department ?? { name: "Mi departamento", slug: "" };
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [accountOpen, setAccountOpen] = useState(false);
+  const accountRef = useRef<HTMLDivElement>(null);
   const pathname = usePathname();
-  useEffect(() => setMobileOpen(false), [pathname]);
+  useEffect(() => { setMobileOpen(false); setAccountOpen(false); }, [pathname]);
+  // El menú Cuenta se cierra al tocar fuera (no en las ventanas de confirmación) o con Escape.
+  useEffect(() => {
+    if (!accountOpen) return;
+    const close = (e: Event) => {
+      if (e instanceof KeyboardEvent) { if (e.key === "Escape") setAccountOpen(false); return; }
+      const target = e.target as HTMLElement;
+      if (!accountRef.current?.contains(target) && !target.closest("dialog, [role=dialog]")) setAccountOpen(false);
+    };
+    document.addEventListener("pointerdown", close);
+    document.addEventListener("keydown", close);
+    return () => { document.removeEventListener("pointerdown", close); document.removeEventListener("keydown", close); };
+  }, [accountOpen]);
   const menu = { user, pinned: new Set(sections.ancladas.map((p) => p.id)) };
 
   const navItem = (href: string, label: string, Icon?: typeof Home) => {
@@ -154,16 +168,31 @@ export function Sidebar({ user, sections }: { user: User; sections: SidebarSecti
         </Link>
       </header>
 
-      {/* Celular y tableta: barra de navegación abajo (#47), además del menú lateral */}
-      <nav aria-label="Navegación rápida" className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-line bg-paper/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden">
+      {/* Celular y tableta: barra abajo con Inicio, Plantillas y Cuenta (#47). Buscar, Nueva página, los
+          departamentos y las páginas siguen en el menú lateral (botón de arriba). */}
+      <nav aria-label="Navegación rápida" className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-3 border-t border-line bg-paper/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden">
         {bottomItem("/", "Inicio", Home)}
-        {bottomItem("/buscar", "Buscar", Search)}
-        <NewPageButton variant="nav" label="Nueva" />
         {bottomItem("/plantillas", "Plantillas", LayoutTemplate)}
-        <button type="button" onClick={() => setMobileOpen(true)} aria-label="Abrir menú y perfil" className="flex flex-col items-center justify-center gap-0.5 py-1.5 text-[11px] font-medium text-muted hover:text-ink">
-          <span className="scale-90"><Avatar name={user.name} /></span>
-          Menú
-        </button>
+        <div ref={accountRef} className="relative flex">
+          <button type="button" onClick={() => setAccountOpen((v) => !v)} aria-haspopup="menu" aria-expanded={accountOpen}
+            className={`flex flex-1 flex-col items-center justify-center gap-0.5 py-1.5 text-[11px] font-medium ${accountOpen || pathname === "/cuenta" ? "text-brand-strong" : "text-muted hover:text-ink"}`}>
+            <span className={`grid h-8 w-12 place-items-center rounded-full ${accountOpen || pathname === "/cuenta" ? "bg-brand-soft" : ""}`}><UserRound size={19} aria-hidden /></span>
+            Cuenta
+          </button>
+          {/* Oculto en lugar de desmontado: así no se pierde la ventana de confirmación de cerrar sesión. */}
+          <div role="menu" aria-label="Cuenta" className={`${accountOpen ? "" : "hidden"} absolute bottom-full right-2 mb-2 w-64 rounded-xl border border-line bg-surface p-1 shadow-xl`}>
+            <div className="flex items-center gap-2.5 border-b border-line px-3 py-2.5">
+              <Avatar name={user.name} />
+              <div className="min-w-0">
+                <p className="truncate text-sm font-semibold">{user.name}</p>
+                <p className="truncate text-xs text-muted">{roleLabel[user.role]}</p>
+              </div>
+            </div>
+            <Link href="/cuenta" role="menuitem" className="flex items-center gap-2.5 rounded-md px-3 py-2.5 text-sm hover:bg-paper"><UserRound size={16} aria-hidden /> Mi cuenta</Link>
+            <LogoutButton userId={user.id} variant="menu" mode="cambiar" />
+            <LogoutButton userId={user.id} variant="menu" />
+          </div>
+        </div>
       </nav>
 
       {/* Escritorio */}
