@@ -82,6 +82,8 @@ self.addEventListener("fetch", (event) => {
     event.respondWith(cacheFirst(request));
   } else if (isBrandAsset(url.pathname)) {
     event.respondWith(cacheFirst(request, true));
+  } else if (url.pathname.startsWith("/iconos/") || url.pathname.startsWith("/patrones/") || url.pathname.startsWith("/brand/")) {
+    event.respondWith(cacheFirst(request));
   } else if (request.mode === "navigate") {
     event.respondWith(networkFirst(request, PAGES, OFFLINE_URL));
   } else if (request.headers.get("RSC") === "1" || url.searchParams.has("_rsc") || url.pathname.startsWith("/archivos/") || url.pathname.startsWith("/_next/image")) {
