@@ -26,6 +26,12 @@ export function OfflineBanner({ user }: { user: { id: string; name: string } }) 
     window.addEventListener("offline", off);
     if ("serviceWorker" in navigator && (process.env.NODE_ENV === "production" || process.env.NEXT_PUBLIC_ENABLE_SW === "1")) {
       navigator.serviceWorker.register("/sw.js").catch(() => { /* sin modo sin conexión */ });
+      // Al publicar una versión nueva, su service worker toma el control (skipWaiting): se recarga para dejar de
+      // usar la vieja. En los editores no, para no cortar a quien escribe (toman la nueva al salir).
+      const hadController = Boolean(navigator.serviceWorker.controller);
+      navigator.serviceWorker.addEventListener("controllerchange", () => {
+        if (hadController && !/\/editar$|^\/sin-conexion/.test(location.pathname)) location.reload();
+      }, { once: true });
     }
     return () => { window.removeEventListener("online", on); window.removeEventListener("offline", off); };
   }, [user]);

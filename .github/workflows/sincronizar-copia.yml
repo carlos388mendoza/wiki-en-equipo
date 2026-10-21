@@ -27,4 +27,19 @@ jobs:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         # Es el botón "Sync fork" de GitHub. Si el cambio toca archivos de .github/workflows, GitHub no deja que
         # este flujo lo traiga: hay que presionar "Sync fork" en la copia a mano (ver CLAUDE.md).
-        run: gh api --method POST "repos/${{ github.repository }}/merge-upstream" -f branch=main
+        run: |
+          result=$(gh api --method POST "repos/${{ github.repository }}/merge-upstream" -f branch=main)
+          echo "$result"
+          # "none": ya estaba al día; "fast-forward": la copia avanzó y hay que publicar.
+          echo "avanzo=$(echo "$result" | jq -r ".merge_type != \"none\"")" >> "$GITHUB_OUTPUT"
+        id: sync
+      # Vercel no siempre publica al recibir el avance de la copia (el 21/10/2026 no lo hizo): se le pide con un
+      # Deploy Hook del proyecto (secreto VERCEL_DEPLOY_HOOK de la copia). Si el aviso de Git también llega, Vercel
+      # publica el mismo commit dos veces, sin problema.
+      - name: Pedir a Vercel que publique
+        if: steps.sync.outputs.avanzo == 'true'
+        env:
+          HOOK: ${{ secrets.VERCEL_DEPLOY_HOOK }}
+        run: |
+          if [ -z "$HOOK" ]; then echo "Sin VERCEL_DEPLOY_HOOK: se espera al aviso de Git."; exit 0; fi
+          curl -fsS -X POST "$HOOK" > /dev/null && echo "Publicación pedida a Vercel."
