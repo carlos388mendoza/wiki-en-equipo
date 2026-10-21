@@ -23,7 +23,9 @@ export function middleware(request: NextRequest) {
 export const config = {
   // Todo menos el login, los archivos de Next y los recursos estáticos. /archivos queda fuera porque
   // valida la sesión por su cuenta y porque Next corta en 10 MB los cuerpos que pasan por el middleware.
-  matcher: ["/((?!login|archivos|_next/|favicon.ico|manifest.webmanifest|sw.js|sw-build.js|iconos/|patrones/|.*\.(?:png|jpg|jpeg|svg|webp|ico|txt)$).*)"],
+  // /fonts son las fuentes de emojis (#54): se sirven sin sesión para que la página se vea igual
+  // antes de iniciar sesión.
+  matcher: ["/((?!login|archivos|_next/|favicon.ico|manifest.webmanifest|sw.js|sw-build.js|iconos/|patrones/|fonts/|.*\.(?:png|jpg|jpeg|svg|webp|ico|txt|css|woff2)$).*)"],
   // Runtime de Node.js, no Edge: el proyecto único de Vercel (Services, ver vercel.json de la raíz) no admite
   // funciones Edge. Este middleware no usa nada de Edge; con Node funciona igual.
   runtime: "nodejs",

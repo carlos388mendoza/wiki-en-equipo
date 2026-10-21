@@ -23,6 +23,36 @@ export function patternUrl(emoji: string) {
   return `url("data:image/svg+xml,${encodeURIComponent(svg)}")`;
 }
 
+/** ¿El patrón es solo un emoji? (no un icono de Lucide, 3D, marca o bandera) */
+export function isPlainEmojiPattern(emoji: string) {
+  return !/^(?:lucide|3d|marca):/.test(emoji) && !flagCode(emoji);
+}
+
+/** Identificador único del patrón (mismo emoji = mismo dibujo). */
+function patternKey(emoji: string) {
+  return Array.from(emoji).map((c) => c.codePointAt(0)!.toString(36)).join("-");
+}
+
+/**
+ * Patrón de emojis dibujado dentro de la página (#54): al ser un SVG en línea, el emoji hereda la fuente del
+ * sitio y sale con el mismo estilo en todos los dispositivos. Como imagen de fondo (data URI) el navegador la
+ * dibuja aparte y usaría el emoji del sistema.
+ */
+export function EmojiPattern({ emoji, className = "" }: { emoji: string; className?: string }) {
+  const id = `pat-${patternKey(emoji)}`;
+  return (
+    <svg className={`h-full w-full ${className}`} aria-hidden focusable="false">
+      <defs>
+        <pattern id={id} width="64" height="64" patternUnits="userSpaceOnUse">
+          <text x="8" y="28" fontSize="20" fill="black">{emoji}</text>
+          <text x="40" y="60" fontSize="20" fill="black">{emoji}</text>
+        </pattern>
+      </defs>
+      <rect width="100%" height="100%" fill={`url(#${id})`} />
+    </svg>
+  );
+}
+
 /** Patrones de figuras hechos solo con CSS (sin imágenes externas). */
 export function shapeStyle(shape: ShapePattern, ink: string): React.CSSProperties {
   switch (shape) {
@@ -74,6 +104,14 @@ export function backgroundStyle(background: Background | null, seed?: string): R
 export function PageBackground({ background, seed, className = "", sizes = "100vw", priority = false }: {
   background: Background | null; seed?: string; className?: string; sizes?: string; priority?: boolean;
 }) {
+  if (background?.type === "pattern" && isPlainEmojiPattern(background.emoji)) {
+    // Patrón de emojis dibujado en la página: hereda la fuente del sitio (#54).
+    return (
+      <div className={className} style={{ backgroundColor: background.color }}>
+        <EmojiPattern emoji={background.emoji} />
+      </div>
+    );
+  }
   if (background?.type === "image") {
     return (
       // Los logos de la marca (el animado de Grupo Comidas es rectangular) van enteros sobre negro, sin recortarse.

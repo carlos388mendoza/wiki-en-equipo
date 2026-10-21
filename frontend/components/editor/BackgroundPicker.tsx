@@ -10,7 +10,7 @@ import { isOptimizableImage } from "@/lib/images";
 import type { Background, ShapePattern } from "@/lib/types";
 import { IMAGE_TYPES, MAX_UPLOAD_MB, uploadToWiki, type UploadTarget } from "@/lib/uploads";
 import { registerUnsplashDownload, useUnsplashSearch, type RemotePhoto } from "@/lib/unsplash-search";
-import { backgroundStyle } from "../page/PageBackground";
+import { backgroundStyle, EmojiPattern, isPlainEmojiPattern } from "../page/PageBackground";
 import { Modal } from "../ui/Modal";
 import { IconBrowser } from "./IconBrowser";
 
@@ -281,8 +281,18 @@ export function BackgroundPicker({ open, onClose, value, onChange, uploadTarget 
                 ))}
               </div>
             </div>
-            <div className="h-24 rounded-lg border border-line" aria-label="Vista previa del patrón"
-              style={backgroundStyle(value?.type === "shapes" ? value : { type: "pattern", emoji: patternEmoji, color: patternColor })} />
+            {value?.type === "shapes" ? (
+              <div className="h-24 rounded-lg border border-line" aria-label="Vista previa del patrón"
+                style={backgroundStyle(value)} />
+            ) : (
+              // El patrón de emojis se dibuja dentro de la página para que use la fuente del sitio (#54).
+              <div className="h-24 rounded-lg border border-line" aria-label="Vista previa del patrón"
+                style={{ backgroundColor: patternColor }}>
+                {isPlainEmojiPattern(patternEmoji) ? <EmojiPattern emoji={patternEmoji} /> : (
+                  <div className="h-full w-full" style={backgroundStyle({ type: "pattern", emoji: patternEmoji, color: patternColor })} />
+                )}
+              </div>
+            )}
           </div>
         )}
 
