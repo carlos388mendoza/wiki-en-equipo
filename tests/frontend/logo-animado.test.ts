@@ -19,6 +19,15 @@ describe("logo animado de Grupo Comidas", () => {
     expect(pageIcon).not.toMatch(/\?v=\$\{/);
   });
 
+  it("el lienzo del WebP mide 600 × 200 (antes decía 88 × 200 y el logo se veía como una tira invisible)", () => {
+    expect(banner.toString("ascii", 0, 4)).toBe("RIFF");
+    expect(banner.toString("ascii", 8, 12)).toBe("WEBP");
+    expect(banner.toString("ascii", 12, 16)).toBe("VP8X");
+    expect(banner.readUInt32LE(4)).toBe(banner.length - 8);
+    expect(banner.readUIntLE(24, 3) + 1).toBe(600);
+    expect(banner.readUIntLE(27, 3) + 1).toBe(200);
+  });
+
   it("el archivo es un WebP animado de 74 fotogramas que se reproduce una vez (loop = 1)", () => {
     const anim = banner.indexOf("ANIM");
     expect(banner.toString("ascii", anim, anim + 4)).toBe("ANIM");
