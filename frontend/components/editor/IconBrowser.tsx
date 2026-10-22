@@ -138,7 +138,7 @@ export function IconBrowser({ value, onPick, initialTab, tone, onToneChange, aut
                   return (
                     <button key={`${item.kind}:${icon}`} type="button" onClick={() => onPick(icon)} aria-label={`Usar ${labelOf(item)}`} title={titleOf(item)}
                       className={`grid h-10 place-items-center rounded-lg p-1 text-xl hover:bg-paper ${value === icon ? "bg-brand-soft" : ""}`}>
-                      <PageIcon icon={icon} size={item.kind === "3d" || item.kind === "brand" ? 40 : 28} />
+                      <PageIcon icon={icon} size={item.kind === "3d" ? 40 : item.kind === "brand" ? (BRANDS[item.id].wide ? 10 : 40) : 28} />
                     </button>
                   );
                 })}

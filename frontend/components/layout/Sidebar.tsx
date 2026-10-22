@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useContext, useEffect, useId, useState } from "react";
 import { Building2, Calculator, ChevronRight, ChevronsUpDown, Cpu, Home, LayoutTemplate, Menu, Package, Search, ShoppingCart, Shield, Trash2, UserRound } from "lucide-react";
 import type { SavedAccount } from "@/lib/accounts";
 import { canManageUsers, roleLabel } from "@/lib/permissions";
@@ -88,6 +88,42 @@ function Section({ title, pages, empty }: { title: string; pages: PageSummary[];
   );
 }
 
+/**
+ * Páginas de un departamento, plegables (#63): el título es un botón con chevron, como los grupos de la sidebar de
+ * shadcn. Empieza abierto el departamento propio y se abre solo cuando la página abierta es de ese departamento.
+ */
+function DepartmentSection({ id, title, pages, empty, abierta }: {
+  id: string; title: string; pages: PageSummary[]; empty?: string; abierta?: boolean;
+}) {
+  const pathname = usePathname();
+  const contieneActiva = pages.some((p) => pathname === `/paginas/${p.id}`);
+  const [abierto, setAbierto] = useState(Boolean(abierta) || contieneActiva);
+  useEffect(() => { if (contieneActiva) setAbierto(true); }, [contieneActiva]);
+  const ids = new Set(pages.map((p) => p.id));
+  const roots = pages.filter((p) => !p.parentId || !ids.has(p.parentId));
+  // useId: el panel se dibuja dos veces (escritorio y menú del celular) y cada copia necesita su propio id.
+  const panelId = `${useId()}-departamento-${id}`;
+  if (roots.length === 0 && !empty) return null;
+  return (
+    <section className="flex flex-col gap-1">
+      <h2>
+        <button type="button" onClick={() => setAbierto(!abierto)} aria-expanded={abierto} aria-controls={panelId}
+          className="flex w-full items-center gap-1 rounded-md px-2 py-1 text-left text-xs font-semibold text-muted hover:bg-line/60 hover:text-ink">
+          <ChevronRight size={14} aria-hidden className={`shrink-0 transition-transform ${abierto ? "rotate-90" : ""}`} />
+          <span className="truncate">{title}</span>
+        </button>
+      </h2>
+      <div id={panelId} hidden={!abierto}>
+        {roots.length === 0 ? (
+          <p className="px-2 py-1 text-sm text-muted">{empty}</p>
+        ) : (
+          <ul>{roots.map((p) => <TreeNode key={p.id} page={p} all={pages} depth={0} />)}</ul>
+        )}
+      </div>
+    </section>
+  );
+}
+
 export function Sidebar({ user, sections, accounts }: { user: User; sections: SidebarSections; accounts: SavedAccount[] }) {
   const department = user.department ?? { name: "Mi departamento", slug: "" };
   // Todos los departamentos para un administrador; para los demás, solo el suyo (lo decide el backend).
@@ -157,7 +193,8 @@ export function Sidebar({ user, sections, accounts }: { user: User; sections: Si
       <Section title="Ancladas" pages={sections.ancladas} />
       <Section title="Empresa" pages={sections.empresa} />
       {departments.map((d) => (
-        <Section key={d.id} title={d.name} pages={d.pages} empty={d.id === user.departmentId ? "Tu departamento no ha publicado páginas." : "Este departamento no ha publicado páginas."} />
+        <DepartmentSection key={d.id} id={d.id} title={d.name} pages={d.pages} abierta={d.id === user.departmentId}
+          empty={d.id === user.departmentId ? "Tu departamento no ha publicado páginas." : "Este departamento no ha publicado páginas."} />
       ))}
       <Section title="Compartidas conmigo" pages={sections.compartidas} />
       <Section title="Privadas" pages={sections.privadas} empty="Las páginas que crees aparecerán aquí." />
