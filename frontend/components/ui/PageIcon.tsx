@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import Image from "next/image";
 import { flagCode, flagSrc } from "@/lib/flags";
 import { ICON_TONES, parseIcon } from "@/lib/icons";
@@ -13,15 +12,14 @@ export function PageIcon({ icon, fallback = "📄", size = 20, className = "" }:
   icon: string | null | undefined; fallback?: string; size?: number; className?: string;
 }) {
   const parsed = parseIcon(icon) ?? parseIcon(fallback);
-  const [animKey, setAnimKey] = useState(0);
   if (parsed?.kind === "brand" && parsed.wide) {
-    // El logo animado es rectangular (600 × 200): entero, sobre fondo transparente.
-    // Al pasar el ratón se reinicia la animación.
+    // El logo animado es rectangular (600 × 200, 3:1): la caja usa la misma proporción para que lo llene.
+    // Sin reinicio al pasar el ratón: reiniciarlo obligaba a pedir el archivo con otra URL (pesa ~1 MB) y el
+    // logo se quedaba en blanco mientras descargaba. Se reproduce una vez y se queda en el último fotograma.
     return (
       <span aria-hidden className={`relative inline-block shrink-0 overflow-hidden ${className}`}
-        style={{ width: size * 2, height: size, borderRadius: size * 0.12 }}
-        onMouseEnter={() => setAnimKey((k) => k + 1)}>
-        <Image key={animKey} src={`${parsed.src}?v=${animKey}`} alt="" fill sizes={`${size * 2}px`} unoptimized className="object-contain" />
+        style={{ width: size * 3, height: size }}>
+        <Image src={parsed.src} alt="" fill sizes={`${size * 3}px`} unoptimized className="object-contain" />
       </span>
     );
   }

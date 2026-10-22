@@ -50,7 +50,8 @@ export const BRAND_BANNER_SRC = "/brand/franquicias/grupo-comidas-animado.webp";
 export const isBrandImage = (url: string) => url.startsWith("/brand/");
 /**
  * Logos de la pestaña "Grupo Comidas" del selector de iconos: `marca:<id>`. Los de las franquicias tienen fondo
- * transparente (originales en assets/brand/franquicias). `wide`: el animado es rectangular y se dibuja sobre negro.
+ * transparente (originales en assets/brand/franquicias). `wide`: el animado es rectangular (600 × 200) y su
+ * recuadro usa la misma proporción 3:1.
  */
 export const BRANDS: Record<string, { label: string; src: string; wide?: boolean }> = {
   "grupo-comidas": { label: "Grupo Comidas", src: BRAND_LOGO_SRC },
