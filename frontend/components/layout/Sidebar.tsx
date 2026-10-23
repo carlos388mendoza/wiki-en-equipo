@@ -175,14 +175,17 @@ export function Sidebar({ user, sections, accounts }: { user: User; sections: Si
 
       <nav className="flex flex-col gap-0.5" aria-label="Principal">
         {navItem("/", "Inicio de la empresa", Home)}
+        {/* Un solo departamento (#55): en el menú principal, sin sección aparte. */}
+        {departments.length === 1 && <ul><DepartmentGroup department={departments[0]} own={departments[0].id === user.departmentId} /></ul>}
         {navItem("/buscar", "Buscar", Search)}
         {navItem("/plantillas", "Plantillas", LayoutTemplate)}
         {canManageUsers(user) && navItem("/admin", "Administración", Shield)}
       </nav>
 
-      {departments.length > 0 && (
+      {/* Varios (Administrador, #55): una sección "Departamentos", cada uno una sola vez. */}
+      {departments.length > 1 && (
         <section className="flex flex-col gap-1" aria-label="Departamentos">
-          <h2 className="px-2 text-xs font-semibold text-muted">{departments.length > 1 ? "Departamentos" : "Tu departamento"}</h2>
+          <h2 className="px-2 text-xs font-semibold text-muted">Departamentos</h2>
           <ul className="flex flex-col gap-0.5">
             {departments.map((d) => <DepartmentGroup key={d.id} department={d} own={d.id === user.departmentId} />)}
           </ul>

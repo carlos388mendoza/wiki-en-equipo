@@ -90,10 +90,33 @@ const byUpdated = (a: PageSummary, b: PageSummary) => (b.updatedAt ?? "").locale
 
 /* ---------- Consultas base (cacheadas por petición) ---------- */
 
-/** Páginas que el usuario puede ver (máx. 100, ordenadas por actualización). */
+/** Las páginas más allá de 1000 no se listan (10 vueltas de 100). */
+const MAX_LIST_PAGES = 10;
+
+/**
+ * Listado completo de `/pages` siguiendo el cursor del backend (de a 100, #13): antes solo llegaban las 100 más
+ * recientes y la barra lateral, los departamentos o las subpáginas podían quedar incompletos.
+ */
+async function listAllPages(query = ""): Promise<ApiResult<RawListPage[]>> {
+  const pages: RawListPage[] = [];
+  let cursor: string | undefined;
+  for (let i = 0; i < MAX_LIST_PAGES; i++) {
+    const params = new URLSearchParams(query);
+    if (cursor) params.set("cursor", cursor);
+    const qs = params.toString();
+    const res = await backend<{ pages: RawListPage[]; hasMore?: boolean; nextCursor?: string }>(`/pages${qs ? `?${qs}` : ""}`);
+    if (!res.ok) return i === 0 ? res : { ok: true, data: pages };
+    pages.push(...res.data.pages);
+    if (!res.data.hasMore || !res.data.nextCursor) break;
+    cursor = res.data.nextCursor;
+  }
+  return { ok: true, data: pages };
+}
+
+/** Páginas que el usuario puede ver (ordenadas por actualización). */
 const accessiblePages = cache(async (): Promise<ApiResult<PageSummary[]>> => {
-  const res = await backend<{ pages: RawListPage[] }>("/pages");
-  return res.ok ? { ok: true, data: res.data.pages.map(toSummary) } : res;
+  const res = await listAllPages();
+  return res.ok ? { ok: true, data: res.data.map(toSummary) } : res;
 });
 
 const popularPages = cache(async (departmentId?: string): Promise<PageSummary[]> => {
@@ -157,7 +180,7 @@ const pagesByIds = cache(async (key: string): Promise<PageSummary[]> => {
 
 /**
  * Resúmenes de páginas por id, en el mismo orden (subpáginas y menciones del contenido). Se piden por id
- * y no se buscan en el listado, que solo trae las 100 más recientes.
+ * y no se buscan en el listado completo (más rápido: una sola petición de hasta 100).
  */
 export async function getPageSummaries(_viewer: User, ids: string[]): Promise<PageSummary[]> {
   const unique = [...new Set(ids)].slice(0, 100);
@@ -167,8 +190,8 @@ export async function getPageSummaries(_viewer: User, ids: string[]): Promise<Pa
 }
 
 export async function getChildren(_viewer: User, parentId: string): Promise<PageSummary[]> {
-  const res = await backend<{ pages: RawListPage[] }>(`/pages?parentId=${encodeURIComponent(parentId)}`);
-  return res.ok ? res.data.pages.map(toSummary) : [];
+  const res = await listAllPages(`parentId=${encodeURIComponent(parentId)}`);
+  return res.ok ? res.data.map(toSummary) : [];
 }
 
 const sharedWithMe = (permission: MyPermission | undefined) => permission === "EDIT" || permission === "READ";
@@ -231,12 +254,12 @@ export async function getDepartmentWall(viewer: User, slug: string): Promise<Api
     department.wallPageId ? getPage(viewer, department.wallPageId) : Promise.resolve(null),
     backend<{ pages: RawListPage[] }>(`/departments/${department.id}/featured`),
     popularPages(department.id),
-    backend<{ pages: RawListPage[] }>(`/pages?departmentId=${encodeURIComponent(department.id)}`),
+    listAllPages(`departmentId=${encodeURIComponent(department.id)}`),
   ]);
   if (featuredRes.ok === false && featuredRes.error === "sin_acceso") return featuredRes;
 
   const published = listRes.ok
-    ? listRes.data.pages.map(toSummary).filter((p) => p.visibility !== "PRIVATE" && p.id !== department.wallPageId)
+    ? listRes.data.map(toSummary).filter((p) => p.visibility !== "PRIVATE" && p.id !== department.wallPageId)
     : [];
   return {
     ok: true,
@@ -252,8 +275,8 @@ export async function getDepartmentWall(viewer: User, slug: string): Promise<Api
 
 /** Páginas publicadas de un departamento (para elegir destacadas o el muro). */
 export async function listDepartmentPages(_viewer: User, departmentId: string): Promise<PageSummary[]> {
-  const res = await backend<{ pages: RawListPage[] }>(`/pages?departmentId=${encodeURIComponent(departmentId)}`);
-  return res.ok ? res.data.pages.map(toSummary).sort(byUpdated) : [];
+  const res = await listAllPages(`departmentId=${encodeURIComponent(departmentId)}`);
+  return res.ok ? res.data.map(toSummary).sort(byUpdated) : [];
 }
 
 /** Busca en el título y en el contenido; cada resultado trae un fragmento con lo encontrado. */
