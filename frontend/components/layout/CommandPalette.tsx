@@ -2,7 +2,7 @@
 
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useId, useMemo, useRef, useState, type ReactNode } from "react";
-import { FilePlus2, Home, LayoutTemplate, LoaderCircle, LogOut, Monitor, Moon, Pencil, Search, Share2, Shield, Sun, Trash2, UserRound } from "lucide-react";
+import { ArrowLeft, Check, FilePlus2, Home, LayoutTemplate, LoaderCircle, LogOut, Monitor, Moon, Pencil, Search, Share2, Shield, Sun, Trash2, UserRound } from "lucide-react";
 import { searchForPalette, type PaletteResult } from "@/app/actions/search";
 import { fold } from "@/lib/icon-search";
 import { canManageUsers } from "@/lib/permissions";
@@ -58,7 +58,7 @@ export function CommandPalette({ user, sections, departments }: { user: User; se
     if (!dialog) return;
     if (open && !dialog.open) {
       // Las acciones de la página abierta que la persona puede hacer (sus botones están en pantalla).
-      setContextual(["editar", "compartir", "subpagina"].filter((a) => actionButton(a)));
+      setContextual(["editar", "compartir", "subpagina", "guardar", "plantilla", "salir-edicion"].filter((a) => actionButton(a)));
       dialog.showModal();
       inputRef.current?.focus();
     }
@@ -94,6 +94,9 @@ export function CommandPalette({ user, sections, departments }: { user: User; se
       ...(contextual.includes("editar") ? [{ id: "editar", group: "En esta página", label: "Editar esta página", icon: <Pencil size={16} aria-hidden />, words: "editar modificar cambiar", run: click("editar") }] : []),
       ...(contextual.includes("compartir") ? [{ id: "compartir", group: "En esta página", label: "Compartir esta página", icon: <Share2 size={16} aria-hidden />, words: "compartir invitar enlace publicar permisos", run: click("compartir") }] : []),
       ...(contextual.includes("subpagina") ? [{ id: "subpagina", group: "En esta página", label: "Agregar una subpágina", icon: <FilePlus2 size={16} aria-hidden />, words: "agregar subpagina nueva hija", run: click("subpagina") }] : []),
+...(contextual.includes("guardar") ? [{ id: "guardar", group: "En esta página", label: "Guardar", icon: <Check size={16} aria-hidden />, words: "guardar listo", run: click("guardar") }] : []),
+...(contextual.includes("plantilla") ? [{ id: "plantilla", group: "En esta página", label: "Guardar como plantilla", icon: <LayoutTemplate size={16} aria-hidden />, words: "plantilla guardar modelo", run: click("plantilla") }] : []),
+...(contextual.includes("salir-edicion") ? [{ id: "salir-edicion", group: "En esta página", label: "Salir del modo edición", icon: <ArrowLeft size={16} aria-hidden />, words: "salir volver modo edicion", run: click("salir-edicion") }] : []),
       { id: "nueva", group: "Acciones", label: "Nueva página", icon: <FilePlus2 size={16} aria-hidden />, words: "nueva pagina crear documento", run: click("nueva-pagina") },
       ...THEMES.map((t) => ({
         id: `tema-${t.id}`, group: "Acciones", label: `Tema: ${t.label}`, hint: theme === t.id ? "Actual" : undefined, icon: themeIcon[t.id],
@@ -140,13 +143,13 @@ export function CommandPalette({ user, sections, departments }: { user: User; se
   let lastGroup = "";
   return (
     <dialog ref={dialogRef} onClose={close} onClick={(e) => { if (e.target === dialogRef.current) close(); }} aria-label="Buscar en la wiki"
-      className="m-0 mx-auto mt-[8vh] w-[calc(100%-2rem)] max-w-xl overflow-hidden rounded-2xl border border-line bg-surface p-0 text-ink shadow-2xl backdrop:bg-shade/40">
+      className="m-0 mx-auto mt-[8vh] w-[calc(100%-2rem)] max-w-xl overflow-hidden rounded-2xl border border-line bg-surface p-0 text-ink shadow-2xl outline-none backdrop:bg-shade/40">
       <div className="flex items-center gap-2 border-b border-line px-4">
         <Search size={18} className="shrink-0 text-muted" aria-hidden />
         <input ref={inputRef} value={query} onChange={(e) => setQuery(e.target.value)} onKeyDown={onKeyDown}
           placeholder="Busca páginas, #etiquetas o acciones…" aria-label="Buscar páginas y acciones"
           role="combobox" aria-expanded="true" aria-controls={listId} aria-activedescendant={items.length ? `${listId}-${current}` : undefined}
-          className="h-14 min-w-0 flex-1 bg-transparent text-base outline-none focus-visible:outline-none" />
+          className="h-14 min-w-0 flex-1 bg-transparent text-base outline-none focus:outline-none focus:ring-0 focus-visible:outline-none" />
         {searching && <LoaderCircle size={16} className="shrink-0 animate-spin text-muted" aria-label="Buscando" />}
         <kbd className="hidden shrink-0 rounded border border-line px-1.5 py-0.5 text-[11px] text-muted sm:inline">Esc</kbd>
       </div>
