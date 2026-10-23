@@ -71,13 +71,11 @@ body { @apply bg-paper text-ink font-sans antialiased; }
 
 :focus-visible { outline: 2px solid var(--color-brand); outline-offset: 2px; border-radius: 4px; }
 
-/* La barra de comandos (Ctrl/⌘+K) no muestra el anillo rojo al enfocarse. */
+/* La barra de comandos (Ctrl/⌘+K): el anillo rojo del :focus-visible global se aplicaba al diálogo entero
+   (demasiado grande). Se quita del diálogo y se deja solo alrededor del campo donde se escribe. */
 dialog[aria-label="Buscar en la wiki"],
 dialog[aria-label="Buscar en la wiki"]:focus,
-dialog[aria-label="Buscar en la wiki"]:focus-visible,
-dialog[aria-label="Buscar en la wiki"] input,
-dialog[aria-label="Buscar en la wiki"] input:focus,
-dialog[aria-label="Buscar en la wiki"] input:focus-visible {
+dialog[aria-label="Buscar en la wiki"]:focus-visible {
   outline: none !important;
   box-shadow: none !important;
 }
