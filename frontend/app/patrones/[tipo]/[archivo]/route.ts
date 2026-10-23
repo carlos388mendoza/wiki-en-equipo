@@ -6,10 +6,11 @@ import { parseCdnThreeD, THREE_D_ICONS } from "@/lib/icons-3d";
  * diagonal. Se arma con los archivos que ya genera la compilación (`/iconos/lucide/<nombre>.svg` y
  * `/iconos/3d/<nombre>.webp`), así no se carga código de Lucide. Las URL:
  *   /patrones/lucide/<nombre>.svg?tono=<tono>     /patrones/3d/<nombre>.svg
- * Es pública (no tiene datos de nadie) y se guarda en caché: el contenido de una URL nunca cambia.
+ * Es pública (no tiene datos de nadie) y se guarda en caché un día.
  */
 const NAME = /^[a-z0-9]+(?:-[a-z0-9]+)*$/;
-const headers = { "Content-Type": "image/svg+xml; charset=utf-8", "Cache-Control": "public, max-age=31536000, immutable", "X-Content-Type-Options": "nosniff" };
+// Un día en caché (y una semana sirviendo la copia mientras se revisa): si cambia un logo o un icono, se ve el nuevo.
+const headers = { "Content-Type": "image/svg+xml; charset=utf-8", "Cache-Control": "public, max-age=86400, stale-while-revalidate=604800", "X-Content-Type-Options": "nosniff" };
 
 export async function GET(request: Request, { params }: { params: Promise<{ tipo: string; archivo: string }> }) {
   const { tipo, archivo } = await params;
