@@ -441,19 +441,19 @@ export function PageEditor({ mode, id, initial, pages, tagSuggestions, viewer, b
   return (
     <div className="min-h-dvh overflow-x-clip">
       <div className="sticky top-0 z-20 flex items-center gap-2 border-b border-line bg-paper/95 px-3 py-2 backdrop-blur sm:px-6 max-lg:top-[53px]">
-        <Link href={backHref} className="inline-flex items-center gap-1.5 rounded-md px-2 py-1.5 text-sm text-muted hover:bg-line/60 hover:text-ink">
-          <ArrowLeft size={16} aria-hidden /> <span className="hidden sm:inline">Volver</span>
+        <Link href={backHref} data-wiki-accion="salir-edicion" className="inline-flex items-center gap-1.5 rounded-md px-2 py-1.5 text-sm text-muted hover:bg-line/60 hover:text-ink">
+          <ArrowLeft size={16} aria-hidden /> <span className="hidden sm:inline">Salir del modo edición</span>
         </Link>
         <span role="status" aria-live="polite" className={`inline-flex items-center gap-1.5 text-sm ${S.cls}`}>
           <S.Icon size={14} className={status === "saving" ? "animate-spin" : ""} aria-hidden /> <span className="max-md:sr-only">{S.text}</span>
         </span>
         <div className="ml-auto flex items-center gap-2">
           {isPage && <CollabStatus status={collab.status} peers={collab.peers} live={collab.live} />}
-          <button type="button" onClick={() => setSaveTemplate(selectionBlocks().length ? "selection" : "page")} className="hidden items-center gap-1.5 rounded-lg border border-line px-3 py-1.5 text-sm font-medium hover:border-brand lg:inline-flex" title="Guardar toda la página o los bloques seleccionados como plantilla">
+          <button type="button" data-wiki-accion="plantilla" onClick={() => setSaveTemplate(selectionBlocks().length ? "selection" : "page")} className="hidden items-center gap-1.5 rounded-lg border border-line px-3 py-1.5 text-sm font-medium hover:border-brand lg:inline-flex" title="Guardar toda la página o los bloques seleccionados como plantilla">
             <LayoutTemplate size={14} aria-hidden /> Guardar como plantilla
           </button>
-          <button type="button" onClick={finish} className="inline-flex items-center gap-1.5 rounded-lg bg-ink px-3 py-1.5 text-sm font-medium text-on-ink hover:bg-brand hover:text-white">
-            <Check size={14} aria-hidden /> Listo
+          <button type="button" data-wiki-accion="guardar" onClick={finish} className="inline-flex items-center gap-1.5 rounded-lg bg-ink px-3 py-1.5 text-sm font-medium text-on-ink hover:bg-brand hover:text-white">
+            <Check size={14} aria-hidden /> Guardar
           </button>
         </div>
       </div>
