@@ -20,6 +20,15 @@ Construir una plataforma de documentación colaborativa inspirada en herramienta
 - Subpáginas, historial de ediciones, visitas a páginas públicas y papelera restaurable.
 - Límites para archivos subidos y visualización optimizada de imágenes.
 
+Además (octubre de 2026):
+
+- **Búsqueda con Ctrl/⌘ + K** desde cualquier pantalla: páginas por título, contenido o `#etiqueta`, y acciones (nueva página, tema, cerrar sesión; en una página, editar, compartir o agregar una subpágina). En el celular, con el botón **Buscar** de la barra de abajo.
+- **Tema claro, oscuro o automático**, guardado en el dispositivo (en Ctrl/⌘ + K o en la ventana de Cuentas).
+- **Varias cuentas en el mismo dispositivo**, como en Google: cambiar de cuenta sin volver a escribir la contraseña, agregar otra, cerrar sesión en una o en todas.
+- **Barra del celular** con Inicio, Buscar, Nuevo, Plantillas y Cuenta; el menú lateral entra desde la izquierda.
+- **Todos los iconos:** Lucide, 3D (3dicons) en varios estilos, todos los emojis (fuente de Apple, igual en todos los dispositivos) y los logos de Grupo Comidas y sus franquicias. Fotos de fondo con la API de Unsplash.
+- El **Administrador** ve todos los departamentos en la barra lateral.
+
 Estas funciones describen el alcance del proyecto. Consulta [backend/README.md](backend/README.md) para ver las rutas del servidor y [frontend/README.md](frontend/README.md) para las pantallas, el editor y la demostración paso a paso.
 
 ## Roles previstos
@@ -122,11 +131,15 @@ de GitHub de Vercel solo puede instalarla el dueño de cada cuenta, y está inst
 
 1. Se une un PR a `main` de este repositorio.
 2. En la copia, el flujo [`.github/workflows/sincronizar-copia.yml`](.github/workflows/sincronizar-copia.yml) adelanta su
-   `main` (el botón "Sync fork" de GitHub; nunca fuerza). En este repositorio el flujo no hace nada.
-   **Por ahora hay que correrlo a mano** después de unir: su horario de cada 5 minutos nunca se ha disparado (al
-   20/10/2026). En la copia: **Actions → Sincronizar la copia que publica Vercel → Run workflow**, o
+   `main` (el botón "Sync fork" de GitHub; nunca fuerza). En este repositorio el flujo no hace nada. Su horario
+   (cada 5 minutos) se dispara con retrasos de horas, así que **después de unir conviene correrlo a mano**: en la
+   copia, **Actions → Sincronizar la copia que publica Vercel → Run workflow**, o
    `gh workflow run sincronizar-copia.yml -R carlos388mendoza/wiki-en-equipo`.
-3. Ese avance hace que Vercel publique **la web y la API** en producción, en alrededor de un minuto.
+3. Cuando la copia avanza, el flujo llama al **Deploy Hook** del proyecto de Vercel (secreto `VERCEL_DEPLOY_HOOK` de la
+   copia; desde el 21/10/2026, porque Vercel no siempre publicaba con el aviso de Git) y Vercel publica **la web y la
+   API** en producción en un par de minutos. Si aun así no publica: desde la raíz de `main`,
+   `npx --no-install vercel deploy --prod --yes`.
+   Un "Sync fork" a mano en GitHub **no** pasa por el flujo, así que no llama al Deploy Hook.
 
 Detalles:
 - Solo `main` publica: `git.deploymentEnabled` en el `vercel.json` de la raíz. Las vistas previas de la API tienen las
@@ -198,6 +211,8 @@ Y estas, que usa el servicio `web` (el frontend):
 | `NEXT_PUBLIC_COLLAB_URL` | `https://wiki-grupo-comidas.vercel.app/api/collab` (edición en vivo por consultas periódicas por HTTP) |
 | `NEXT_PUBLIC_MAX_UPLOAD_MB` | `20` |
 | `NEXT_PUBLIC_TRASH_RETENTION_DAYS` | `30` |
+| `ACCOUNTS_SECRET` | texto aleatorio largo, **sensible**: cifra la cookie de las cuentas guardadas en el dispositivo (si cambia, se olvidan una vez) |
+| `UNSPLASH_ACCESS_KEY` | la clave de acceso de la API de Unsplash, **solo Production** (sin ella, la búsqueda de fondos usa la galería fija) |
 
 > Si `BACKEND_URL` no está definida, el frontend usa su propio dominio (`VERCEL_PROJECT_PRODUCTION_URL`/`VERCEL_URL`); en local, `http://localhost:4000`.
 
@@ -249,7 +264,7 @@ Toda la información de la wiki vive en Turso. Antes de un cambio grande, saca u
 
 ### Crear o actualizar los 4 usuarios en producción
 
-> **Advertencia:** este repositorio es público y la contraseña `12345abc` está escrita en él. El equipo decidió usarla también en producción, pero así cualquier persona que lea el repositorio puede entrar con esas cuentas, incluida la de administrador. Conviene cambiar las contraseñas en cuanto el equipo empiece a usar la wiki (cada persona: su nombre en la barra lateral → **Mi cuenta** → Cambiar contraseña).
+> **Advertencia:** este repositorio es público y la contraseña `12345abc` está escrita en él. El equipo decidió usarla también en producción, pero así cualquier persona que lea el repositorio puede entrar con esas cuentas, incluida la de administrador. Conviene cambiar las contraseñas en cuanto el equipo empiece a usar la wiki (cada persona: su nombre abajo en la barra lateral, o **Cuenta** en el celular → **Mi cuenta** → Cambiar contraseña).
 
 **Nunca** borres ni reinicies la base de producción y **nunca** corras `npm run seed` contra ella (crea páginas de ejemplo y solo sirve con una base vacía). Primero despliega en el backend la versión que acepta contraseñas de 8 caracteres.
 

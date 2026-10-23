@@ -2,6 +2,9 @@
 
 Next.js 15 (App Router) + React 19 + Tailwind CSS 4 + lucide-react + TypeScript.
 Editor BlockNote, Yjs + y-indexeddb para edición simultánea y modo sin conexión.
+También: shadcn/ui (Sheet y Drawer, sobre Radix Dialog y vaul) para el menú y la ventana de cuentas del celular,
+TanStack Virtual en el selector de iconos, tema claro/oscuro/automático (`lib/theme.ts`) y la búsqueda con
+Ctrl/⌘ + K (`components/layout/CommandPalette.tsx`). Detalle de cada parte en `../CLAUDE.md`.
 
 ## Arrancar en local
 
