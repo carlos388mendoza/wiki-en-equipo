@@ -9,3 +9,4 @@ allowBuilds:
 nodeLinker: hoisted
 overrides:
   deepmerge-ts: '>=8.0.0'
+  ip-address: '>=10.7.4'
