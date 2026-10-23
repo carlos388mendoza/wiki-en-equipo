@@ -22,7 +22,7 @@ export function CollabStatus({ status, peers, live }: { status: ChannelStatus; p
               {initials(p.name)}
             </span>
           ))}
-          {peers.length > 4 && <span className="grid h-7 w-7 place-items-center rounded-full border-2 border-paper bg-ink text-[10px] font-semibold text-white">+{peers.length - 4}</span>}
+          {peers.length > 4 && <span className="grid h-7 w-7 place-items-center rounded-full border-2 border-paper bg-ink text-[10px] font-semibold text-on-ink">+{peers.length - 4}</span>}
         </div>
       )}
       <span title={view.help} className={`inline-flex items-center gap-1.5 rounded-full bg-surface px-2 py-1 text-xs font-medium ${view.cls}`}>

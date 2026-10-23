@@ -76,7 +76,7 @@ export function ConflictDialog({ result, onResolve, onCancel, origin }: {
           })}
         </ol>
         <div className="flex justify-end gap-2 border-t border-line pt-3">
-          <button type="button" onClick={() => onResolve(resolveConflicts(result, choices))} className="rounded-lg bg-ink px-4 py-2 font-medium text-white hover:bg-brand">
+          <button type="button" onClick={() => onResolve(resolveConflicts(result, choices))} className="rounded-lg bg-ink px-4 py-2 font-medium text-on-ink hover:bg-brand hover:text-white">
             Aplicar y guardar
           </button>
         </div>

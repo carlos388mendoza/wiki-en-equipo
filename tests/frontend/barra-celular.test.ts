@@ -7,9 +7,11 @@ const sidebar = read("components/layout/Sidebar.tsx");
 const accountPanel = read("components/auth/AccountPanel.tsx");
 
 describe("barra de navegación del celular", () => {
-  it("está fija abajo solo en pantallas chicas y tiene tres botones: Inicio, Plantillas y Cuenta", () => {
-    expect(sidebar).toMatch(/aria-label="Navegación rápida" className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4[^"]*lg:hidden"/);
+  it("está fija abajo solo en pantallas chicas y tiene cinco botones: Inicio, Buscar, Nuevo, Plantillas y Cuenta (#47, #67)", () => {
+    expect(sidebar).toMatch(/aria-label="Navegación rápida" className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5[^"]*lg:hidden"/);
     expect(sidebar).toContain(`bottomItem("/", "Inicio", Home)`);
+    // Buscar abre la misma ventana que Ctrl/⌘ + K.
+    expect(sidebar).toMatch(/onClick=\{\(\) => \{ setMobileOpen\(false\); openPalette\(\); \}\}[\s\S]{0,300}Buscar/);
     expect(sidebar).toContain(`bottomItem("/plantillas", "Plantillas", LayoutTemplate)`);
     expect(sidebar).toContain(`<NewPageButton variant="nav" label="Nuevo" />`);
   });

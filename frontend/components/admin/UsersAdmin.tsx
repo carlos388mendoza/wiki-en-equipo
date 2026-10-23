@@ -52,7 +52,7 @@ export function UsersAdmin({ users, departments, viewerId }: { users: ManagedUse
             <span className="sr-only">Buscar usuarios</span>
             <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Buscar por nombre, correo o depto." className="h-10 w-full bg-transparent text-sm outline-none sm:w-64" />
           </label>
-          <button type="button" onClick={() => setCreating(true)} className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-ink px-3 text-sm font-medium text-white hover:bg-brand">
+          <button type="button" onClick={() => setCreating(true)} className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-ink px-3 text-sm font-medium text-on-ink hover:bg-brand hover:text-white">
             <Plus size={16} aria-hidden /> Nuevo usuario
           </button>
         </div>
@@ -123,7 +123,7 @@ export function UsersAdmin({ users, departments, viewerId }: { users: ManagedUse
         <div className="mt-5 flex justify-end gap-2">
           <button type="button" onClick={() => setConfirmOff(null)} className="rounded-lg px-3 py-2 text-sm font-medium hover:bg-paper">Cancelar</button>
           <button type="button" disabled={pending} onClick={() => { const u = confirmOff!; setConfirmOff(null); run(() => updateUser(u.id, { active: false }), `Se desactivó la cuenta de ${u.name}.`); }}
-            className="rounded-lg bg-danger px-3 py-2 text-sm font-medium text-white disabled:opacity-60">Desactivar</button>
+            className="rounded-lg bg-danger px-3 py-2 text-sm font-medium text-on-danger disabled:opacity-60">Desactivar</button>
         </div>
       </Modal>
     </div>
@@ -163,7 +163,7 @@ function NewUserForm({ departments, onDone }: { departments: Department[]; onDon
         </label>
       </div>
       {error && <p role="alert" className="rounded-lg bg-danger-soft px-3 py-2 text-danger">{error}</p>}
-      <button type="submit" disabled={pending} className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-ink font-medium text-white hover:bg-brand disabled:opacity-60">
+      <button type="submit" disabled={pending} className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-ink font-medium text-on-ink hover:bg-brand hover:text-white disabled:opacity-60">
         {pending && <LoaderCircle size={14} className="animate-spin" aria-hidden />} Crear usuario
       </button>
     </form>

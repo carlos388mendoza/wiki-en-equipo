@@ -48,6 +48,34 @@ describe("colores de la marca", () => {
     for (const [text, bg] of pairs) expect(contrast(token(text)!, token(bg)!), `${text} sobre ${bg}`).toBeGreaterThanOrEqual(4.5);
   });
 
+  it("en el tema oscuro (#67) también se cumple el contraste AA y el rojo y el amarillo del logo no cambian", () => {
+    const block = css.match(/html\[data-theme="oscuro"\] \{([\s\S]*?)\n  \}/)?.[1] ?? "";
+    const dark = (name: string) => block.match(new RegExp(`--color-${name}:\\s*(#[0-9a-f]{6})`, "i"))?.[1].toLowerCase() ?? token(name)!;
+    expect(block).toContain("--color-paper: #151211");
+    expect(block).not.toMatch(/--color-(brand|sun):/);
+    const pairs: [string, string][] = [
+      ["ink", "paper"], ["ink", "surface"], ["muted", "paper"], ["muted", "surface"], ["brand-strong", "brand-soft"], ["brand-strong", "surface"],
+      ["sky", "sky-soft"], ["sky", "surface"], ["sun-ink", "sun-soft"], ["danger", "danger-soft"], ["danger", "surface"],
+      ["on-ink", "ink"], ["on-sun", "sun"], ["on-danger", "danger"], ["on-sky", "sky"], ["ink", "brand-soft"], ["ink", "sun-soft"],
+    ];
+    for (const [text, bg] of pairs) expect(contrast(dark(text), dark(bg)), `oscuro: ${text} sobre ${bg}`).toBeGreaterThanOrEqual(4.5);
+    // Texto blanco sobre el rojo del logo (botones al pasar el ratón), en los dos temas.
+    expect(contrast("#ffffff", token("brand")!)).toBeGreaterThanOrEqual(4.5);
+    // El automático usa los mismos colores que el oscuro cuando el sistema está en oscuro.
+    const auto = css.match(/html\[data-theme="auto"\] \{([\s\S]*?)\n    \}/)?.[1] ?? "";
+    expect(auto).toContain("--color-paper: #151211");
+    expect(auto.replace(/\s+/g, " ").trim()).toBe(block.replace(/\s+/g, " ").trim());
+  });
+
+  it("ningún botón queda con texto blanco sobre un relleno que se aclara en el tema oscuro", () => {
+    const strings = code.flatMap(({ path, text }) => [...text.matchAll(/["`]([^"`\n]*)["`]/g)].map((m) => ({ path, cls: m[1] })));
+    const has = (cls: string, c: string) => new RegExp(`(^|\\s)${c}(\\s|$)`).test(cls);
+    const bad = strings.filter(({ cls }) => (has(cls, "bg-ink") || has(cls, "bg-danger") || has(cls, "bg-sky")) && has(cls, "text-white"))
+      .concat(strings.filter(({ cls }) => has(cls, "bg-sun") && has(cls, "text-ink")))
+      .concat(strings.filter(({ cls }) => /(^|\s|:)bg-ink\/\d/.test(cls)));
+    expect(bad.map(({ path, cls }) => `${path.split(/[\\/]frontend[\\/]/).pop()}: ${cls}`)).toEqual([]);
+  });
+
   it("los iconos nuevos usan el rojo del logo y los guardados con otros tonos se conservan", () => {
     expect(ICON_TONES.rojo[1]).toBe("#e2001a");
     expect(parseIcon("lucide:book-open:morado")).toMatchObject({ kind: "lucide", tone: "rojo" });

@@ -126,7 +126,7 @@ export function PageMenu({ page, user, pinned }: { page: PageSummary; user: User
         <div className="mt-5 flex justify-end gap-2">
           <button type="button" onClick={() => setConfirmDelete(false)} className="rounded-lg px-3 py-2 text-sm font-medium hover:bg-paper">Cancelar</button>
           <button type="button" disabled={pending} onClick={() => run(() => trashPage(page.id), () => { if (viewing) router.push("/papelera"); })}
-            className="inline-flex items-center gap-2 rounded-lg bg-danger px-3 py-2 text-sm font-medium text-white disabled:opacity-60">
+            className="inline-flex items-center gap-2 rounded-lg bg-danger px-3 py-2 text-sm font-medium text-on-danger disabled:opacity-60">
             {pending && <LoaderCircle size={14} className="animate-spin" aria-hidden />} Mover a la papelera
           </button>
         </div>

@@ -20,6 +20,13 @@
   --color-sky-soft: #e8f0fa;
   --color-danger: #9c1c12;
   --color-danger-soft: #fbe8e4;
+  /* Texto sobre un relleno (botones y avisos): en el tema oscuro el relleno se aclara y el texto se oscurece. */
+  --color-on-ink: #ffffff;
+  --color-on-sun: #1b1717;
+  --color-on-danger: #ffffff;
+  --color-on-sky: #ffffff;
+  /* Velos y fondos de video o créditos sobre fotos: oscuros en los dos temas. */
+  --color-shade: #1b1717;
 
   --font-display: var(--font-bricolage), ui-sans-serif, system-ui, sans-serif;
   /* Emojis (#54): "Apple Color Emoji" se carga desde /fonts/apple-emoji (trozos WOFF2 con unicode-range).
@@ -32,6 +39,35 @@
 
 html { color-scheme: light; }
 body { @apply bg-paper text-ink font-sans antialiased; }
+
+/*
+ * Tema oscuro (#67): Claro, Oscuro o Automático (el del sistema), elegido en la búsqueda Ctrl/⌘ + K o en la ventana
+ * de cuentas y guardado en este dispositivo (lib/theme.ts). <html data-theme="claro|oscuro|auto"> lo pone un script
+ * antes de dibujar, así no parpadea. El rojo y el amarillo del logo no cambian; el resto cumple el contraste AA
+ * (tests/frontend/colores.test.ts).
+ */
+@layer base {
+  html[data-theme="oscuro"] {
+    color-scheme: dark;
+    --color-paper: #151211; --color-surface: #1f1b1a; --color-ink: #f2edeb; --color-muted: #a8a09e; --color-line: #3a3433;
+    --color-brand-strong: #ff7a85; --color-brand-soft: #3d151a;
+    --color-sun-soft: #3a3112; --color-sun-ink: #f6d54a;
+    --color-sky: #86b4f0; --color-sky-soft: #16273f;
+    --color-danger: #f2867a; --color-danger-soft: #3d1b17;
+    --color-on-ink: #151211; --color-on-danger: #151211; --color-on-sky: #151211;
+  }
+  @media (prefers-color-scheme: dark) {
+    html[data-theme="auto"] {
+      color-scheme: dark;
+      --color-paper: #151211; --color-surface: #1f1b1a; --color-ink: #f2edeb; --color-muted: #a8a09e; --color-line: #3a3433;
+      --color-brand-strong: #ff7a85; --color-brand-soft: #3d151a;
+      --color-sun-soft: #3a3112; --color-sun-ink: #f6d54a;
+      --color-sky: #86b4f0; --color-sky-soft: #16273f;
+      --color-danger: #f2867a; --color-danger-soft: #3d1b17;
+      --color-on-ink: #151211; --color-on-danger: #151211; --color-on-sky: #151211;
+    }
+  }
+}
 
 :focus-visible { outline: 2px solid var(--color-brand); outline-offset: 2px; border-radius: 4px; }
 

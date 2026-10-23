@@ -18,6 +18,7 @@ import type { WikiBlock } from "@/lib/blocks";
 import { deleteWholeBlocksOnKey, removeLeftoverAfterCut } from "@/lib/editor/block-selection";
 import { blockNoteToWiki, trimTrailingEmpty, wikiToBlockNote, type BNBlock } from "@/lib/editor/convert";
 import { formatShortcut } from "@/lib/shortcuts";
+import { useTheme } from "@/lib/use-theme";
 import type { PageSummary } from "@/lib/types";
 import { wikiSchema, type WikiEditor } from "./schema";
 
@@ -42,6 +43,8 @@ export type BlockEditorProps = {
 };
 
 export default function BlockEditor({ initialBlocks, onChange, pages, uploadFile, onCreateSubpage, onInsertTemplate, editable = true, editorRef, collaboration, onEditorReady }: BlockEditorProps) {
+  // El editor (Mantine) sigue el tema de la wiki: claro u oscuro (#67).
+  const { dark } = useTheme();
   const initialContent = useMemo(() => {
     const blocks = wikiToBlockNote(initialBlocks);
     return blocks.length ? blocks : undefined;
@@ -129,7 +132,7 @@ export default function BlockEditor({ initialBlocks, onChange, pages, uploadFile
     <BlockNoteView
       editor={editor}
       editable={editable}
-      theme="light"
+      theme={dark ? "dark" : "light"}
       slashMenu={false}
       className="wiki-editor"
       // Varios bloques completos seleccionados: borrar o cortar quita los bloques, sin dejar un párrafo vacío (#34).

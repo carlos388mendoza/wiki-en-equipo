@@ -32,7 +32,7 @@ export function Modal({ open, onClose, title, description, children, size = "md"
       onClose={onClose}
       onClick={(e) => { if (e.target === ref.current) onClose(); }}
       aria-labelledby="modal-title"
-      className={`m-0 mt-auto max-h-[92dvh] w-full max-w-none overflow-hidden rounded-t-2xl bg-surface p-0 text-ink shadow-xl backdrop:bg-ink/40 sm:m-auto sm:rounded-2xl ${width}`}
+      className={`m-0 mt-auto max-h-[92dvh] w-full max-w-none overflow-hidden rounded-t-2xl bg-surface p-0 text-ink shadow-xl backdrop:bg-shade/40 sm:m-auto sm:rounded-2xl ${width}`}
     >
       {open && (
         <div className="flex max-h-[92dvh] flex-col">

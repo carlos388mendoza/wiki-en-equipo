@@ -76,7 +76,7 @@ export function BackgroundPicker({ open, onClose, value, onChange, uploadTarget 
         onClick={() => { pick({ type: "image", url: p.url, credit: p.credit, creditUrl: p.creditUrl }); registerUnsplashDownload(p); }}>
         <Image src={p.thumb} alt="" fill sizes="200px" unoptimized className="object-cover" />
       </Swatch>
-      <span className="absolute inset-x-px bottom-px truncate rounded-b-lg bg-ink/60 px-1.5 py-0.5 text-[10px] text-white opacity-0 transition-opacity focus-within:opacity-100 group-hover/foto:opacity-100 [@media(any-hover:none)]:opacity-90">
+      <span className="absolute inset-x-px bottom-px truncate rounded-b-lg bg-shade/60 px-1.5 py-0.5 text-[10px] text-white opacity-0 transition-opacity focus-within:opacity-100 group-hover/foto:opacity-100 [@media(any-hover:none)]:opacity-90">
         <a href={p.creditUrl} target="_blank" rel="noopener noreferrer" className="hover:underline">{p.credit}</a>
         {" · "}<a href={UNSPLASH_URL} target="_blank" rel="noopener noreferrer" className="hover:underline">Unsplash</a>
       </span>
@@ -150,7 +150,7 @@ export function BackgroundPicker({ open, onClose, value, onChange, uploadTarget 
                   <p className="text-xs text-muted">
                     JPG, PNG, WEBP o GIF, de hasta {MAX_UPLOAD_MB} MB.<span className="hidden [@media(any-hover:hover)]:inline"> También puedes arrastrarla aquí.</span>
                   </p>
-                  <button type="button" onClick={() => fileRef.current?.click()} disabled={busy} className="mt-1 inline-flex h-10 items-center gap-2 rounded-lg bg-ink px-4 text-sm font-medium text-white hover:bg-brand disabled:opacity-60">
+                  <button type="button" onClick={() => fileRef.current?.click()} disabled={busy} className="mt-1 inline-flex h-10 items-center gap-2 rounded-lg bg-ink px-4 text-sm font-medium text-on-ink hover:bg-brand hover:text-white disabled:opacity-60">
                     {busy ? <LoaderCircle size={16} className="animate-spin" aria-hidden /> : <ImagePlus size={16} aria-hidden />} {busy ? uploadingLabel : "Elegir imagen"}
                   </button>
                 </div>
@@ -211,7 +211,7 @@ export function BackgroundPicker({ open, onClose, value, onChange, uploadTarget 
                 <span className="sr-only">Enlace de una imagen</span>
                 <input value={link} onChange={(e) => setLink(e.target.value)} placeholder="O pega el enlace de una imagen (https://…)" className="h-10 flex-1 bg-transparent text-sm outline-none" />
               </label>
-              <button type="submit" className="h-10 rounded-lg bg-ink px-3 text-sm font-medium text-white hover:bg-brand">Usar enlace</button>
+              <button type="submit" className="h-10 rounded-lg bg-ink px-3 text-sm font-medium text-on-ink hover:bg-brand hover:text-white">Usar enlace</button>
             </form>
             {value?.type === "image" && !isOptimizableImage(value.url) && !own && (
               <p className="text-xs text-muted">Las imágenes de otros sitios se muestran tal cual, sin optimizar. Si el sitio la quita, el fondo desaparecerá.</p>
@@ -297,7 +297,7 @@ export function BackgroundPicker({ open, onClose, value, onChange, uploadTarget 
         )}
 
         <div className="flex justify-end border-t border-line pt-3">
-          <button type="button" onClick={onClose} className="rounded-lg bg-ink px-4 py-2 text-sm font-medium text-white hover:bg-brand">Listo</button>
+          <button type="button" onClick={onClose} className="rounded-lg bg-ink px-4 py-2 text-sm font-medium text-on-ink hover:bg-brand hover:text-white">Listo</button>
         </div>
       </div>
     </Modal>

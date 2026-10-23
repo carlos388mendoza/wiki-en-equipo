@@ -38,7 +38,7 @@ export function LoginForm({ next }: { next?: string }) {
       <button
         type="submit"
         disabled={pending}
-        className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-ink font-medium text-white hover:bg-brand disabled:opacity-60"
+        className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-ink font-medium text-on-ink hover:bg-brand hover:text-white disabled:opacity-60"
       >
         {pending && <LoaderCircle size={16} className="animate-spin" aria-hidden />}
         {pending ? "Entrando…" : "Iniciar sesión"}
