@@ -80,14 +80,7 @@ dialog[aria-label="Buscar en la wiki"]:focus-visible {
   box-shadow: none !important;
 }
 
-dialog[aria-label="Buscar en la wiki"] input {
-  outline: 2px solid transparent;
-  outline-offset: -2px;
-  border-radius: 4px;
-}
-
-dialog[aria-label="Buscar en la wiki"] input:focus,
-dialog[aria-label="Buscar en la wiki"] input:focus-visible {
+dialog[aria-label="Buscar en la wiki"]:focus-within input {
   outline: 2px solid var(--color-brand);
   outline-offset: -2px;
   border-radius: 4px;
