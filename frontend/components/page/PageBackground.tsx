@@ -106,7 +106,7 @@ export function PageBackground({ background, seed, className = "", sizes = "100v
         {/* Crédito de las fotos elegidas con la búsqueda de Unsplash (#44; lo piden sus reglas): pequeño y solo al pasar
             el ratón (en pantallas táctiles, tenue). Las de la galería fija no lo llevan (su licencia no lo exige). */}
         {background.credit && background.creditUrl && background.credit !== "Unsplash" && (
-          <span className="absolute bottom-1.5 left-2 z-10 max-w-[70%] truncate rounded bg-ink/55 px-1.5 py-0.5 text-[10px] text-white opacity-0 transition-opacity group-hover/portada:opacity-100 focus-within:opacity-100 [@media(any-hover:none)]:opacity-70">
+          <span className="absolute bottom-1.5 left-2 z-10 max-w-[70%] truncate rounded bg-shade/55 px-1.5 py-0.5 text-[10px] text-white opacity-0 transition-opacity group-hover/portada:opacity-100 focus-within:opacity-100 [@media(any-hover:none)]:opacity-70">
             Foto: <a href={background.creditUrl} target="_blank" rel="noopener noreferrer" className="hover:underline">{background.credit}</a>
             {" · "}<a href="https://unsplash.com/?utm_source=wiki_grupo_comidas&utm_medium=referral" target="_blank" rel="noopener noreferrer" className="hover:underline">Unsplash</a>
           </span>

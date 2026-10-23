@@ -133,7 +133,7 @@ function Blocks({ blocks, subpages }: { blocks: WikiBlock[]; subpages: Record<st
             );
           case "code":
             return (
-              <pre key={b.id} className="overflow-x-auto rounded-lg bg-ink px-4 py-3 text-sm text-white">
+              <pre key={b.id} className="overflow-x-auto rounded-lg bg-ink px-4 py-3 text-sm text-on-ink">
                 <code>{b.data.text}</code>
               </pre>
             );
@@ -161,11 +161,11 @@ function Blocks({ blocks, subpages }: { blocks: WikiBlock[]; subpages: Record<st
             return (
               <figure key={b.id} className="flex flex-col gap-2">
                 {embed ? (
-                  <div className="aspect-video overflow-hidden rounded-lg bg-ink">
+                  <div className="aspect-video overflow-hidden rounded-lg bg-shade">
                     <iframe src={embed} title={b.data.caption ?? "Video"} className="h-full w-full" allow="encrypted-media; picture-in-picture; fullscreen" allowFullScreen loading="lazy" />
                   </div>
                 ) : isDirectVideo(b.data.url) ? (
-                  <video src={b.data.url} controls preload="metadata" className="w-full rounded-lg bg-ink" />
+                  <video src={b.data.url} controls preload="metadata" className="w-full rounded-lg bg-shade" />
                 ) : (
                   <a href={b.data.url} target="_blank" rel="noopener noreferrer" className="inline-flex items-center gap-2 text-sky underline">
                     Ver video <ExternalLink size={14} aria-label="(abre un sitio externo)" />

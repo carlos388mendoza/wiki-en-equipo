@@ -15,16 +15,17 @@ export function NewPageButton({ parentId, parentTitle, variant = "primary", init
   const [open, setOpen] = useState(false);
   const router = useRouter();
   const cls = {
-    primary: "flex w-full items-center justify-center gap-2 rounded-lg bg-ink px-3 py-2 text-sm font-medium text-white hover:bg-brand",
+    primary: "flex w-full items-center justify-center gap-2 rounded-lg bg-ink px-3 py-2 text-sm font-medium text-on-ink hover:bg-brand hover:text-white",
     secondary: "inline-flex items-center gap-2 rounded-lg border border-line bg-surface px-3 py-2 text-sm font-medium hover:border-brand",
-    small: "inline-flex items-center gap-1 rounded-md bg-ink px-2 py-1 text-xs font-medium text-white hover:bg-brand",
+    small: "inline-flex items-center gap-1 rounded-md bg-ink px-2 py-1 text-xs font-medium text-on-ink hover:bg-brand hover:text-white",
     // Barra de navegación del celular: el botón central, redondo y destacado.
     nav: "flex flex-col items-center justify-center gap-0.5 py-1.5 text-[11px] font-medium text-ink",
   }[variant];
   return (
     <>
-      <button type="button" onClick={() => (navigator.onLine ? setOpen(true) : router.push("/sin-conexion?nuevo=1"))} className={cls}>
-        {variant === "nav" ? <span className="grid h-8 w-8 place-items-center rounded-full bg-ink text-white" aria-hidden><Plus size={18} /></span>
+      <button type="button" onClick={() => (navigator.onLine ? setOpen(true) : router.push("/sin-conexion?nuevo=1"))} className={cls}
+        data-wiki-accion={parentId ? "subpagina" : variant === "primary" || variant === "nav" ? "nueva-pagina" : undefined}>
+        {variant === "nav" ? <span className="grid h-8 w-8 place-items-center rounded-full bg-ink text-on-ink" aria-hidden><Plus size={18} /></span>
           : parentId ? <FilePlus2 size={14} aria-hidden /> : <Plus size={variant === "small" ? 13 : 16} aria-hidden />} {label ?? (parentId ? "Subpágina" : "Nueva página")}
       </button>
       <Modal open={open} onClose={() => setOpen(false)} size="xl"
@@ -87,7 +88,7 @@ function NewPageForm({ parentId, initialTemplateId, onCreated }: { parentId?: st
 
       {error && <p role="alert" className="rounded-lg bg-danger-soft px-3 py-2 text-sm text-danger">{error}</p>}
       <div className="sticky bottom-0 -mx-5 -mb-4 flex justify-end gap-2 border-t border-line bg-surface px-5 py-3">
-        <button type="submit" disabled={pending} className="inline-flex h-10 items-center gap-2 rounded-lg bg-ink px-4 font-medium text-white hover:bg-brand disabled:opacity-60">
+        <button type="submit" disabled={pending} className="inline-flex h-10 items-center gap-2 rounded-lg bg-ink px-4 font-medium text-on-ink hover:bg-brand hover:text-white disabled:opacity-60">
           {pending && <LoaderCircle size={14} className="animate-spin" aria-hidden />} Crear y editar
         </button>
       </div>

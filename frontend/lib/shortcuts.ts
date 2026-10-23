@@ -60,4 +60,17 @@ export const EDITOR_SHORTCUTS: { group: string; items: { keys: string[]; label: 
       { keys: ["Mod-Shift-Z", "Mod-Y"], label: "Rehacer" },
     ],
   },
+  {
+    group: "En toda la wiki",
+    items: [
+      { keys: ["Mod-K"], label: "Buscar páginas y acciones" },
+      { keys: ["ArrowUp", "ArrowDown"], label: "Moverse por los resultados" },
+      { keys: ["Enter"], label: "Abrir el resultado elegido" },
+    ],
+  },
 ];
+
+/** ¿Es Ctrl/⌘ + K? (abre la búsqueda en cualquier pantalla, #67). En Mac solo ⌘; en Windows y Linux, Ctrl. */
+export function isPaletteShortcut(event: Pick<KeyboardEvent, "key" | "metaKey" | "ctrlKey" | "altKey" | "shiftKey">, apple = isApplePlatform()) {
+  return event.key.toLowerCase() === "k" && !event.altKey && !event.shiftKey && (apple ? event.metaKey && !event.ctrlKey : event.ctrlKey && !event.metaKey);
+}

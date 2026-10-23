@@ -108,7 +108,7 @@ export function SaveTemplateDialog({ open, onClose, viewer, hasSelection, defaul
             {result.text} {result.id && <Link href="/plantillas" className="font-medium underline">Ver plantillas</Link>}
           </p>
         )}
-        <button type="submit" disabled={pending} className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-ink font-medium text-white hover:bg-brand disabled:opacity-60">
+        <button type="submit" disabled={pending} className="inline-flex h-10 items-center justify-center gap-2 rounded-lg bg-ink font-medium text-on-ink hover:bg-brand hover:text-white disabled:opacity-60">
           {pending && <LoaderCircle size={14} className="animate-spin" aria-hidden />} Guardar plantilla
         </button>
       </form>

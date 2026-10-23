@@ -19,7 +19,7 @@ export function SheetContent({ side = "left", className, children, closeLabel = 
 }) {
   return (
     <SheetPrimitive.Portal>
-      <SheetPrimitive.Overlay className="wiki-overlay fixed inset-0 z-40 bg-ink/45" />
+      <SheetPrimitive.Overlay className="wiki-overlay fixed inset-0 z-40 bg-shade/45" />
       <SheetPrimitive.Content
         data-side={side}
         className={cn("wiki-sheet fixed inset-y-0 z-50 flex w-[85%] max-w-xs flex-col bg-paper shadow-2xl outline-none", side === "left" ? "left-0" : "right-0", className)}

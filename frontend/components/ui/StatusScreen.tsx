@@ -56,11 +56,11 @@ export function StatusScreen({ error, title, message, action }: {
       <p className="text-muted">{message ?? text.body}</p>
       {action ?? (
         error === "no_autenticado" ? (
-          <Link href="/login" className="mt-2 rounded-lg bg-ink px-4 py-2 text-sm font-medium text-white hover:bg-brand">
+          <Link href="/login" className="mt-2 rounded-lg bg-ink px-4 py-2 text-sm font-medium text-on-ink hover:bg-brand hover:text-white">
             Iniciar sesión
           </Link>
         ) : (
-          <Link href="/" className="mt-2 rounded-lg bg-ink px-4 py-2 text-sm font-medium text-white hover:bg-brand">
+          <Link href="/" className="mt-2 rounded-lg bg-ink px-4 py-2 text-sm font-medium text-on-ink hover:bg-brand hover:text-white">
             Ir al inicio
           </Link>
         )

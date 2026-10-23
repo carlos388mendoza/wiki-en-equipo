@@ -5,10 +5,11 @@ import { usePathname } from "next/navigation";
 import { createContext, useContext, useEffect, useId, useState } from "react";
 import { ChevronRight, ChevronsUpDown, Home, LayoutTemplate, Menu, Search, Shield, Trash2, UserRound } from "lucide-react";
 import type { SavedAccount } from "@/lib/accounts";
-import { departmentIconFor } from "@/lib/departments";
 import { canManageUsers, roleLabel } from "@/lib/permissions";
+import { formatShortcut } from "@/lib/shortcuts";
 import type { PageSummary, SidebarDepartment, SidebarSections, User } from "@/lib/types";
 import { AccountPanel } from "../auth/AccountPanel";
+import { LogoutButton } from "../auth/LogoutButton";
 import { NewPageButton } from "../pages/NewPageDialog";
 import { Avatar } from "../ui/Avatar";
 import { BrandLogo } from "../ui/BrandLogo";
@@ -16,6 +17,8 @@ import { Drawer, DrawerContent, DrawerDescription, DrawerTitle } from "../ui/dra
 import { Modal } from "../ui/Modal";
 import { PageIcon } from "../ui/PageIcon";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "../ui/sheet";
+import { CommandPalette, openPalette } from "./CommandPalette";
+import { DepartmentIcon } from "./DepartmentIcon";
 import { PageMenu } from "./PageMenu";
 
 /** Quién mira la barra y qué páginas ancló (para el menú ⋯ de cada página). */
@@ -78,12 +81,7 @@ function Section({ title, pages, empty }: { title: string; pages: PageSummary[];
   );
 }
 
-/** Icono de un departamento: el suyo de la base si lo tiene (emoji, Lucide, 3D) o el que sale de su nombre. */
-export function DepartmentIcon({ department, size = 16 }: { department: Pick<SidebarDepartment, "name" | "icon">; size?: number }) {
-  if (department.icon) return <PageIcon icon={department.icon} size={size} />;
-  const Icon = departmentIconFor(department.name);
-  return <Icon size={size} aria-hidden className="shrink-0" />;
-}
+export { DepartmentIcon };
 
 /**
  * Un departamento en la barra (#55, #63): la flecha pliega o despliega sus páginas y el nombre, con su icono, lleva a
@@ -138,6 +136,9 @@ export function Sidebar({ user, sections, accounts }: { user: User; sections: Si
   const pathname = usePathname();
   useEffect(() => { setMobileOpen(false); setAccountOpen(false); setDesktopAccountOpen(false); }, [pathname]);
   const menu = { user, pinned: new Set(sections.ancladas.map((p) => p.id)) };
+  // ⌘K en Mac y Ctrl+K en Windows: se sabe en el navegador (en el servidor sale Ctrl+K).
+  const [shortcutLabel, setShortcutLabel] = useState("Ctrl+K");
+  useEffect(() => { setShortcutLabel(formatShortcut("Mod-K")); }, []);
 
   const navItem = (href: string, label: string, Icon?: typeof Home) => {
     const active = pathname === href || (href !== "/" && pathname.startsWith(`${href}/`));
@@ -198,6 +199,12 @@ export function Sidebar({ user, sections, accounts }: { user: User; sections: Si
       <Section title="Privadas" pages={sections.privadas} empty="Las páginas que crees aparecerán aquí." />
 
       <div className="mt-auto flex flex-col gap-2 border-t border-line pt-3">
+        {/* Atajo a la búsqueda de toda la wiki (#67). */}
+        <button type="button" onClick={() => { setMobileOpen(false); openPalette(); }}
+          className="flex items-center gap-2 rounded-md border border-line bg-surface px-2 py-1.5 text-left text-sm text-muted hover:border-brand hover:text-ink">
+          <Search size={16} aria-hidden /> <span className="flex-1">Buscar en la wiki</span>
+          <kbd suppressHydrationWarning className="rounded border border-line px-1.5 text-[11px]">{shortcutLabel}</kbd>
+        </button>
         {navItem("/papelera", "Papelera", Trash2)}
         <button type="button" onClick={() => setDesktopAccountOpen(true)} aria-haspopup="dialog" title="Cuentas"
           className="hidden items-center gap-2 rounded-md px-2 py-1.5 text-left hover:bg-line/60 lg:flex">
@@ -235,10 +242,16 @@ export function Sidebar({ user, sections, accounts }: { user: User; sections: Si
         </Link>
       </header>
 
-      {/* Celular y tableta: barra abajo con Inicio, Plantillas y Cuenta (#47). Buscar, Nueva página, los
-          departamentos y las páginas siguen en el menú lateral (botón de arriba). Cuenta solo abre su ventana. */}
-<nav aria-label="Navegación rápida" className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-4 border-t border-line bg-paper/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden">
+      {/* Celular y tableta: barra abajo con Inicio, Buscar (la ventana de Ctrl/⌘ + K), Nuevo, Plantillas y Cuenta
+          (#47, #67). Los departamentos y las páginas siguen en el menú lateral (botón de arriba). Cuenta solo abre su
+          ventana de cuentas. */}
+      <nav aria-label="Navegación rápida" className="fixed inset-x-0 bottom-0 z-30 grid grid-cols-5 border-t border-line bg-paper/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden">
         {bottomItem("/", "Inicio", Home)}
+        <button type="button" onClick={() => { setMobileOpen(false); openPalette(); }} aria-haspopup="dialog"
+          className="flex flex-col items-center justify-center gap-0.5 py-1.5 text-[11px] font-medium text-muted hover:text-ink">
+          <span className="grid h-8 w-12 place-items-center rounded-full"><Search size={19} aria-hidden /></span>
+          Buscar
+        </button>
         <NewPageButton variant="nav" label="Nuevo" />
         {bottomItem("/plantillas", "Plantillas", LayoutTemplate)}
         <button type="button" onClick={() => { setMobileOpen(false); setAccountOpen(true); }} aria-haspopup="dialog" aria-expanded={accountOpen}
@@ -273,6 +286,9 @@ export function Sidebar({ user, sections, accounts }: { user: User; sections: Si
           {panel}
         </SheetContent>
       </Sheet>
+      {/* Búsqueda con Ctrl/⌘ + K (#67) y el cierre de sesión que usa su acción "Cerrar sesión" (con la misma confirmación). */}
+      <CommandPalette user={user} sections={sections} departments={departments} />
+      <LogoutButton userId={user.id} variant="menu" hiddenTrigger />
     </MenuContext.Provider>
   );
 }

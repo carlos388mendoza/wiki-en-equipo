@@ -68,7 +68,7 @@ export default async function PageView({ params }: { params: Promise<{ id: strin
             {editable ? (
               <>
                 <NewPageButton parentId={page.id} parentTitle={page.title} variant="secondary" />
-                <Link href={`/paginas/${page.id}/editar`} className="inline-flex items-center gap-2 rounded-lg bg-ink px-3 py-2 text-sm font-medium text-white hover:bg-brand">
+                <Link href={`/paginas/${page.id}/editar`} data-wiki-accion="editar" className="inline-flex items-center gap-2 rounded-lg bg-ink px-3 py-2 text-sm font-medium text-on-ink hover:bg-brand hover:text-white">
                   <Pencil size={14} aria-hidden /> Editar
                 </Link>
               </>

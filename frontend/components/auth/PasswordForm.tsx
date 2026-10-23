@@ -39,7 +39,7 @@ export function PasswordForm() {
           {mismatch ? "Las contraseñas nuevas no coinciden." : state.error}
         </p>
       )}
-      <button type="submit" disabled={pending} className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-ink font-medium text-white hover:bg-brand disabled:opacity-60">
+      <button type="submit" disabled={pending} className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-ink font-medium text-on-ink hover:bg-brand hover:text-white disabled:opacity-60">
         {pending && <LoaderCircle size={16} className="animate-spin" aria-hidden />} Cambiar contraseña
       </button>
       <p className="text-xs text-muted">Al cambiarla se cerrará tu sesión en todos los dispositivos y tendrás que entrar de nuevo.</p>

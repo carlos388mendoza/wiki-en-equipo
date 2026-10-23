@@ -115,7 +115,7 @@ const Embed = createReactBlockSpec(
       return (
         <figure className="wiki-embed" contentEditable={false}>
           {src ? (
-            <div className="aspect-video overflow-hidden rounded-lg bg-ink">
+            <div className="aspect-video overflow-hidden rounded-lg bg-shade">
               <iframe src={src} title={block.props.caption || "Video"} className="h-full w-full" allow="encrypted-media; picture-in-picture; fullscreen" allowFullScreen />
             </div>
           ) : (

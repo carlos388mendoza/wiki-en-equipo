@@ -156,7 +156,7 @@ export function OfflineDrafts() {
             {online ? <Wifi size={14} aria-hidden /> : <CloudOff size={14} aria-hidden />}
             {online ? "Tienes conexión" : "Sin conexión"}
           </p>
-          <button type="button" onClick={newDraft} className="flex w-full items-center justify-center gap-2 rounded-lg bg-ink px-3 py-2 text-sm font-medium text-white hover:bg-brand">
+          <button type="button" onClick={newDraft} className="flex w-full items-center justify-center gap-2 rounded-lg bg-ink px-3 py-2 text-sm font-medium text-on-ink hover:bg-brand hover:text-white">
             <FilePlus2 size={16} aria-hidden /> Nuevo borrador
           </button>
           <section className="flex flex-col gap-1">
@@ -194,7 +194,7 @@ export function OfflineDrafts() {
             <CloudOff size={32} className="mx-auto text-muted" aria-hidden />
             <h1 className="mt-3 font-display text-2xl font-bold">Trabajar sin conexión</h1>
             <p className="mt-2 text-muted">Escribe borradores aunque no tengas internet. Se guardan en este dispositivo y, cuando vuelvas a estar en línea, los subes a la wiki como páginas privadas.</p>
-            <button type="button" onClick={newDraft} className="mt-5 inline-flex items-center gap-2 rounded-lg bg-ink px-4 py-2 text-sm font-medium text-white hover:bg-brand">
+            <button type="button" onClick={newDraft} className="mt-5 inline-flex items-center gap-2 rounded-lg bg-ink px-4 py-2 text-sm font-medium text-on-ink hover:bg-brand hover:text-white">
               <FilePlus2 size={16} aria-hidden /> Nuevo borrador
             </button>
           </div>
@@ -210,7 +210,7 @@ export function OfflineDrafts() {
               <div className="ml-auto flex items-center gap-2">
                 <button type="button" onClick={remove} aria-label="Borrar borrador" title="Borrar borrador" className="grid h-8 w-8 place-items-center rounded-md text-muted hover:bg-danger-soft hover:text-danger"><Trash2 size={16} /></button>
                 <button type="button" disabled={!online || busy} onClick={publish} title={online ? "Crear la página en la wiki" : "Necesitas conexión para publicar"}
-                  className="inline-flex items-center gap-1.5 rounded-lg bg-ink px-3 py-1.5 text-sm font-medium text-white hover:bg-brand disabled:opacity-50">
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-ink px-3 py-1.5 text-sm font-medium text-on-ink hover:bg-brand hover:text-white disabled:opacity-50">
                   {busy ? <LoaderCircle size={14} className="animate-spin" aria-hidden /> : <CloudUpload size={14} aria-hidden />} Subir a la wiki
                 </button>
               </div>

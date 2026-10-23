@@ -55,7 +55,7 @@ export function WallPagePicker({ target, wall, candidates }: { target: Target; w
           <div className="flex flex-wrap items-center gap-3 rounded-lg border border-line px-3 py-2">
             <Check size={16} className="text-brand-strong" aria-hidden />
             <span className="min-w-0 flex-1 truncate font-medium">{wall.title}</span>
-            <Link href={`/paginas/${wall.id}/editar`} className="inline-flex items-center gap-1.5 rounded-lg bg-ink px-3 py-1.5 text-sm font-medium text-white hover:bg-brand">
+            <Link href={`/paginas/${wall.id}/editar`} className="inline-flex items-center gap-1.5 rounded-lg bg-ink px-3 py-1.5 text-sm font-medium text-on-ink hover:bg-brand hover:text-white">
               <Pencil size={14} aria-hidden /> Editar contenido
             </Link>
             <button type="button" disabled={pending} onClick={() => run(() => (target.kind === "company" ? clearCompanyWall() : clearDepartmentWall(target.departmentId)), "El muro ya no tiene página de inicio. La página sigue existiendo.")}
@@ -81,7 +81,7 @@ export function WallPagePicker({ target, wall, candidates }: { target: Target; w
             const res = await createWallPage(target.kind === "company" ? "company" : { departmentId: target.departmentId, name: target.name });
             if (!res.ok) { setMessage({ ok: false, text: res.message }); return; }
             router.push(`/paginas/${res.data.id}/editar`);
-          })} className="inline-flex h-10 items-center justify-center gap-1.5 rounded-lg bg-ink px-3 text-sm font-medium text-white hover:bg-brand disabled:opacity-60">
+          })} className="inline-flex h-10 items-center justify-center gap-1.5 rounded-lg bg-ink px-3 text-sm font-medium text-on-ink hover:bg-brand hover:text-white disabled:opacity-60">
             {pending ? <LoaderCircle size={14} className="animate-spin" aria-hidden /> : <Sparkles size={14} aria-hidden />} Crear desde plantilla
           </button>
         </div>
@@ -163,7 +163,7 @@ export function FeaturedEditor({ target, initial, candidates }: { target: Target
           const res = target.kind === "company" ? await setCompanyFeaturedPages(ids) : await setFeaturedPages(target.departmentId, ids);
           setMessage(res.ok ? { ok: true, text: "Destacadas guardadas." } : { ok: false, text: res.message });
           if (res.ok) router.refresh();
-        })} className="inline-flex h-10 items-center gap-2 rounded-lg bg-ink px-4 text-sm font-medium text-white hover:bg-brand disabled:opacity-50">
+        })} className="inline-flex h-10 items-center gap-2 rounded-lg bg-ink px-4 text-sm font-medium text-on-ink hover:bg-brand hover:text-white disabled:opacity-50">
           {pending && <LoaderCircle size={14} className="animate-spin" aria-hidden />} Guardar destacadas
         </button>
         {dirty && <span className="text-sm text-muted">Tienes cambios sin guardar.</span>}
@@ -201,7 +201,7 @@ export function DepartmentInfoEditor({ departmentId, initial }: { departmentId: 
           const res = await updateDepartmentInfo(departmentId, { description, icon });
           setMessage(res.ok ? { ok: true, text: "Presentación guardada." } : { ok: false, text: res.message });
           if (res.ok) router.refresh();
-        })} className="inline-flex h-10 items-center gap-2 rounded-lg bg-ink px-4 text-sm font-medium text-white hover:bg-brand disabled:opacity-50">
+        })} className="inline-flex h-10 items-center gap-2 rounded-lg bg-ink px-4 text-sm font-medium text-on-ink hover:bg-brand hover:text-white disabled:opacity-50">
           {pending && <LoaderCircle size={14} className="animate-spin" aria-hidden />} Guardar presentación
         </button>
         <Feedback message={message} />

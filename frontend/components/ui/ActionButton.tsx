@@ -49,7 +49,7 @@ export function ActionButton({ action, children, className, confirm, successHref
           <div className="mt-5 flex justify-end gap-2">
             <button type="button" onClick={() => setOpen(false)} className="rounded-lg px-3 py-2 text-sm font-medium hover:bg-paper">Cancelar</button>
             <button type="button" disabled={pending} onClick={run}
-              className={`inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-white disabled:opacity-60 ${danger ? "bg-danger" : "bg-ink hover:bg-brand"}`}>
+              className={`inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium disabled:opacity-60 ${danger ? "bg-danger text-on-danger" : "bg-ink text-on-ink hover:bg-brand hover:text-white"}`}>
               {pending && <LoaderCircle size={14} className="animate-spin" aria-hidden />} {confirm.cta}
             </button>
           </div>

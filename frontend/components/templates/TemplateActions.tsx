@@ -87,7 +87,7 @@ export function TemplateActions({ template, viewer, autoOpen = false }: { templa
             if (!res.ok) { setError(res.message); return; }
             setConfirm(false);
             router.refresh();
-          })} className="inline-flex items-center gap-2 rounded-lg bg-danger px-3 py-2 text-sm font-medium text-white disabled:opacity-60">
+          })} className="inline-flex items-center gap-2 rounded-lg bg-danger px-3 py-2 text-sm font-medium text-on-danger disabled:opacity-60">
             {pending && <LoaderCircle size={14} className="animate-spin" aria-hidden />} Eliminar
           </button>
         </div>
@@ -106,7 +106,7 @@ export function NewTemplateButton() {
         const res = await createTemplate({ title: "Plantilla sin título", description: "", scope: "PRIVATE", blocks: [], background: null, icon: "📄" });
         if (!res.ok) { setError(res.message); return; }
         router.push(`/plantillas/${res.data.id}/editar`);
-      })} className="inline-flex items-center gap-2 rounded-lg bg-ink px-3 py-2 text-sm font-medium text-white hover:bg-brand disabled:opacity-60">
+      })} className="inline-flex items-center gap-2 rounded-lg bg-ink px-3 py-2 text-sm font-medium text-on-ink hover:bg-brand hover:text-white disabled:opacity-60">
         {pending ? <LoaderCircle size={14} className="animate-spin" aria-hidden /> : <Plus size={14} aria-hidden />} Nueva plantilla
       </button>
       {error && <p role="alert" className="text-sm text-danger">{error}</p>}

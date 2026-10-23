@@ -16,7 +16,7 @@ export const DrawerDescription = DrawerPrimitive.Description;
 export function DrawerContent({ className, children, ...props }: React.ComponentProps<typeof DrawerPrimitive.Content>) {
   return (
     <DrawerPrimitive.Portal>
-      <DrawerPrimitive.Overlay className="fixed inset-0 z-40 bg-ink/45" />
+      <DrawerPrimitive.Overlay className="fixed inset-0 z-40 bg-shade/45" />
       <DrawerPrimitive.Content
         className={cn("fixed inset-x-0 bottom-0 z-50 mx-auto flex max-h-[88dvh] w-full max-w-md flex-col rounded-t-2xl border border-line bg-surface pb-[env(safe-area-inset-bottom)] shadow-2xl outline-none", className)}
         {...props}

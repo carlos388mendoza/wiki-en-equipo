@@ -19,7 +19,7 @@ export function AcceptShareForm({ token }: { token: string }) {
           const res = await acceptShareLink(token);
           if (res && !res.ok) setError(res.message);
         })}
-        className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-ink font-medium text-white hover:bg-brand disabled:opacity-60"
+        className="inline-flex h-11 items-center justify-center gap-2 rounded-lg bg-ink font-medium text-on-ink hover:bg-brand hover:text-white disabled:opacity-60"
       >
         {pending && <LoaderCircle size={16} className="animate-spin" aria-hidden />} Aceptar y abrir
       </button>

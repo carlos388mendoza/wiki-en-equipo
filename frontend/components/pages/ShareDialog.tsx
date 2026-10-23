@@ -37,7 +37,7 @@ export function ShareButton({ page, viewer }: { page: SharePage; viewer: User })
   const [open, setOpen] = useState(false);
   return (
     <>
-      <button type="button" onClick={() => setOpen(true)} className={triggerClass.normal}>
+      <button type="button" onClick={() => setOpen(true)} className={triggerClass.normal} data-wiki-accion="compartir">
         <Share2 size={14} aria-hidden /> Compartir
       </button>
       <Modal open={open} onClose={() => setOpen(false)} title="Compartir página" description={page.title} size="lg">
@@ -329,7 +329,7 @@ function InviteSection({ target, excluded, pending, run, onInvited }: {
                       onInvited(p, permission);
                       setQuery("");
                     })}
-                    className="inline-flex items-center gap-1.5 rounded-lg bg-ink px-3 py-1.5 text-sm font-medium text-white hover:bg-brand disabled:opacity-60"
+                    className="inline-flex items-center gap-1.5 rounded-lg bg-ink px-3 py-1.5 text-sm font-medium text-on-ink hover:bg-brand hover:text-white disabled:opacity-60"
                   >
                     <UserPlus size={14} aria-hidden /> Invitar
                   </button>
@@ -374,7 +374,7 @@ function LinksSection({ target, pending, run }: { target: ShareTarget; pending: 
             <button
               type="button"
               onClick={async () => { await navigator.clipboard.writeText(created.url); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
-              className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-ink px-3 text-sm font-medium text-white hover:bg-brand"
+              className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-ink px-3 text-sm font-medium text-on-ink hover:bg-brand hover:text-white"
             >
               {copied ? <Check size={14} aria-hidden /> : <Copy size={14} aria-hidden />} {copied ? "Copiado" : "Copiar"}
             </button>
@@ -395,7 +395,7 @@ function LinksSection({ target, pending, run }: { target: ShareTarget; pending: 
             if (res.ok) { setCreated(res.data); setLinks((list) => [res.data, ...(list ?? [])]); }
             return res;
           }, "Enlace creado. Cópialo y envíalo.")}
-          className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg bg-ink px-3 text-sm font-medium text-white hover:bg-brand disabled:opacity-60"
+          className="inline-flex h-9 items-center justify-center gap-1.5 rounded-lg bg-ink px-3 text-sm font-medium text-on-ink hover:bg-brand hover:text-white disabled:opacity-60"
         >
           {pending ? <LoaderCircle size={14} className="animate-spin" aria-hidden /> : <Link2 size={14} aria-hidden />} Crear enlace
         </button>

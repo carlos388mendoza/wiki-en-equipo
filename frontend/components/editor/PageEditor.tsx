@@ -452,7 +452,7 @@ export function PageEditor({ mode, id, initial, pages, tagSuggestions, viewer, b
           <button type="button" onClick={() => setSaveTemplate(selectionBlocks().length ? "selection" : "page")} className="hidden items-center gap-1.5 rounded-lg border border-line px-3 py-1.5 text-sm font-medium hover:border-brand lg:inline-flex" title="Guardar toda la página o los bloques seleccionados como plantilla">
             <LayoutTemplate size={14} aria-hidden /> Guardar como plantilla
           </button>
-          <button type="button" onClick={finish} className="inline-flex items-center gap-1.5 rounded-lg bg-ink px-3 py-1.5 text-sm font-medium text-white hover:bg-brand">
+          <button type="button" onClick={finish} className="inline-flex items-center gap-1.5 rounded-lg bg-ink px-3 py-1.5 text-sm font-medium text-on-ink hover:bg-brand hover:text-white">
             <Check size={14} aria-hidden /> Listo
           </button>
         </div>
@@ -581,7 +581,7 @@ export function PageEditor({ mode, id, initial, pages, tagSuggestions, viewer, b
         >
           <input data-autofocus value={subpageTitle} onChange={(e) => setSubpageTitle(e.target.value)} placeholder="Título de la subpágina" aria-label="Título de la subpágina" maxLength={200}
             className="h-11 rounded-lg border border-line px-3 outline-none focus:border-brand" />
-          <button type="submit" className="h-10 rounded-lg bg-ink font-medium text-white hover:bg-brand">Crear subpágina</button>
+          <button type="submit" className="h-10 rounded-lg bg-ink font-medium text-on-ink hover:bg-brand hover:text-white">Crear subpágina</button>
         </form>
       </Modal>
 

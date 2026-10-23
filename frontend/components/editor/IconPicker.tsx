@@ -40,7 +40,7 @@ export function IconPicker({ value, onChange }: { value: string | null; onChange
             tone={tone} onToneChange={(t) => { setTone(t); if (current?.kind === "lucide") onChange(lucideIcon(current.name, t)); }} />
           <form className="mt-2 flex gap-2" onSubmit={(e) => { e.preventDefault(); const v = custom.trim(); if (v) { pick([...v].slice(0, 2).join("")); setCustom(""); } }}>
             <input value={custom} onChange={(e) => setCustom(e.target.value)} placeholder="Otro emoji" aria-label="Otro emoji" className="h-9 min-w-0 flex-1 rounded-lg border border-line px-2 text-sm outline-none focus:border-brand" />
-            <button type="submit" className="rounded-lg bg-ink px-3 text-sm font-medium text-white hover:bg-brand">Usar</button>
+            <button type="submit" className="rounded-lg bg-ink px-3 text-sm font-medium text-on-ink hover:bg-brand hover:text-white">Usar</button>
           </form>
           <button type="button" onClick={() => pick(null)} className="mt-2 text-xs text-muted hover:text-ink hover:underline">Quitar icono</button>
         </div>

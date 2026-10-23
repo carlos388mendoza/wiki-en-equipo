@@ -9,6 +9,7 @@ import { roleLabel } from "@/lib/permissions";
 import type { User } from "@/lib/types";
 import { Avatar } from "../ui/Avatar";
 import { Modal } from "../ui/Modal";
+import { ThemePicker } from "../ui/ThemePicker";
 import { LogoutButton } from "./LogoutButton";
 
 /**
@@ -37,6 +38,10 @@ export function AccountPanel({ user, accounts }: { user: User; accounts: SavedAc
         <span className="inline-flex items-center gap-1 rounded-full bg-brand-soft px-2 py-0.5 text-[11px] font-medium text-brand-strong"><Check size={12} aria-hidden /> Actual</span>
       </div>
       <Link href="/cuenta" className="flex items-center gap-2.5 rounded-md px-3 py-2.5 hover:bg-paper"><UserRound size={16} aria-hidden /> Mi cuenta</Link>
+      <div className="px-3 py-1.5">
+        <p className="mb-1.5 text-xs font-semibold text-muted">Tema</p>
+        <ThemePicker />
+      </div>
       <LogoutButton userId={user.id} variant="menu" />
 
       {others.length > 0 && (
@@ -73,7 +78,7 @@ export function AccountPanel({ user, accounts }: { user: User; accounts: SavedAc
         description={closing ? `Se cerrará la sesión de ${closing.name} en este dispositivo. Para volver a usarla tendrá que escribir su contraseña.` : undefined}>
         <div className="flex flex-wrap justify-end gap-2 text-sm">
           <button type="button" onClick={() => setClosing(null)} className="rounded-lg px-3 py-2 font-medium hover:bg-paper">Cancelar</button>
-          <button type="button" disabled={pending} className="inline-flex items-center gap-2 rounded-lg bg-ink px-3 py-2 font-medium text-white hover:bg-brand disabled:opacity-60"
+          <button type="button" disabled={pending} className="inline-flex items-center gap-2 rounded-lg bg-ink px-3 py-2 font-medium text-on-ink hover:bg-brand hover:text-white disabled:opacity-60"
             onClick={() => { const id = closing!.id; start(async () => { await signOutAccount(id); setClosing(null); }); }}>
             {pending && <LoaderCircle size={14} className="animate-spin" aria-hidden />} Cerrar sesión
           </button>
