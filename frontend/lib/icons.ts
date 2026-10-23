@@ -50,12 +50,12 @@ export const BRAND_BANNER_SRC = "/brand/franquicias/grupo-comidas-animado.webp";
 export const isBrandImage = (url: string) => url.startsWith("/brand/");
 /**
  * Logos de la pestaña "Grupo Comidas" del selector de iconos: `marca:<id>`. Los de las franquicias tienen fondo
- * transparente (originales en assets/brand/franquicias). `wide`: el animado es rectangular (600 × 200) y su
- * recuadro usa la misma proporción 3:1.
+ * transparente (originales en assets/brand/franquicias). `wide`: el animado es rectangular (600 × 200); `still` es su
+ * último cuadro, liviano, que se muestra quieto hasta pasar el ratón.
  */
-export const BRANDS: Record<string, { label: string; src: string; wide?: boolean }> = {
+export const BRANDS: Record<string, { label: string; src: string; wide?: boolean; still?: string }> = {
   "grupo-comidas": { label: "Grupo Comidas", src: BRAND_LOGO_SRC },
-  "grupo-comidas-animado": { label: "Grupo Comidas (animado)", src: BRAND_BANNER_SRC, wide: true },
+  "grupo-comidas-animado": { label: "Grupo Comidas (animado)", src: BRAND_BANNER_SRC, wide: true, still: "/brand/franquicias/grupo-comidas-fijo.webp" },
   "pizza-hut": { label: "Pizza Hut", src: "/brand/franquicias/pizza-hut.webp" },
   kfc: { label: "KFC", src: "/brand/franquicias/kfc.webp" },
   dennys: { label: "Denny's", src: "/brand/franquicias/dennys.webp" },
@@ -67,13 +67,13 @@ export type ParsedIcon =
   /** `Icon` solo en los iconos de Lucide que la app trae siempre; los demás se dibujan con /iconos/lucide/<nombre>.svg. */
   | { kind: "lucide"; Icon: LucideIcon | null; name: string; tone: IconTone }
   | { kind: "3d"; name: string; src: string }
-  | { kind: "brand"; src: string; wide?: boolean };
+  | { kind: "brand"; src: string; wide?: boolean; still?: string };
 
 export function parseIcon(icon: string | null | undefined): ParsedIcon | null {
   if (!icon) return null;
   if (icon.startsWith("marca:")) {
     const brand = Object.hasOwn(BRANDS, icon.slice(6)) ? BRANDS[icon.slice(6)] : null;
-    return brand ? { kind: "brand", src: brand.src, ...(brand.wide && { wide: true }) } : null;
+    return brand ? { kind: "brand", src: brand.src, ...(brand.wide && { wide: true, still: brand.still }) } : null;
   }
   if (icon.startsWith("3d:")) {
     // Del CDN de 3dicons (cualquier estilo y ángulo, #46) o de los 120 guardados en el repo.
