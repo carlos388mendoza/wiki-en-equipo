@@ -71,6 +71,17 @@ body { @apply bg-paper text-ink font-sans antialiased; }
 
 :focus-visible { outline: 2px solid var(--color-brand); outline-offset: 2px; border-radius: 4px; }
 
+/* La barra de comandos (Ctrl/⌘+K) no muestra el anillo rojo al enfocarse. */
+dialog[aria-label="Buscar en la wiki"],
+dialog[aria-label="Buscar en la wiki"]:focus,
+dialog[aria-label="Buscar en la wiki"]:focus-visible,
+dialog[aria-label="Buscar en la wiki"] input,
+dialog[aria-label="Buscar en la wiki"] input:focus,
+dialog[aria-label="Buscar en la wiki"] input:focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { animation: none !important; transition: none !important; }
 }
