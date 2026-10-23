@@ -149,7 +149,7 @@ export function CommandPalette({ user, sections, departments }: { user: User; se
         <input ref={inputRef} value={query} onChange={(e) => setQuery(e.target.value)} onKeyDown={onKeyDown}
           placeholder="Busca páginas, #etiquetas o acciones…" aria-label="Buscar páginas y acciones"
           role="combobox" aria-expanded="true" aria-controls={listId} aria-activedescendant={items.length ? `${listId}-${current}` : undefined}
-          className="h-14 min-w-0 flex-1 bg-transparent text-base outline-none focus:outline-none focus:ring-2 focus:ring-brand focus:ring-inset focus-visible:outline-none" style={{ outline: "none" }} />
+          className="h-14 min-w-0 flex-1 bg-transparent text-base outline-none focus:outline-none" />
         {searching && <LoaderCircle size={16} className="shrink-0 animate-spin text-muted" aria-label="Buscando" />}
         <kbd className="hidden shrink-0 rounded border border-line px-1.5 py-0.5 text-[11px] text-muted sm:inline">Esc</kbd>
       </div>
