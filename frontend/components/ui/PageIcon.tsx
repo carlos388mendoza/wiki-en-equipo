@@ -1,8 +1,13 @@
-"use client";
-
 import Image from "next/image";
 import { flagCode, flagSrc } from "@/lib/flags";
+import { emojiFontFamily } from "@/lib/emoji-font";
 import { ICON_TONES, parseIcon } from "@/lib/icons";
+import { AnimatedLogo } from "./AnimatedLogo";
+
+/** Ancho máximo del logo rectangular (3:1) como icono: no descuadra la cabecera ni la barra lateral. */
+export const WIDE_ICON_MAX = 240;
+/** Caja del logo rectangular para un icono de `size`: el doble de ancho (hasta 240 px) y un tercio de alto. */
+export const wideIconBox = (size: number) => { const width = Math.min(size * 2, WIDE_ICON_MAX); return { width, height: Math.round(width / 3) }; };
 
 /**
  * Icono de una página o plantilla: emoji, logo de Grupo Comidas, icono 3D (3dicons) o icono de Lucide sobre una tesela con
@@ -12,16 +17,11 @@ export function PageIcon({ icon, fallback = "📄", size = 20, className = "" }:
   icon: string | null | undefined; fallback?: string; size?: number; className?: string;
 }) {
   const parsed = parseIcon(icon) ?? parseIcon(fallback);
-  if (parsed?.kind === "brand" && parsed.wide) {
-    // El logo animado es rectangular (600 × 200, 3:1): la caja usa la misma proporción para que lo llene.
-    // Sin reinicio al pasar el ratón: reiniciarlo obligaba a pedir el archivo con otra URL (pesa ~1 MB) y el
-    // logo se quedaba en blanco mientras descargaba. Se reproduce una vez y se queda en el último fotograma.
-    return (
-      <span aria-hidden className={`relative inline-block shrink-0 overflow-hidden ${className}`}
-        style={{ width: size * 3, height: size }}>
-        <Image src={parsed.src} alt="" fill sizes={`${size * 3}px`} unoptimized className="object-contain" />
-      </span>
-    );
+  if (parsed?.kind === "brand" && parsed.wide && parsed.still) {
+    // El logo animado es rectangular (600 × 200, 3:1): quieto en su último cuadro y se anima al pasar el ratón o
+    // al tocarlo, sin volver a descargarlo (AnimatedLogo). La caja tiene un ancho máximo.
+    const box = wideIconBox(size);
+    return <AnimatedLogo src={parsed.src} still={parsed.still} width={box.width} height={box.height} className={className} />;
   }
   if (parsed?.kind === "3d" || parsed?.kind === "brand") {
     // Imagen local (public/iconos/3d o public/brand): se optimiza con next/image.
@@ -32,7 +32,7 @@ export function PageIcon({ icon, fallback = "📄", size = 20, className = "" }:
     const flag = flagCode(parsed?.value ?? fallback);
     if (flag) return <Image src={flagSrc(flag)} alt="" aria-hidden width={Math.round(size * 4 / 3)} height={size} className={`inline-block shrink-0 rounded-[3px] object-cover shadow-sm ${className}`} style={{ width: Math.round(size * 0.9 * 4 / 3), height: Math.round(size * 0.9) }} />;
     return (
-      <span aria-hidden className={`inline-block leading-none ${className}`} style={{ fontSize: size }}>
+      <span aria-hidden className={`inline-block leading-none ${className}`} style={{ fontSize: size, fontFamily: emojiFontFamily(parsed?.value ?? fallback) }}>
         {parsed?.value ?? fallback}
       </span>
     );
