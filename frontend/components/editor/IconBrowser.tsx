@@ -55,8 +55,10 @@ export function IconBrowser({ value, onPick, initialTab, tone, onToneChange, aut
       const q = words(query);
       return [...brandItems.filter((b) => q.every((t) => b.words.some((w) => w.startsWith(t)))), ...searchCatalog(catalog, query)];
     }
-    return tab === "marca" ? brandItems : tab === "iconos" ? catalog.lucide : tab === "3d" ? catalog.threeD : catalog.emojis;
-  }, [catalog, query, tab]);
+    // Los emojis esperan al catálogo completo (en el orden de los trozos de la fuente): la lista básica de respaldo
+    // está desordenada y, por un instante, hacía que el navegador bajara casi todos los trozos (~13 MB).
+    return tab === "marca" ? brandItems : tab === "iconos" ? catalog.lucide : tab === "3d" ? catalog.threeD : loading ? [] : catalog.emojis;
+  }, [catalog, query, tab, loading]);
 
   const virtual = useVirtualizer({ count: Math.ceil(items.length / COLUMNS), getScrollElement: () => listRef.current, estimateSize: () => ROW, overscan: 4 });
 
@@ -124,10 +126,22 @@ export function IconBrowser({ value, onPick, initialTab, tone, onToneChange, aut
         </div>
       )}
 
-      {!searching && tab === "marca" && <p className="text-xs text-muted">El logo animado también se puede usar como portada: Fondo → Imágenes → Grupo Comidas.</p>}
-
       <div ref={listRef} className={`${height} overflow-y-auto p-0.5`} aria-label={searching ? "Resultados de la búsqueda" : undefined}>
-        {items.length === 0 ? (
+        {!searching && tab === "marca" ? (
+          // Pestaña "Grupo Comidas": pocos logos, sin virtualizar; el animado ocupa una fila entera para verse grande.
+          <div className="grid grid-cols-7 gap-1.5">
+            {brandItems.map((item) => {
+              const icon = valueOf(item);
+              const wide = item.kind === "brand" && BRANDS[item.id].wide;
+              return (
+                <button key={icon} type="button" onClick={() => onPick(icon)} aria-label={`Usar ${labelOf(item)}`} title={titleOf(item)}
+                  className={`grid place-items-center rounded-lg p-1 hover:bg-paper ${wide ? "col-span-7 h-16" : "h-10"} ${value === icon ? "bg-brand-soft" : ""}`}>
+                  <PageIcon icon={icon} size={wide ? 84 : 40} />
+                </button>
+              );
+            })}
+          </div>
+        ) : items.length === 0 ? (
           <p className="py-4 text-center text-sm text-muted">{searching ? `No encontramos iconos con “${query.trim()}”. Prueba otra palabra.` : "Cargando…"}</p>
         ) : (
           <div className="relative" style={{ height: virtual.getTotalSize() }}>
@@ -138,7 +152,7 @@ export function IconBrowser({ value, onPick, initialTab, tone, onToneChange, aut
                   return (
                     <button key={`${item.kind}:${icon}`} type="button" onClick={() => onPick(icon)} aria-label={`Usar ${labelOf(item)}`} title={titleOf(item)}
                       className={`grid h-10 place-items-center rounded-lg p-1 text-xl hover:bg-paper ${value === icon ? "bg-brand-soft" : ""}`}>
-                      <PageIcon icon={icon} size={item.kind === "3d" ? 40 : item.kind === "brand" ? (BRANDS[item.id].wide ? 10 : 40) : 28} />
+                      <PageIcon icon={icon} size={item.kind === "3d" ? 40 : item.kind === "brand" ? (BRANDS[item.id].wide ? 20 : 40) : 28} />
                     </button>
                   );
                 })}

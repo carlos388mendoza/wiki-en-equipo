@@ -3,10 +3,11 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { createContext, useContext, useEffect, useId, useState } from "react";
-import { Building2, Calculator, ChevronRight, ChevronsUpDown, Cpu, Home, LayoutTemplate, Menu, Package, Search, ShoppingCart, Shield, Trash2, UserRound } from "lucide-react";
+import { ChevronRight, ChevronsUpDown, Home, LayoutTemplate, Menu, Search, Shield, Trash2, UserRound } from "lucide-react";
 import type { SavedAccount } from "@/lib/accounts";
+import { departmentIconFor } from "@/lib/departments";
 import { canManageUsers, roleLabel } from "@/lib/permissions";
-import type { PageSummary, SidebarSections, User } from "@/lib/types";
+import type { PageSummary, SidebarDepartment, SidebarSections, User } from "@/lib/types";
 import { AccountPanel } from "../auth/AccountPanel";
 import { NewPageButton } from "../pages/NewPageDialog";
 import { Avatar } from "../ui/Avatar";
@@ -16,17 +17,6 @@ import { Modal } from "../ui/Modal";
 import { PageIcon } from "../ui/PageIcon";
 import { Sheet, SheetContent, SheetDescription, SheetTitle } from "../ui/sheet";
 import { PageMenu } from "./PageMenu";
-
-/** Icono para cada departamento según su nombre (cuando no tiene uno propio). */
-function departmentIcon(name: string) {
-  const n = name.toLowerCase();
-  if (n.includes("tecnolog")) return Cpu;
-  if (n.includes("compra")) return ShoppingCart;
-  if (n.includes("contabilidad") || n.includes("finanz")) return Calculator;
-  if (n.includes("recursos") || n.includes("rrhh") || n.includes("humanos")) return UserRound;
-  if (n.includes("logistic") || n.includes("almacen") || n.includes("bodega")) return Package;
-  return Building2;
-}
 
 /** Quién mira la barra y qué páginas ancló (para el menú ⋯ de cada página). */
 const MenuContext = createContext<{ user: User; pinned: Set<string> } | null>(null);
@@ -88,39 +78,51 @@ function Section({ title, pages, empty }: { title: string; pages: PageSummary[];
   );
 }
 
+/** Icono de un departamento: el suyo de la base si lo tiene (emoji, Lucide, 3D) o el que sale de su nombre. */
+export function DepartmentIcon({ department, size = 16 }: { department: Pick<SidebarDepartment, "name" | "icon">; size?: number }) {
+  if (department.icon) return <PageIcon icon={department.icon} size={size} />;
+  const Icon = departmentIconFor(department.name);
+  return <Icon size={size} aria-hidden className="shrink-0" />;
+}
+
 /**
- * Páginas de un departamento, plegables (#63): el título es un botón con chevron, como los grupos de la sidebar de
- * shadcn. Empieza abierto el departamento propio y se abre solo cuando la página abierta es de ese departamento.
+ * Un departamento en la barra (#55, #63): la flecha pliega o despliega sus páginas y el nombre, con su icono, lleva a
+ * su muro. Empieza abierto el departamento propio y se abre solo cuando la página abierta es de ese departamento.
+ * Cada departamento aparece una sola vez (antes el Administrador los veía en la lista y otra vez como sección).
  */
-function DepartmentSection({ id, title, pages, empty, abierta }: {
-  id: string; title: string; pages: PageSummary[]; empty?: string; abierta?: boolean;
-}) {
-  const pathname = usePathname();
+export function DepartmentGroup({ department, own }: { department: SidebarDepartment; own: boolean }) {
+  const pathname = usePathname() ?? "";
+  const { pages } = department;
   const contieneActiva = pages.some((p) => pathname === `/paginas/${p.id}`);
-  const [abierto, setAbierto] = useState(Boolean(abierta) || contieneActiva);
+  const [abierto, setAbierto] = useState(own || contieneActiva);
   useEffect(() => { if (contieneActiva) setAbierto(true); }, [contieneActiva]);
   const ids = new Set(pages.map((p) => p.id));
   const roots = pages.filter((p) => !p.parentId || !ids.has(p.parentId));
   // useId: el panel se dibuja dos veces (escritorio y menú del celular) y cada copia necesita su propio id.
-  const panelId = `${useId()}-departamento-${id}`;
-  if (roots.length === 0 && !empty) return null;
+  const panelId = `${useId()}-departamento-${department.id}`;
+  const href = `/departamentos/${department.slug}`;
+  const active = pathname === href || pathname.startsWith(`${href}/`);
   return (
-    <section className="flex flex-col gap-1">
-      <h2>
+    <li>
+      <div className={`flex items-center rounded-md text-sm ${active ? "bg-brand-soft font-semibold text-brand-strong" : "hover:bg-line/60"}`}>
         <button type="button" onClick={() => setAbierto(!abierto)} aria-expanded={abierto} aria-controls={panelId}
-          className="flex w-full items-center gap-1 rounded-md px-2 py-1 text-left text-xs font-semibold text-muted hover:bg-line/60 hover:text-ink">
-          <ChevronRight size={14} aria-hidden className={`shrink-0 transition-transform ${abierto ? "rotate-90" : ""}`} />
-          <span className="truncate">{title}</span>
+          aria-label={`${abierto ? "Plegar" : "Desplegar"} las páginas de ${department.name}`}
+          className="grid h-8 w-6 shrink-0 place-items-center text-muted hover:text-ink">
+          <ChevronRight size={14} aria-hidden className={`transition-transform ${abierto ? "rotate-90" : ""}`} />
         </button>
-      </h2>
-      <div id={panelId} hidden={!abierto}>
+        <Link href={href} aria-current={active ? "page" : undefined} className="flex min-w-0 flex-1 items-center gap-2 py-1.5 pr-2">
+          <DepartmentIcon department={department} />
+          <span className="truncate">{department.name}</span>
+        </Link>
+      </div>
+      <div id={panelId} hidden={!abierto} className="pl-3">
         {roots.length === 0 ? (
-          <p className="px-2 py-1 text-sm text-muted">{empty}</p>
+          <p className="px-2 py-1 text-sm text-muted">{own ? "Tu departamento no ha publicado páginas." : "Este departamento no ha publicado páginas."}</p>
         ) : (
           <ul>{roots.map((p) => <TreeNode key={p.id} page={p} all={pages} depth={0} />)}</ul>
         )}
       </div>
-    </section>
+    </li>
   );
 }
 
@@ -173,29 +175,25 @@ export function Sidebar({ user, sections, accounts }: { user: User; sections: Si
 
       <nav className="flex flex-col gap-0.5" aria-label="Principal">
         {navItem("/", "Inicio de la empresa", Home)}
-        {departments.length <= 1 && departments.map((d) => navItem(`/departamentos/${d.slug}`, d.name, departmentIcon(d.name)))}
+        {/* Un solo departamento (#55): en el menú principal, sin sección aparte. */}
+        {departments.length === 1 && <ul><DepartmentGroup department={departments[0]} own={departments[0].id === user.departmentId} /></ul>}
         {navItem("/buscar", "Buscar", Search)}
         {navItem("/plantillas", "Plantillas", LayoutTemplate)}
         {canManageUsers(user) && navItem("/admin", "Administración", Shield)}
       </nav>
 
+      {/* Varios (Administrador, #55): una sección "Departamentos", cada uno una sola vez. */}
       {departments.length > 1 && (
         <section className="flex flex-col gap-1" aria-label="Departamentos">
           <h2 className="px-2 text-xs font-semibold text-muted">Departamentos</h2>
           <ul className="flex flex-col gap-0.5">
-            {departments.map((d) => (
-              <li key={d.id}>{navItem(`/departamentos/${d.slug}`, d.name, departmentIcon(d.name))}</li>
-            ))}
+            {departments.map((d) => <DepartmentGroup key={d.id} department={d} own={d.id === user.departmentId} />)}
           </ul>
         </section>
       )}
 
       <Section title="Ancladas" pages={sections.ancladas} />
       <Section title="Empresa" pages={sections.empresa} />
-      {departments.map((d) => (
-        <DepartmentSection key={d.id} id={d.id} title={d.name} pages={d.pages} abierta={d.id === user.departmentId}
-          empty={d.id === user.departmentId ? "Tu departamento no ha publicado páginas." : "Este departamento no ha publicado páginas."} />
-      ))}
       <Section title="Compartidas conmigo" pages={sections.compartidas} />
       <Section title="Privadas" pages={sections.privadas} empty="Las páginas que crees aparecerán aquí." />
 

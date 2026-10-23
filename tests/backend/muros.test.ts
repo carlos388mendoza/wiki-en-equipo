@@ -20,6 +20,16 @@ afterAll(() => api.close());
 const ids = (res: { body: { pages: { id: string }[] } }) => res.body.pages.map((p) => p.id);
 
 describe("departamentos", () => {
+  it("el listado da todos los departamentos a un ADMIN y a los demás solo el suyo (la barra lateral)", async () => {
+    const names = async (user: TestUser) => (await api.as(user).get("/departments")).body.departments.map((d: { name: string }) => d.name);
+    expect(await names(ana)).toEqual(["Compras", "Contabilidad", "Tecnología"]);
+    expect(await names(luis)).toEqual(["Tecnología"]);
+    expect(await names(maria)).toEqual(["Compras"]);
+    // Un administrador de departamento tampoco ve los demás.
+    expect(await names(carlos)).toEqual(["Contabilidad"]);
+    expect((await api.as(null).get("/departments")).status).toBe(401);
+  });
+
   it("distingue 'no existe' (404) de 'sin acceso' (403)", async () => {
     expect((await api.as(maria).get("/departments/tecnologia")).status).toBe(403);
     expect((await api.as(maria).get("/departments/no-existe")).status).toBe(404);

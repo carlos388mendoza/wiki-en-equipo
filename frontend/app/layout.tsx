@@ -9,7 +9,11 @@ const figtree = Figtree({ subsets: ["latin"], variable: "--font-figtree", displa
 // Vercel espera hasta 60 s (el máximo del plan gratis) en lugar de cortar la petición.
 export const maxDuration = 60;
 
+// Dirección pública para las imágenes de Open Graph (en Vercel, el dominio de producción).
+const siteUrl = process.env.VERCEL_PROJECT_PRODUCTION_URL ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL}` : "http://localhost:3000";
+
 export const metadata: Metadata = {
+  metadataBase: new URL(siteUrl),
   title: { default: "Wiki Grupo Comidas", template: "%s | Wiki Grupo Comidas" },
   description: "Documentación y procesos de Grupo Comidas",
 };

@@ -25,6 +25,8 @@
   /* Emojis (#54): "Apple Color Emoji" se carga desde /fonts/apple-emoji (trozos WOFF2 con unicode-range).
      Si el navegador no la descarga, cae en el emoji del sistema. */
   --font-emoji: "Apple Color Emoji", "Noto Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", sans-serif;
+  /* Iconos de un solo emoji: la familia de sueltos (trozos pequeños) y, si no lo tiene, la de Apple (lib/emoji-font.ts). */
+  --font-emoji-icono: "Apple Color Emoji Sueltos", "Apple Color Emoji", "Noto Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", sans-serif;
   --font-sans: var(--font-figtree), var(--font-emoji), ui-sans-serif, system-ui, sans-serif;
 }
 

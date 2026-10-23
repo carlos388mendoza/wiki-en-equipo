@@ -1,22 +1,39 @@
 import { readFileSync } from "node:fs";
+import { createElement } from "react";
+import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it } from "vitest";
+import { PageIcon, WIDE_ICON_MAX, wideIconBox } from "../../frontend/components/ui/PageIcon";
+import { BRANDS } from "../../frontend/lib/icons";
 
-// El logo animado (GIF convertido a WebP) se veía "lagueado": cada vez que el ratón pasaba por encima se pedía
-// otra vez el archivo (~1 MB) con una URL nueva (`?v=N`) y el logo se quedaba en blanco mientras descargaba.
-const read = (file: string) => readFileSync(new URL(`../../frontend/${file}`, import.meta.url), "utf8");
-const pageIcon = read("components/ui/PageIcon.tsx");
+// El logo animado (GIF convertido a WebP) se veía "lagueado": al pasar el ratón se pedía otra vez el archivo con una
+// URL nueva (`?v=N`), y además el WebP estaba mal hecho por dentro (lienzo de 88 × 200). Ahora se muestra quieto (su
+// último cuadro, liviano) y se anima al pasar el ratón o al tocarlo desde una sola descarga (AnimatedLogo).
 const banner = readFileSync(new URL("../../frontend/public/brand/franquicias/grupo-comidas-animado.webp", import.meta.url));
+const still = readFileSync(new URL("../../frontend/public/brand/franquicias/grupo-comidas-fijo.webp", import.meta.url));
+const animatedLogo = readFileSync(new URL("../../frontend/components/ui/AnimatedLogo.tsx", import.meta.url), "utf8");
+const html = (size: number) => renderToStaticMarkup(createElement(PageIcon, { icon: "marca:grupo-comidas-animado", size }));
 
 describe("logo animado de Grupo Comidas", () => {
-  it("la caja tiene la misma proporción que el logo (600 × 200, 3:1) para que lo llene sin aire arriba y abajo", () => {
-    expect(pageIcon).toContain("style={{ width: size * 3, height: size }}");
-    expect(pageIcon).toMatch(/src=\{parsed\.src\}[^>]*className="object-contain"/);
+  it("como icono tiene un tamaño máximo (no descuadra la cabecera ni la barra lateral) y guarda la proporción 3:1", () => {
+    expect(wideIconBox(16)).toEqual({ width: 32, height: 11 });
+    expect(wideIconBox(76)).toEqual({ width: 152, height: 51 });
+    expect(wideIconBox(136)).toEqual({ width: WIDE_ICON_MAX, height: 80 });
+    expect(html(136)).toContain("width:240px;height:80px");
   });
 
-  it("no se le cambia la URL al pasar el ratón: se reproduce una vez y se queda en el último fotograma", () => {
-    expect(pageIcon).not.toContain("animKey");
-    expect(pageIcon).not.toContain("onMouseEnter");
-    expect(pageIcon).not.toMatch(/\?v=\$\{/);
+  it("se dibuja quieto con el último cuadro: el archivo animado no se descarga hasta pasar el ratón", () => {
+    const markup = html(76);
+    expect(markup).toContain(BRANDS["grupo-comidas-animado"].still);
+    expect(markup).not.toContain("grupo-comidas-animado.webp");
+    expect(markup).toContain("<canvas");
+  });
+
+  it("al animarse no cambia la URL ni lo vuelve a pedir: una sola descarga por pestaña", () => {
+    // Ni `?v=${…}` ni `+ "?v="` en el código (el comentario sí lo menciona para explicarlo).
+    expect(animatedLogo).not.toMatch(/\?v=\$\{|searchParams|\+ *["']\?v=/);
+    expect(animatedLogo).toContain("const cache = new Map<string, Promise<ArrayBuffer>>()");
+    expect(animatedLogo).toContain("onPointerOver={play} onTouchStart={play}");
+    expect(animatedLogo).toContain("prefers-reduced-motion");
   });
 
   it("el lienzo del WebP mide 600 × 200 (antes decía 88 × 200 y el logo se veía como una tira invisible)", () => {
@@ -26,9 +43,12 @@ describe("logo animado de Grupo Comidas", () => {
     expect(banner.readUInt32LE(4)).toBe(banner.length - 8);
     expect(banner.readUIntLE(24, 3) + 1).toBe(600);
     expect(banner.readUIntLE(27, 3) + 1).toBe(200);
+    // Con transparencia (bit alfa del VP8X) y animación.
+    expect(banner[20] & 0x10).toBe(0x10);
+    expect(banner[20] & 0x02).toBe(0x02);
   });
 
-  it("el archivo es un WebP animado de 74 fotogramas que se reproduce una vez (loop = 1)", () => {
+  it("es un WebP animado de 74 fotogramas que se reproduce una vez (loop = 1), más liviano que antes", () => {
     const anim = banner.indexOf("ANIM");
     expect(banner.toString("ascii", anim, anim + 4)).toBe("ANIM");
     expect(banner.readUInt16LE(anim + 12)).toBe(1);
@@ -41,6 +61,7 @@ describe("logo animado de Grupo Comidas", () => {
       off += 8 + size + (size % 2);
     }
     expect(frames).toBe(74);
-    expect(banner.length).toBeGreaterThan(900_000); // el archivo completo, sin recomprimir
+    expect(banner.length).toBeLessThan(800_000); // antes 915 KB
+    expect(still.length).toBeLessThan(40_000);
   });
 });

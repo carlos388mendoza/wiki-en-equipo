@@ -46,10 +46,10 @@ export function unseal(value: string | undefined, k = key()): StoredAccount[] {
 }
 
 /** Fecha de vencimiento del token (JWT), para no ofrecer sesiones ya vencidas. */
-function expired(token: string) {
+export function expired(token: string, now = Date.now()) {
   try {
     const { exp } = JSON.parse(Buffer.from(token.split(".")[1], "base64url").toString("utf8"));
-    return typeof exp === "number" && exp * 1000 <= Date.now();
+    return typeof exp !== "number" || exp * 1000 <= now; // sin vencimiento: no se ofrece
   } catch {
     return true;
   }
